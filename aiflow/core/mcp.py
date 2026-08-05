@@ -110,11 +110,17 @@ class MCPClient:
 class MCPTool(Tool):
     """Adapts one remote MCP tool into the aiflow Tool ABC."""
 
+    dangerous = True
+
     def __init__(self, client: MCPClient, schema: dict) -> None:
         self.client = client
         self.name = schema["name"]
         self.description = schema["description"]
         self.parameters = schema["input_schema"]
+
+    def preview(self, **kwargs) -> str:
+        args = ", ".join(f"{key}={value!r}" for key, value in kwargs.items())
+        return f"{self.name}({args})"
 
     def run(self, **kwargs) -> ToolResult:
         try:
