@@ -18,6 +18,10 @@ class BashTool(Tool):
         },
         "required": ["command"],
     }
+    dangerous = True
+
+    def preview(self, command: str, **_) -> str:
+        return f"$ {command}"
 
     def run(self, command: str, timeout: int = 120) -> ToolResult:
         try:
