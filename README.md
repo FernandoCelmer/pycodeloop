@@ -144,6 +144,42 @@ class MyTool(Tool):
         return ToolResult(output=f"did {x}")
 ```
 
+Mark a tool `dangerous = True` and it gets a confirmation gate before it runs — `write_file`, `edit_file`, `bash`, and every MCP tool already are. Override `preview(**kwargs)` to control what's shown at confirmation time (defaults to a diff for file tools, the command line for `bash`):
+
+```python
+from aiflow.core.agent import Agent
+
+def confirm(name: str, preview: str) -> bool:
+    print(preview)
+    return input(f"run {name}? [y/N] ").lower() == "y"
+
+agent = Agent(provider=provider, confirm=confirm)
+```
+
+---
+
+</details>
+
+<details>
+<summary><strong>Streaming and token usage</strong></summary>
+
+`Agent` exposes hooks for everything the terminal UI needs — streamed text, per-turn and cumulative token usage:
+
+```python
+from aiflow.core.agent import Agent
+
+agent = Agent(
+    provider=provider,
+    on_text_delta=lambda chunk: print(chunk, end=""),
+    on_usage=lambda turn, total: print(f"\n{turn.input_tokens}in/{turn.output_tokens}out, total {total.input_tokens}in/{total.output_tokens}out"),
+)
+
+agent.run("...")
+print(agent.usage)  # Usage(input_tokens=..., output_tokens=...)
+```
+
+`on_text_delta` only fires when the provider supports streaming (Anthropic and OpenAI both do); leave it `None` to get the assembled response in one shot instead.
+
 ---
 
 </details>
@@ -197,7 +233,16 @@ aiflow chat
 
 # Override provider/model per invocation
 aiflow run "..." --provider openai --model gpt-5
+
+# Skip confirmation prompts for dangerous tools
+aiflow run "..." --yes
 ```
+
+The CLI behaves like a terminal coding agent:
+
+- **Streams** the model's text as it arrives instead of waiting for the full reply.
+- **Asks before running** `write_file`, `edit_file`, `bash`, or any MCP tool — shows a colored diff (or the shell command) and waits for confirmation. `--yes` skips this.
+- **Reports token usage** after every turn: input/output tokens for that turn plus the running session total.
 
 ---
 
