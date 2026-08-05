@@ -149,6 +149,41 @@ class MyTool(Tool):
 </details>
 
 <details>
+<summary><strong>MCP servers</strong></summary>
+
+```bash
+pip install aiflow[mcp]
+```
+
+Connect to any Model Context Protocol server over stdio and expose its remote tools to the agent alongside the built-in ones:
+
+```python
+from aiflow import AIFlow, Config
+from aiflow.core.mcp import MCPServer, load_mcp_tools
+from aiflow.core.tools import DEFAULT_TOOLS
+from aiflow.providers import AnthropicProvider
+
+server = MCPServer(command="npx", args=["-y", "@modelcontextprotocol/server-filesystem", "."])
+tools = DEFAULT_TOOLS + load_mcp_tools(server)
+
+config = Config(provider=AnthropicProvider(model="claude-sonnet-5"), tools=tools)
+flow = AIFlow(config=config)
+```
+
+Or from the CLI, one `--mcp` flag per server:
+
+```bash
+aiflow run "list every allowed directory" \
+  --mcp "npx -y @modelcontextprotocol/server-filesystem ."
+```
+
+`load_mcp_tools` keeps the server subprocess alive on a background event loop for the life of the process, and adapts each remote tool schema into a regular `Tool` — the agent can't tell an MCP tool from a local one.
+
+---
+
+</details>
+
+<details>
 <summary><strong>CLI</strong></summary>
 
 Run the agent directly from the command line:
