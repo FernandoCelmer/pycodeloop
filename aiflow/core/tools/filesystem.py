@@ -2,9 +2,20 @@
 
 from __future__ import annotations
 
+import difflib
 from pathlib import Path
 
 from aiflow.abc.tool import Tool, ToolResult
+
+
+def _diff(path: str, before: str, after: str) -> str:
+    lines = difflib.unified_diff(
+        before.splitlines(keepends=True),
+        after.splitlines(keepends=True),
+        fromfile=path,
+        tofile=path,
+    )
+    return "".join(lines) or "(no changes)"
 
 
 class ReadFileTool(Tool):
@@ -43,6 +54,14 @@ class WriteFileTool(Tool):
         },
         "required": ["path", "content"],
     }
+    dangerous = True
+
+    def preview(self, path: str, content: str, **_) -> str:
+        try:
+            before = Path(path).read_text()
+        except OSError:
+            before = ""
+        return _diff(path, before, content)
 
     def run(self, path: str, content: str) -> ToolResult:
         try:
@@ -67,8 +86,9 @@ class EditFileTool(Tool):
         },
         "required": ["path", "old_string", "new_string"],
     }
+    dangerous = True
 
-    def run(self, path: str, old_string: str, new_string: str, replace_all: bool = False) -> ToolResult:
+    def _apply(self, path: str, old_string: str, new_string: str, replace_all: bool) -> tuple[str, str] | ToolResult:
         try:
             text = Path(path).read_text()
         except OSError as exc:
@@ -85,7 +105,21 @@ class EditFileTool(Tool):
             )
 
         new_text = text.replace(old_string, new_string) if replace_all else text.replace(old_string, new_string, 1)
-        Path(path).write_text(new_text)
+        return text, new_text
+
+    def preview(self, path: str, old_string: str, new_string: str, replace_all: bool = False, **_) -> str:
+        result = self._apply(path, old_string, new_string, replace_all)
+        if isinstance(result, ToolResult):
+            return result.output
+        before, after = result
+        return _diff(path, before, after)
+
+    def run(self, path: str, old_string: str, new_string: str, replace_all: bool = False) -> ToolResult:
+        result = self._apply(path, old_string, new_string, replace_all)
+        if isinstance(result, ToolResult):
+            return result
+        _before, after = result
+        Path(path).write_text(after)
         return ToolResult(output=f"Edited {path}")
 
 
