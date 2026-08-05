@@ -10,14 +10,9 @@ from aiflow.settings import Settings
 
 
 def _default_provider() -> Provider:
-    if Settings.PROVIDER == "openai":
-        from aiflow.providers.openai import OpenAIProvider
+    from aiflow.providers import get_provider
 
-        return OpenAIProvider(model=Settings.MODEL, api_key=Settings.API_KEY)
-
-    from aiflow.providers.anthropic import AnthropicProvider
-
-    return AnthropicProvider(model=Settings.MODEL, api_key=Settings.API_KEY)
+    return get_provider(Settings.PROVIDER, model=Settings.MODEL, api_key=Settings.API_KEY)
 
 
 class Config:
