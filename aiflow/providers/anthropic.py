@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from aiflow.abc.provider import Provider, ProviderResponse, ToolCall
+from collections.abc import Callable
+
+from aiflow.abc.provider import Provider, ProviderResponse, ToolCall, Usage
 from aiflow.core.session import Message
 
 
@@ -67,14 +69,28 @@ class AnthropicProvider(Provider):
                 )
         return out
 
-    def complete(self, system_prompt: str, messages: list[Message], tools: list[dict]) -> ProviderResponse:
-        response = self.client.messages.create(
-            model=self.model,
-            max_tokens=self.extra.get("max_tokens", 4096),
-            system=system_prompt,
-            messages=self._to_anthropic_messages(messages),
-            tools=self._tool_schema(tools) if tools else [],
-        )
+    def complete(
+        self,
+        system_prompt: str,
+        messages: list[Message],
+        tools: list[dict],
+        on_delta: Callable[[str], None] | None = None,
+    ) -> ProviderResponse:
+        kwargs = {
+            "model": self.model,
+            "max_tokens": self.extra.get("max_tokens", 4096),
+            "system": system_prompt,
+            "messages": self._to_anthropic_messages(messages),
+            "tools": self._tool_schema(tools) if tools else [],
+        }
+
+        if on_delta is None:
+            response = self.client.messages.create(**kwargs)
+        else:
+            with self.client.messages.stream(**kwargs) as stream:
+                for delta in stream.text_stream:
+                    on_delta(delta)
+                response = stream.get_final_message()
 
         text = ""
         tool_calls: list[ToolCall] = []
@@ -84,9 +100,15 @@ class AnthropicProvider(Provider):
             elif block.type == "tool_use":
                 tool_calls.append(ToolCall(id=block.id, name=block.name, arguments=block.input))
 
+        usage = Usage(
+            input_tokens=response.usage.input_tokens,
+            output_tokens=response.usage.output_tokens,
+        )
+
         return ProviderResponse(
             text=text,
             tool_calls=tool_calls,
             stop_reason=response.stop_reason or "end_turn",
+            usage=usage,
             raw=response,
         )
