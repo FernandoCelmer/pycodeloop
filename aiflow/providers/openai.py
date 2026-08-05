@@ -10,10 +10,21 @@ from aiflow.core.session import Message
 
 
 class OpenAIProvider(Provider):
+    """OpenAI-compatible provider. Point `base_url` at any server that
+    speaks the OpenAI chat-completions API (LM Studio, vLLM, llama.cpp
+    server, ...) to run it through the same code path."""
+
     name = "openai"
 
-    def __init__(self, model: str = "gpt-5", api_key: str | None = None, **kwargs) -> None:
+    def __init__(
+        self,
+        model: str = "gpt-5",
+        api_key: str | None = None,
+        base_url: str | None = None,
+        **kwargs,
+    ) -> None:
         super().__init__(model=model, api_key=api_key, **kwargs)
+        self.base_url = base_url
         self._client = None
 
     @property
@@ -21,7 +32,7 @@ class OpenAIProvider(Provider):
         if self._client is None:
             import openai
 
-            self._client = openai.OpenAI(api_key=self.api_key)
+            self._client = openai.OpenAI(api_key=self.api_key, base_url=self.base_url)
         return self._client
 
     @staticmethod
