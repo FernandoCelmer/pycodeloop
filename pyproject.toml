@@ -1,0 +1,94 @@
+[project]
+name = "aiflow"
+version = "0.1.0"
+authors = [
+  { name="Fernando Celmer", email="email@fernandocelmer.com" },
+]
+license = {file = "LICENSE"}
+description = "AIFlow — an agentic coding assistant core and CLI, multi-provider (Anthropic, OpenAI)."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "rich",
+  "pydantic",
+  "typer",
+  "typing-extensions",
+]
+keywords = [
+  "agent",
+  "llm",
+  "coding-agent",
+  "cli",
+  "anthropic",
+  "openai",
+  "ai",
+]
+classifiers = [
+  'Development Status :: 3 - Alpha',
+  "Operating System :: OS Independent",
+  'Intended Audience :: Developers',
+  'Natural Language :: English',
+  "License :: OSI Approved :: MIT License",
+  "Topic :: Software Development :: Libraries",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
+
+[project.urls]
+Homepage = "https://github.com/dotflow-io/aiflow"
+Issues = "https://github.com/dotflow-io/aiflow/issues"
+Repository = "https://github.com/dotflow-io/aiflow"
+
+[project.optional-dependencies]
+anthropic = ["anthropic"]
+openai = ["openai"]
+all = ["anthropic", "openai"]
+
+[tool.poetry]
+name = "aiflow"
+version = "0.1.0"
+description = "AIFlow — an agentic coding assistant core and CLI, multi-provider (Anthropic, OpenAI)."
+authors = ["Fernando Celmer <email@fernandocelmer.com>"]
+readme = "README.md"
+license = "MIT"
+package-mode = true
+homepage = "https://github.com/dotflow-io/aiflow"
+repository = "https://github.com/dotflow-io/aiflow"
+packages = [{ include = "aiflow" }]
+
+[tool.poetry.scripts]
+aiflow = "aiflow.cli.main:main"
+
+[tool.poetry.dependencies]
+python = ">=3.10.0"
+rich = "^14.1.0"
+pydantic = "^2.11.7"
+typer = "^0.15.0"
+typing-extensions = "^4.14.1"
+anthropic = { version = "^0.40.0", optional = true }
+openai = { version = "^1.55.0", optional = true }
+
+[tool.poetry.extras]
+anthropic = ["anthropic"]
+openai = ["openai"]
+all = ["anthropic", "openai"]
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.4"
+pytest-cov = "^6.0.0"
+anthropic = "^0.40.0"
+openai = "^1.55.0"
+
+[tool.poetry.group.code-quality.dependencies]
+ruff = "^0.9.0"
+mypy = "^1.13.0"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
