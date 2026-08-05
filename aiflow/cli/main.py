@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import shlex
+import sys
+from pathlib import Path
 
 import typer
 from rich.console import Console
@@ -18,12 +20,16 @@ from aiflow.core.tools import DEFAULT_TOOLS
 from aiflow.providers import get_provider
 from aiflow.settings import Settings
 
+app = typer.Typer(add_completion=False, help="AIFlow — an agentic coding assistant.")
+console = Console()
+
+_cwd = str(Path.cwd())
+if _cwd not in sys.path:
+    sys.path.insert(0, _cwd)
+
 
 def _format_tokens(count: int) -> str:
     return f"{count / 1000:.1f}k" if count >= 1000 else str(count)
-
-app = typer.Typer(add_completion=False, help="AIFlow — an agentic coding assistant.")
-console = Console()
 
 
 def _render_preview(preview: str) -> Text:
@@ -53,19 +59,24 @@ def _load_mcp_tools(specs: list[str] | None) -> list:
 def _build_flow(
     provider_name: str | None,
     model: str | None,
+    base_url: str | None = None,
     mcp: list[str] | None = None,
     auto_approve: bool = False,
 ) -> AIFlow:
     provider_name = provider_name or Settings.PROVIDER
     model = model or Settings.MODEL
+    is_local_or_custom = provider_name == "ollama" or ":" in provider_name
 
-    if not Settings.API_KEY and provider_name == Settings.PROVIDER:
+    if not Settings.API_KEY and not is_local_or_custom and provider_name == Settings.PROVIDER:
         console.print(
             f"{Settings.WARNING_ALERT} no API key found for provider "
             f"'{provider_name}'. Set the matching *_API_KEY env var."
         )
 
-    provider = get_provider(provider_name, model=model, api_key=Settings.API_KEY)
+    provider_kwargs = {"model": model, "api_key": Settings.API_KEY}
+    if base_url:
+        provider_kwargs["base_url"] = base_url
+    provider = get_provider(provider_name, **provider_kwargs)
 
     def on_tool_call(name: str, args: dict) -> None:
         console.print(f"\n[cyan]{Settings.STEP_ICON} {name}[/cyan] {args}")
@@ -97,11 +108,15 @@ def _build_flow(
     return flow
 
 
+_PROVIDER_HELP = "anthropic | openai | ollama | 'module.path:ClassName' for a custom Provider"
+
+
 @app.command()
 def run(
     prompt: str = typer.Argument(..., help="Task for AIFlow to carry out."),
-    provider: str = typer.Option(None, help="anthropic | openai"),
+    provider: str = typer.Option(None, help=_PROVIDER_HELP),
     model: str = typer.Option(None, help="Model name override."),
+    base_url: str = typer.Option(None, help="Override the API endpoint (local/self-hosted servers)."),
     mcp: list[str] = typer.Option(
         None, help="MCP server as 'command arg1 arg2'; repeatable."
     ),
@@ -110,15 +125,16 @@ def run(
     ),
 ) -> None:
     """Run a single prompt to completion, non-interactively."""
-    flow = _build_flow(provider, model, mcp, auto_approve=yes)
+    flow = _build_flow(provider, model, base_url, mcp, auto_approve=yes)
     flow.run(prompt)
     console.print()
 
 
 @app.command()
 def chat(
-    provider: str = typer.Option(None, help="anthropic | openai"),
+    provider: str = typer.Option(None, help=_PROVIDER_HELP),
     model: str = typer.Option(None, help="Model name override."),
+    base_url: str = typer.Option(None, help="Override the API endpoint (local/self-hosted servers)."),
     mcp: list[str] = typer.Option(
         None, help="MCP server as 'command arg1 arg2'; repeatable."
     ),
@@ -127,7 +143,7 @@ def chat(
     ),
 ) -> None:
     """Start an interactive AIFlow session in the current directory."""
-    flow = _build_flow(provider, model, mcp, auto_approve=yes)
+    flow = _build_flow(provider, model, base_url, mcp, auto_approve=yes)
 
     console.print(Panel("AIFlow ready. Ctrl+D or 'exit' to quit.", style="bold green"))
     while True:
