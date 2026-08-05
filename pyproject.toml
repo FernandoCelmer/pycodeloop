@@ -90,6 +90,11 @@ mcp = ">=1.0.0,<3.0.0"
 ruff = "^0.9.0"
 mypy = "^1.13.0"
 
+[tool.poetry.group.docs.dependencies]
+mkdocs = "^1.6.1"
+mkdocs-material = "^9.6.13"
+mkdocstrings = {extras = ["python"], version = "^0.29.0"}
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
