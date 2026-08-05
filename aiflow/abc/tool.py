@@ -14,9 +14,14 @@ class ToolResult:
 
 
 class Tool(ABC):
+    """Action the agent can take. Set `dangerous = True` on subclasses that
+    change state (filesystem, shell, remote calls) so Agent asks for
+    confirmation before running them."""
+
     name: str
     description: str
     parameters: dict[str, Any] = {"type": "object", "properties": {}}
+    dangerous: bool = False
 
     def schema(self) -> dict:
         return {
@@ -24,6 +29,14 @@ class Tool(ABC):
             "description": self.description,
             "parameters": self.parameters,
         }
+
+    def preview(self, **kwargs) -> str:
+        """Human-readable summary of what `run(**kwargs)` would do.
+
+        Shown to the user in a confirmation prompt before a dangerous tool
+        actually runs. Override for a diff, a shell command line, etc.
+        """
+        return ", ".join(f"{key}={value!r}" for key, value in kwargs.items())
 
     @abstractmethod
     def run(self, **kwargs) -> ToolResult:
