@@ -8,6 +8,7 @@ _MODEL = os.environ.get("AIFLOW_MODEL")
 DEFAULT_MODELS = {
     "anthropic": "claude-sonnet-5",
     "openai": "gpt-5",
+    "ollama": "llama3.1",
 }
 
 API_KEY_ENV = {
