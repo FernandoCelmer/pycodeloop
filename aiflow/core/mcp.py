@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import threading
+from contextlib import AsyncExitStack
 from dataclasses import dataclass, field
 
 from aiflow.abc.tool import Tool, ToolResult
@@ -20,7 +21,10 @@ class MCPServer:
     Example:
         `class` aiflow.core.mcp.MCPServer
 
-            server = MCPServer(command="npx", args=["-y", "@modelcontextprotocol/server-filesystem", "."])
+            server = MCPServer(
+                command="npx",
+                args=["-y", "@modelcontextprotocol/server-filesystem", "."],
+            )
             tools = load_mcp_tools(server)
 
             config = Config(tools=DEFAULT_TOOLS + tools)
@@ -37,17 +41,15 @@ class MCPServer:
 
 
 class MCPClient:
-    """Owns one MCP server subprocess on a dedicated background event loop.
-
-    MCP sessions are async and expect to live inside a single `async with`
-    block for their whole lifetime; a background loop lets a synchronous
-    `Tool.run()` call into a long-lived subprocess without blocking Agent.
-    """
+    """One MCP server subprocess on a dedicated background event loop —
+    bridges its async session into synchronous `Tool.run()` calls."""
 
     def __init__(self, server: MCPServer) -> None:
         self.server = server
         self._loop = asyncio.new_event_loop()
-        self._thread = threading.Thread(target=self._loop.run_forever, daemon=True)
+        self._thread = threading.Thread(
+            target=self._loop.run_forever, daemon=True
+        )
         self._thread.start()
         self._exit_stack = None
         self._session = None
@@ -58,8 +60,6 @@ class MCPClient:
         return future.result(timeout=timeout)
 
     async def _connect(self) -> None:
-        from contextlib import AsyncExitStack
-
         from mcp import ClientSession, StdioServerParameters
         from mcp.client.stdio import stdio_client
 
@@ -69,8 +69,12 @@ class MCPClient:
             args=self.server.args,
             env=self.server.env,
         )
-        read, write = await self._exit_stack.enter_async_context(stdio_client(params))
-        session = await self._exit_stack.enter_async_context(ClientSession(read, write))
+        read, write = await self._exit_stack.enter_async_context(
+            stdio_client(params)
+        )
+        session = await self._exit_stack.enter_async_context(
+            ClientSession(read, write)
+        )
         await session.initialize()
         self._session = session
 
@@ -97,7 +101,11 @@ class MCPClient:
 
     async def _call_tool(self, name: str, arguments: dict) -> str:
         result = await self._session.call_tool(name, arguments)
-        parts = [block.text for block in result.content if getattr(block, "text", None)]
+        parts = [
+            block.text
+            for block in result.content
+            if getattr(block, "text", None)
+        ]
         return "\n".join(parts) if parts else str(result.content)
 
     def close(self) -> None:
@@ -131,6 +139,6 @@ class MCPTool(Tool):
 
 
 def load_mcp_tools(server: MCPServer) -> list[Tool]:
-    """Connect to an MCP server and return its tools as aiflow Tool instances."""
+    """Connect to an MCP server, return its tools as aiflow Tools."""
     client = MCPClient(server)
     return [MCPTool(client, schema) for schema in client.list_tools()]

@@ -33,7 +33,9 @@ class BashTool(Tool):
                 timeout=timeout,
             )
         except subprocess.TimeoutExpired:
-            return ToolResult(output=f"Command timed out after {timeout}s", is_error=True)
+            return ToolResult(
+                output=f"Command timed out after {timeout}s", is_error=True
+            )
 
         output = proc.stdout + proc.stderr
         return ToolResult(output=output, is_error=proc.returncode != 0)

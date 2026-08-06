@@ -1,4 +1,4 @@
-"""Ollama (local) provider."""
+"""Ollama Provider"""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from aiflow.providers.openai import OpenAIProvider
 
 
 class OllamaProvider(OpenAIProvider):
-    """Talks to a local Ollama server through its OpenAI-compatible endpoint."""
+    """Talks to a local Ollama server via its OpenAI-compatible API."""
 
     name = "ollama"
 
@@ -17,4 +17,9 @@ class OllamaProvider(OpenAIProvider):
         api_key: str | None = None,
         **kwargs,
     ) -> None:
-        super().__init__(model=model, api_key=api_key or "ollama", base_url=base_url, **kwargs)
+        super().__init__(
+            model=model,
+            api_key=api_key or "ollama",
+            base_url=base_url,
+            **kwargs,
+        )

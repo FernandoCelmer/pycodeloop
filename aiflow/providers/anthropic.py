@@ -1,4 +1,4 @@
-"""Anthropic (Claude) provider."""
+"""Anthropic Provider"""
 
 from __future__ import annotations
 
@@ -11,7 +11,12 @@ from aiflow.core.session import Message
 class AnthropicProvider(Provider):
     name = "anthropic"
 
-    def __init__(self, model: str = "claude-sonnet-5", api_key: str | None = None, **kwargs) -> None:
+    def __init__(
+        self,
+        model: str = "claude-sonnet-5",
+        api_key: str | None = None,
+        **kwargs,
+    ) -> None:
         super().__init__(model=model, api_key=api_key, **kwargs)
         self._client = None
 
@@ -29,7 +34,9 @@ class AnthropicProvider(Provider):
             {
                 "name": tool["name"],
                 "description": tool.get("description", ""),
-                "input_schema": tool.get("parameters", {"type": "object", "properties": {}}),
+                "input_schema": tool.get(
+                    "parameters", {"type": "object", "properties": {}}
+                ),
             }
             for tool in tools
         ]
@@ -98,7 +105,11 @@ class AnthropicProvider(Provider):
             if block.type == "text":
                 text += block.text
             elif block.type == "tool_use":
-                tool_calls.append(ToolCall(id=block.id, name=block.name, arguments=block.input))
+                tool_calls.append(
+                    ToolCall(
+                        id=block.id, name=block.name, arguments=block.input
+                    )
+                )
 
         usage = Usage(
             input_tokens=response.usage.input_tokens,

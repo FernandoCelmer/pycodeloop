@@ -53,5 +53,5 @@ class AIFlow:
         self.session = Session(system_prompt=self.agent.system_prompt)
 
     def run(self, prompt: str) -> str:
-        """Run prompt to completion, keeping conversation history across calls."""
+        """Run prompt to completion, keeping history across calls."""
         return self.agent.run(prompt, session=self.session)

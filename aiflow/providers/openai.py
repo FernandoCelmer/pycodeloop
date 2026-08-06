@@ -1,4 +1,4 @@
-"""OpenAI (GPT) provider."""
+"""OpenAI Provider"""
 
 from __future__ import annotations
 
@@ -32,7 +32,9 @@ class OpenAIProvider(Provider):
         if self._client is None:
             import openai
 
-            self._client = openai.OpenAI(api_key=self.api_key, base_url=self.base_url)
+            self._client = openai.OpenAI(
+                api_key=self.api_key, base_url=self.base_url
+            )
         return self._client
 
     @staticmethod
@@ -43,20 +45,27 @@ class OpenAIProvider(Provider):
                 "function": {
                     "name": tool["name"],
                     "description": tool.get("description", ""),
-                    "parameters": tool.get("parameters", {"type": "object", "properties": {}}),
+                    "parameters": tool.get(
+                        "parameters", {"type": "object", "properties": {}}
+                    ),
                 },
             }
             for tool in tools
         ]
 
     @staticmethod
-    def _to_openai_messages(system_prompt: str, messages: list[Message]) -> list[dict]:
+    def _to_openai_messages(
+        system_prompt: str, messages: list[Message]
+    ) -> list[dict]:
         out: list[dict] = [{"role": "system", "content": system_prompt}]
         for msg in messages:
             if msg.role == "user":
                 out.append({"role": "user", "content": msg.content})
             elif msg.role == "assistant":
-                entry: dict = {"role": "assistant", "content": msg.content or None}
+                entry: dict = {
+                    "role": "assistant",
+                    "content": msg.content or None,
+                }
                 if msg.tool_calls:
                     entry["tool_calls"] = [
                         {
@@ -108,11 +117,19 @@ class OpenAIProvider(Provider):
             ]
             stop_reason = choice.finish_reason or "stop"
             usage = Usage(
-                input_tokens=response.usage.prompt_tokens if response.usage else 0,
-                output_tokens=response.usage.completion_tokens if response.usage else 0,
+                input_tokens=response.usage.prompt_tokens
+                if response.usage
+                else 0,
+                output_tokens=response.usage.completion_tokens
+                if response.usage
+                else 0,
             )
             return ProviderResponse(
-                text=text, tool_calls=tool_calls, stop_reason=stop_reason, usage=usage, raw=response
+                text=text,
+                tool_calls=tool_calls,
+                stop_reason=stop_reason,
+                usage=usage,
+                raw=response,
             )
 
         text = ""
@@ -140,7 +157,9 @@ class OpenAIProvider(Provider):
                 on_delta(delta.content)
 
             for tc in delta.tool_calls or []:
-                acc = pending.setdefault(tc.index, {"id": None, "name": None, "arguments": ""})
+                acc = pending.setdefault(
+                    tc.index, {"id": None, "name": None, "arguments": ""}
+                )
                 if tc.id:
                     acc["id"] = tc.id
                 if tc.function and tc.function.name:
@@ -152,7 +171,17 @@ class OpenAIProvider(Provider):
                 stop_reason = choice.finish_reason
 
         tool_calls = [
-            ToolCall(id=acc["id"], name=acc["name"], arguments=json.loads(acc["arguments"] or "{}"))
+            ToolCall(
+                id=acc["id"],
+                name=acc["name"],
+                arguments=json.loads(acc["arguments"] or "{}"),
+            )
             for acc in pending.values()
         ]
-        return ProviderResponse(text=text, tool_calls=tool_calls, stop_reason=stop_reason, usage=usage, raw=None)
+        return ProviderResponse(
+            text=text,
+            tool_calls=tool_calls,
+            stop_reason=stop_reason,
+            usage=usage,
+            raw=None,
+        )
