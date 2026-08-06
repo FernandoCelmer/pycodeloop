@@ -2,6 +2,10 @@
 
 import os
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 _PROVIDER = os.environ.get("AIFLOW_PROVIDER", "anthropic")
 _MODEL = os.environ.get("AIFLOW_MODEL")
 
