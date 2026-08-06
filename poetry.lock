@@ -1907,6 +1907,21 @@ files = [
 six = ">=1.5"
 
 [[package]]
+name = "python-dotenv"
+version = "1.2.2"
+description = "Read key-value pairs from a .env file and set them as environment variables"
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+files = [
+    {file = "python_dotenv-1.2.2-py3-none-any.whl", hash = "sha256:1d8214789a24de455a8b8bd8ae6fe3c6b69a5e3d64aa8a8e5d68e694bbcb285a"},
+    {file = "python_dotenv-1.2.2.tar.gz", hash = "sha256:2c371a91fbd7ba082c2c1dc1f8bf89ca22564a087c2c287cd9b662adde799cf3"},
+]
+
+[package.extras]
+cli = ["click (>=5.0)"]
+
+[[package]]
 name = "python-multipart"
 version = "0.0.32"
 description = "A streaming multipart parser for Python"
@@ -2700,4 +2715,4 @@ openai = ["openai"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10.0"
-content-hash = "7c865a96390c57b8c754a55293090f4012e0fe3f7c42130c9f6a8094cbaab95d"
+content-hash = "e9e1862a4fd82671c963c009e3a70b8650106f5e3540536f504ca25a18ed369a"
