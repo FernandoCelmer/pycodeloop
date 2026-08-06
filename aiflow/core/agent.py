@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from collections.abc import Callable
 
 from aiflow.abc.provider import Provider, Usage
@@ -18,7 +19,7 @@ DEFAULT_SYSTEM_PROMPT = (
 
 
 class Agent:
-    """Drives a provider through a tool-use loop until it stops calling tools."""
+    """Drives a provider through a tool-use loop until it stops."""
 
     def __init__(
         self,
@@ -27,10 +28,11 @@ class Agent:
         system_prompt: str = DEFAULT_SYSTEM_PROMPT,
         max_turns: int = 25,
         on_tool_call: Callable[[str, dict], None] | None = None,
-        on_tool_result: Callable[[str, str], None] | None = None,
+        on_tool_result: Callable[[str, str, bool], None] | None = None,
         on_text_delta: Callable[[str], None] | None = None,
         confirm: Callable[[str, str], bool] | None = None,
-        on_usage: Callable[[Usage, Usage], None] | None = None,
+        on_usage: Callable[[Usage, Usage, float], None] | None = None,
+        on_request: Callable[[int, int], None] | None = None,
     ) -> None:
         self.provider = provider
         self.tools = {tool.name: tool for tool in (tools or DEFAULT_TOOLS)}
@@ -41,39 +43,46 @@ class Agent:
         self.on_text_delta = on_text_delta
         self.confirm = confirm
         self.on_usage = on_usage
+        self.on_request = on_request
         self.usage = Usage()
 
     def _tool_schemas(self) -> list[dict]:
         return [tool.schema() for tool in self.tools.values()]
 
-    def _execute(self, name: str, arguments: dict) -> str:
+    def _execute(self, name: str, arguments: dict) -> tuple[str, bool]:
         tool = self.tools.get(name)
         if tool is None:
-            return f"Unknown tool: {name}"
+            return f"Unknown tool: {name}", True
 
         if tool.dangerous and self.confirm is not None:
             preview = tool.preview(**arguments)
             if not self.confirm(name, preview):
-                return "User declined to run this tool."
+                return "User declined to run this tool.", True
 
         result = tool.run(**arguments)
-        return result.output
+        return result.output, result.is_error
 
     def run(self, prompt: str, session: Session | None = None) -> str:
         session = session or Session(system_prompt=self.system_prompt)
         session.add_user(prompt)
 
         for _ in range(self.max_turns):
+            tools = self._tool_schemas()
+            if self.on_request:
+                self.on_request(len(session.history()), len(tools))
+
+            started_at = time.perf_counter()
             response = self.provider.complete(
                 system_prompt=self.system_prompt,
                 messages=session.history(),
-                tools=self._tool_schemas(),
+                tools=tools,
                 on_delta=self.on_text_delta,
             )
+            elapsed = time.perf_counter() - started_at
 
             self.usage = self.usage + response.usage
             if self.on_usage:
-                self.on_usage(response.usage, self.usage)
+                self.on_usage(response.usage, self.usage, elapsed)
 
             tool_calls = [
                 {"id": call.id, "name": call.name, "arguments": call.arguments}
@@ -88,10 +97,12 @@ class Agent:
                 if self.on_tool_call:
                     self.on_tool_call(call.name, call.arguments)
 
-                result_text = self._execute(call.name, call.arguments)
+                result_text, is_error = self._execute(
+                    call.name, call.arguments
+                )
 
                 if self.on_tool_result:
-                    self.on_tool_result(call.name, result_text)
+                    self.on_tool_result(call.name, result_text, is_error)
 
                 session.add_tool_result(call.id, result_text)
 
