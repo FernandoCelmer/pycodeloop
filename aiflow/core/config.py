@@ -4,15 +4,22 @@ from __future__ import annotations
 
 from aiflow.abc.provider import Provider
 from aiflow.abc.tool import Tool
+from aiflow.core.agent import DEFAULT_SYSTEM_PROMPT
 from aiflow.core.exception import NotProviderInstance
+from aiflow.core.skills import (
+    ReadSkillTool,
+    discover_skills,
+    render_skills_index,
+)
 from aiflow.core.tools import DEFAULT_TOOLS
+from aiflow.providers import get_provider
 from aiflow.settings import Settings
 
 
 def _default_provider() -> Provider:
-    from aiflow.providers import get_provider
-
-    return get_provider(Settings.PROVIDER, model=Settings.MODEL, api_key=Settings.API_KEY)
+    return get_provider(
+        Settings.PROVIDER, model=Settings.MODEL, api_key=Settings.API_KEY
+    )
 
 
 class Config:
@@ -47,11 +54,24 @@ class Config:
 
         max_turns (int): Hard cap on tool-use loop iterations.
 
+        skills (bool): Discover Claude Code skills/memory, Cursor rules,
+            and AGENTS.md files on this machine and this project, expose
+            them as a `read_skill` tool, and list them in the system
+            prompt so the agent knows what's available.
+
+        skill_sources (Optional[Set[str]]): Limit discovery to these
+            sources ("claude-skill", "claude-memory", "cursor-rule",
+            "agents-md"). Defaults to all of them.
+
+        skills_refresh (bool): Skip the `~/.aiflow/config.json` skills
+            cache and force a full rescan.
+
     Attributes:
         provider (Provider):
         tools (List[Tool]):
         system_prompt (Optional[str]):
         max_turns (int):
+        skills (List[Skill]):
     """
 
     _PROVIDERS = {"provider": Provider}
@@ -62,13 +82,40 @@ class Config:
         tools: list[Tool] | None = None,
         system_prompt: str | None = None,
         max_turns: int = Settings.MAX_TURNS,
+        skills: bool = False,
+        skill_sources: set[str] | None = None,
+        skills_refresh: bool = False,
     ) -> None:
-        self.provider = provider if provider is not None else _default_provider()
+        self.provider = (
+            provider if provider is not None else _default_provider()
+        )
         self.tools = tools if tools is not None else DEFAULT_TOOLS
         self.system_prompt = system_prompt
         self.max_turns = max_turns
+        self.skills = self._discover_skills(
+            skills, skill_sources, skills_refresh
+        )
 
         self._validate()
+
+    def _discover_skills(
+        self, enabled: bool, sources: set[str] | None, refresh: bool
+    ) -> list:
+        if not enabled:
+            return []
+
+        found = discover_skills(sources=sources, use_cache=not refresh)
+        if not found:
+            return found
+
+        self.tools = [*self.tools, ReadSkillTool(found)]
+        base_prompt = (
+            self.system_prompt
+            if self.system_prompt is not None
+            else DEFAULT_SYSTEM_PROMPT
+        )
+        self.system_prompt = f"{base_prompt}\n\n{render_skills_index(found)}"
+        return found
 
     def _validate(self) -> None:
         for name, abc in self._PROVIDERS.items():
