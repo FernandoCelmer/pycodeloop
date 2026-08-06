@@ -1,4 +1,4 @@
-"""Grep Tool"""
+"""Search Tools"""
 
 from __future__ import annotations
 
@@ -7,7 +7,15 @@ from pathlib import Path
 
 from aiflow.abc.tool import Tool, ToolResult
 
-_SKIP_DIRS = {".git", "__pycache__", "node_modules", ".venv", "venv", ".mypy_cache", ".ruff_cache"}
+_SKIP_DIRS = {
+    ".git",
+    "__pycache__",
+    "node_modules",
+    ".venv",
+    "venv",
+    ".mypy_cache",
+    ".ruff_cache",
+}
 
 
 class GrepTool(Tool):
@@ -23,7 +31,9 @@ class GrepTool(Tool):
         "required": ["pattern"],
     }
 
-    def run(self, pattern: str, path: str = ".", max_results: int = 100) -> ToolResult:
+    def run(
+        self, pattern: str, path: str = ".", max_results: int = 100
+    ) -> ToolResult:
         try:
             regex = re.compile(pattern)
         except re.error as exc:
@@ -43,4 +53,37 @@ class GrepTool(Tool):
                     if len(matches) >= max_results:
                         return ToolResult(output="\n".join(matches))
 
-        return ToolResult(output="\n".join(matches) if matches else "No matches.")
+        return ToolResult(
+            output="\n".join(matches) if matches else "No matches."
+        )
+
+
+class GlobTool(Tool):
+    name = "glob"
+    description = "Find files by glob pattern (e.g. '**/*.py')."
+    parameters = {
+        "type": "object",
+        "properties": {
+            "pattern": {"type": "string"},
+            "path": {"type": "string", "default": "."},
+            "max_results": {"type": "integer", "default": 100},
+        },
+        "required": ["pattern"],
+    }
+
+    def run(
+        self, pattern: str, path: str = ".", max_results: int = 100
+    ) -> ToolResult:
+        try:
+            matches = [
+                str(p)
+                for p in Path(path).glob(pattern)
+                if not set(p.parts) & _SKIP_DIRS
+            ]
+        except (OSError, ValueError) as exc:
+            return ToolResult(output=f"Invalid glob: {exc}", is_error=True)
+
+        matches = sorted(matches)[:max_results]
+        return ToolResult(
+            output="\n".join(matches) if matches else "No matches."
+        )
