@@ -3,6 +3,7 @@
 import importlib
 
 from aiflow.providers.anthropic import AnthropicProvider
+from aiflow.providers.generic import GenericProvider
 from aiflow.providers.ollama import OllamaProvider
 from aiflow.providers.openai import OpenAIProvider
 
@@ -10,14 +11,23 @@ PROVIDERS = {
     "anthropic": AnthropicProvider,
     "openai": OpenAIProvider,
     "ollama": OllamaProvider,
+    "generic": GenericProvider,
 }
 
-__all__ = ["AnthropicProvider", "OllamaProvider", "OpenAIProvider", "get_provider", "PROVIDERS"]
+__all__ = [
+    "AnthropicProvider",
+    "GenericProvider",
+    "OllamaProvider",
+    "OpenAIProvider",
+    "get_provider",
+    "PROVIDERS",
+]
 
 
 def get_provider(name: str, **kwargs):
-    """Build a Provider by registry name (anthropic, openai, ollama) or by
-    dotted path 'module.path:ClassName' for a custom Provider subclass."""
+    """Build a Provider by registry name (anthropic, openai, ollama,
+    generic) or by dotted path 'module.path:ClassName' for a custom
+    Provider subclass."""
     if ":" in name:
         module_path, class_name = name.split(":", 1)
         module = importlib.import_module(module_path)
