@@ -3,16 +3,26 @@
 from aiflow.abc.tool import Tool, ToolResult
 
 from .bash import BashTool
-from .filesystem import EditFileTool, ListDirTool, ReadFileTool, WriteFileTool
-from .search import GrepTool
+from .filesystem import (
+    DeleteFileTool,
+    EditFileTool,
+    ListDirTool,
+    ReadFileTool,
+    WriteFileTool,
+)
+from .search import GlobTool, GrepTool
+from .web import WebFetchTool
 
 DEFAULT_TOOLS: list[Tool] = [
     ReadFileTool(),
     WriteFileTool(),
     EditFileTool(),
+    DeleteFileTool(),
     ListDirTool(),
+    GlobTool(),
     GrepTool(),
     BashTool(),
+    WebFetchTool(),
 ]
 
 __all__ = [
@@ -22,7 +32,10 @@ __all__ = [
     "ReadFileTool",
     "WriteFileTool",
     "EditFileTool",
+    "DeleteFileTool",
     "ListDirTool",
+    "GlobTool",
     "GrepTool",
+    "WebFetchTool",
     "DEFAULT_TOOLS",
 ]
