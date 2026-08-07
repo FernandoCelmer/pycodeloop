@@ -22,6 +22,9 @@ def complete(
 | Anthropic | `aiflow.providers.AnthropicProvider` | Claude models, native streaming and tool use |
 | OpenAI | `aiflow.providers.OpenAIProvider` | GPT models; `base_url` makes it work with any OpenAI-compatible server |
 | Ollama | `aiflow.providers.OllamaProvider` | `OpenAIProvider` pointed at a local Ollama server by default |
+| Generic | `aiflow.providers.GenericProvider` | Any HTTP endpoint; pluggable request/response shape, real SSE streaming |
+
+`GenericProvider` can also be built entirely from a JSON file — no Python required. See [JSON-configured providers](../development/json-provider.md).
 
 ## Streaming
 

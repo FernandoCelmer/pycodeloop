@@ -16,7 +16,8 @@ print(flow.run("list the files in this repo and summarize the project"))
 
 ```bash
 aiflow run "add a docstring to aiflow/core/agent.py"
-aiflow chat
+aiflow chat   # plain-terminal interactive session
+aiflow        # full-screen Textual TUI (the default with no args)
 ```
 
 ## Low-level: Agent directly

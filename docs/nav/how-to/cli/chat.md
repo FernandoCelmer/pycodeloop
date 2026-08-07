@@ -1,6 +1,6 @@
 # aiflow chat
 
-Start an interactive session in the current directory. Same options as [`aiflow run`](run.md), conversation history kept across turns until you exit.
+Start an interactive plain-terminal session in the current directory. Same options as [`aiflow run`](run.md), conversation history kept across turns until you exit. For a full-screen interface, use [`aiflow tui`](tui.md) instead — that's what bare `aiflow` starts.
 
 ```bash
 aiflow chat

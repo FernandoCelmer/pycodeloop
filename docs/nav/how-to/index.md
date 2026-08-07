@@ -8,5 +8,6 @@ Step-by-step guides for using AIFlow, as a library or from the CLI.
 - [Permission prompts](permission-prompts.md)
 - [Token usage](token-usage.md)
 - [MCP servers](mcp-servers.md)
+- [Skills](skills.md)
 - [Custom tools](custom-tool.md)
 - [AIFlow CLI](cli/run.md)

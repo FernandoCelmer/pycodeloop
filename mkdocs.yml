@@ -101,13 +101,16 @@ nav:
     - nav/how-to/permission-prompts.md
     - nav/how-to/token-usage.md
     - nav/how-to/mcp-servers.md
+    - nav/how-to/skills.md
     - nav/how-to/custom-tool.md
     - AIFlow CLI:
       - nav/how-to/cli/run.md
       - nav/how-to/cli/chat.md
+      - nav/how-to/cli/tui.md
   - Development Guide:
     - nav/development/custom-provider.md
     - nav/development/local-provider.md
+    - nav/development/json-provider.md
     - nav/development/development-guide.md
     - nav/development/release-notes.md
   - Reference:
@@ -120,3 +123,4 @@ nav:
     - Providers: nav/reference/providers.md
     - Tools: nav/reference/tools.md
     - MCP: nav/reference/mcp.md
+    - Skills: nav/reference/skills.md

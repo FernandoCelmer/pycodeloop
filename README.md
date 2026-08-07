@@ -14,15 +14,17 @@
 
 # AIFlow
 
-AIFlow is a lightweight Python library for building agentic coding assistants — in the shape of Claude Code, Codex, or Gemini CLI. Give it a provider and a prompt, it drives a tool-use loop (read, write, edit, grep, bash) until the task is done. Same shape everywhere: swap Anthropic for OpenAI without touching the agent loop.
+AIFlow is a lightweight Python library for building agentic coding assistants — in the shape of Claude Code, Codex, or Gemini CLI. Give it a provider and a prompt, it drives a tool-use loop (read, write, edit, grep, bash, web fetch) until the task is done. Same shape everywhere: swap Anthropic for OpenAI without touching the agent loop.
 
 ## Why AIFlow?
 
 - **Simple** — `AIFlow(config=Config(...)).run("do the thing")`. That's it.
-- **Multi-provider** — Anthropic and OpenAI ship built-in. Add any LLM backend by implementing one interface.
-- **Decoupled** — providers are injected, not hardcoded. Swap them the same way dotflow swaps `Storage`/`Notify`/`Log`.
+- **Multi-provider** — Anthropic, OpenAI, Ollama, any OpenAI-compatible server, or a JSON-configured/custom backend.
+- **Decoupled** — providers, tools, and the system prompt are injected, not hardcoded.
 - **Embeddable** — use it as a library inside your own app, or drive it from the `aiflow` CLI.
-- **Extensible tools** — read/write/edit/list/grep/bash out of the box; add your own by subclassing `Tool`.
+- **Extensible tools** — read/write/edit/delete/list/glob/grep/bash/web-fetch out of the box; add your own by subclassing `Tool`.
+- **Full-screen TUI** — bare `aiflow` drops you into a Textual-based interface; `run`/`chat` stay available for scripting.
+- **Skills-aware** — auto-discovers Claude Code, Cursor, and `AGENTS.md` skills already on disk and exposes them to the agent.
 
 ## Install
 
@@ -78,6 +80,20 @@ export AIFLOW_MODEL=claude-sonnet-5
 export ANTHROPIC_API_KEY=sk-...    # or OPENAI_API_KEY
 ```
 
+Point `GenericProvider` at any OpenAI-compatible HTTP endpoint, or configure one entirely from a JSON file — no Python required:
+
+```python
+from aiflow.providers import get_provider
+
+provider = get_provider("./provider.example.json")
+```
+
+```bash
+aiflow run "list the files here" --provider ./provider.example.json
+```
+
+See [`docs/examples/provider.example.json`](docs/examples/provider.example.json) and the [JSON provider guide](docs/nav/development/json-provider.md).
+
 Bring your own backend by implementing the `Provider` ABC:
 
 ```python
@@ -95,7 +111,7 @@ class MyProvider(Provider):
 <details>
 <summary><strong>Dependency Injection via Config</strong></summary>
 
-The `Config` class validates and injects the pieces an agent run needs — same pattern dotflow uses for `Storage`/`Notify`/`Log`:
+The `Config` class validates and injects the pieces an agent run needs:
 
 ```python
 from aiflow import Config
@@ -126,9 +142,12 @@ Ships with the actions an agent needs to actually change code:
 | `read_file` | Read a file, optionally a line range |
 | `write_file` | Create or overwrite a file |
 | `edit_file` | Replace an exact substring in a file |
+| `delete_file` | Delete a file |
 | `list_dir` | List a directory |
+| `glob` | Find files matching a glob pattern |
 | `grep` | Regex search across files |
 | `bash` | Run a shell command with a timeout |
+| `web_fetch` | Fetch a URL and extract its text |
 
 Add your own by subclassing `Tool`:
 
@@ -144,7 +163,7 @@ class MyTool(Tool):
         return ToolResult(output=f"did {x}")
 ```
 
-Mark a tool `dangerous = True` and it gets a confirmation gate before it runs — `write_file`, `edit_file`, `bash`, and every MCP tool already are. Override `preview(**kwargs)` to control what's shown at confirmation time (defaults to a diff for file tools, the command line for `bash`):
+Mark a tool `dangerous = True` and it gets a confirmation gate before it runs — `write_file`, `edit_file`, `delete_file`, `bash`, and every MCP tool already are. Override `preview(**kwargs)` to control what's shown at confirmation time (defaults to a diff for file tools, the command line for `bash`):
 
 ```python
 from aiflow.core.agent import Agent
@@ -225,10 +244,13 @@ aiflow run "list every allowed directory" \
 Run the agent directly from the command line:
 
 ```bash
+# Bare aiflow drops into the full-screen Textual TUI
+aiflow
+
 # One-shot
 aiflow run "add a docstring to aiflow/core/agent.py"
 
-# Interactive session, conversation history kept across turns
+# Interactive plain-terminal session, conversation history kept across turns
 aiflow chat
 
 # Override provider/model per invocation
@@ -236,13 +258,17 @@ aiflow run "..." --provider openai --model gpt-5
 
 # Skip confirmation prompts for dangerous tools
 aiflow run "..." --yes
+
+# Skip skills auto-discovery
+aiflow run "..." --no-skills
 ```
 
 The CLI behaves like a terminal coding agent:
 
 - **Streams** the model's text as it arrives instead of waiting for the full reply.
-- **Asks before running** `write_file`, `edit_file`, `bash`, or any MCP tool — shows a colored diff (or the shell command) and waits for confirmation. `--yes` skips this.
+- **Asks before running** `write_file`, `edit_file`, `delete_file`, `bash`, or any MCP tool — shows a colored diff (or the shell command) and waits for confirmation. `--yes` skips this.
 - **Reports token usage** after every turn: input/output tokens for that turn plus the running session total.
+- **Discovers skills automatically** — `SKILL.md`/`CLAUDE.md` (Claude Code), `.mdc`/`.cursorrules` (Cursor), and `AGENTS.md` files already on disk are indexed and exposed to the agent via a `read_skill` tool, cached in `~/.aiflow/config.json` until something changes. `--no-skills` turns this off; `--skills-refresh` bypasses the cache.
 
 ---
 
