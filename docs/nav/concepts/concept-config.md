@@ -1,6 +1,6 @@
 # Config (dependency injection)
 
-`Config` (`aiflow.core.config.Config`) is a small DI container — the same role dotflow's `Config` plays for `Storage`/`Notify`/`Log`:
+`Config` (`aiflow.core.config.Config`) is a small dependency-injection container — build one, hand it a `Provider` and a tool set, pass it to `AIFlow`:
 
 ```python
 config = Config(
