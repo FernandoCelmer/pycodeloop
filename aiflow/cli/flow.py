@@ -25,7 +25,7 @@ from aiflow.providers import get_provider
 from aiflow.settings import Settings
 
 PROVIDER_HELP = (
-    "anthropic | openai | ollama | generic | "
+    "anthropic | openai | ollama | generic | path/to/config.json | "
     "'module.path:ClassName' for a custom Provider"
 )
 
@@ -55,7 +55,9 @@ def build_flow(
     provider_name = provider_name or Settings.PROVIDER
     model = model or Settings.MODEL
     is_local_or_custom = (
-        provider_name in {"ollama", "generic"} or ":" in provider_name
+        provider_name in {"ollama", "generic"}
+        or ":" in provider_name
+        or provider_name.endswith(".json")
     )
 
     if (
