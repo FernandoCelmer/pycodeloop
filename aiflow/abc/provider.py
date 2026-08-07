@@ -44,9 +44,8 @@ class Provider(ABC):
             from aiflow.abc.provider import Provider
 
     Every LLM backend AIFlow can drive implements this interface. Swap
-    providers by passing a different instance to `Agent(provider=...)`,
-    the same way dotflow swaps `Storage`/`Notify`/`Log` implementations
-    through `Config`.
+    providers by passing a different instance to `Agent(provider=...)`
+    or `Config(provider=...)`.
     """
 
     name: str = "base"
