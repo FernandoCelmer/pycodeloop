@@ -159,11 +159,11 @@ def chat(
         None, help="MCP server as 'command arg1 arg2'; repeatable."
     ),
     skills: bool = typer.Option(
-        False,
-        "--skills",
+        True,
+        "--skills/--no-skills",
         help=(
             "Discover Claude/Cursor/AGENTS.md skills and expose a "
-            "read_skill tool."
+            "read_skill tool. On by default."
         ),
     ),
     skills_refresh: bool = typer.Option(
