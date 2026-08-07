@@ -1,32 +1,14 @@
-"""Main module"""
+"""Command tui module"""
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
 import typer
 
-from aiflow.cli.commands import chat, run, tui
-from aiflow.cli.flow import PROVIDER_HELP
-
-sys.stdout.reconfigure(line_buffering=True)
-
-_cwd = str(Path.cwd())
-if _cwd not in sys.path:
-    sys.path.insert(0, _cwd)
-
-app = typer.Typer(
-    add_completion=False, help="AIFlow — an agentic coding assistant."
-)
-app.command()(run)
-app.command(name="chat")(chat)
-app.command(name="tui")(tui)
+from aiflow.cli.flow import PROVIDER_HELP, build_flow
+from aiflow.cli.tui import AIFlowApp
 
 
-@app.callback(invoke_without_command=True)
-def default(
-    ctx: typer.Context,
+def tui(
     provider: str = typer.Option(None, help=PROVIDER_HELP),
     model: str = typer.Option(None, help="Model name override."),
     base_url: str = typer.Option(
@@ -56,23 +38,16 @@ def default(
         help="Skip confirmation prompts for dangerous tools.",
     ),
 ) -> None:
-    """Bare `aiflow` starts the TUI; use `run`/`chat`/`tui` for control."""
-    if ctx.invoked_subcommand is None:
-        tui(
-            provider=provider,
-            model=model,
-            base_url=base_url,
-            url=url,
-            mcp=mcp,
-            skills=skills,
-            skills_refresh=skills_refresh,
-            yes=yes,
-        )
-
-
-def main() -> None:
-    app()
-
-
-if __name__ == "__main__":
-    main()
+    """Start the full-screen Textual UI — real live redraw, no readline
+    quirks, since Textual owns the whole terminal."""
+    flow, provider_name, model_name = build_flow(
+        provider,
+        model,
+        base_url,
+        url,
+        mcp,
+        auto_approve=yes,
+        skills=skills,
+        skills_refresh=skills_refresh,
+    )
+    AIFlowApp(flow, provider_name, model_name).run()
