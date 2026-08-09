@@ -4,11 +4,11 @@ import os
 
 from dotenv import load_dotenv
 
-from codeloop.core.user_settings import get_settings
+from codeloop.core.persistence.user_settings import UserSettings
 
 load_dotenv()
 
-_saved = get_settings()
+_saved = UserSettings().get_settings()
 
 _PROVIDER = os.environ.get("CODELOOP_PROVIDER") or _saved.get("provider") or "anthropic"
 _MODEL = os.environ.get("CODELOOP_MODEL") or _saved.get("model")

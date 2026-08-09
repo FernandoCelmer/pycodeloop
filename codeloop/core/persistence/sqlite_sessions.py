@@ -1,111 +1,99 @@
-"""SQLite Storage"""
+"""SQLite Sessions (SQLAlchemy)"""
 
 from __future__ import annotations
 
 import json
-import sqlite3
 import time
 from dataclasses import asdict
 from pathlib import Path
 
-from codeloop.abc.storage import Storage
+from sqlalchemy import Column, Float, Integer, String, create_engine
+from sqlalchemy.orm import Session as OrmSession
+from sqlalchemy.orm import declarative_base, sessionmaker
+
+from codeloop.abc.sessions import Sessions
 from codeloop.core.session import Message, Session
 
-_SCHEMA = """
-CREATE TABLE IF NOT EXISTS sessions (
-    key TEXT PRIMARY KEY,
-    system_prompt TEXT NOT NULL,
-    cwd TEXT NOT NULL,
-    messages TEXT NOT NULL,
-    updated_at REAL NOT NULL,
-    message_count INTEGER NOT NULL
-)
-"""
+Base = declarative_base()
 
 
-class SqliteStorage(Storage):
-    """
-    Import:
-        You can import the **SqliteStorage** class with:
+class SessionRecord(Base):
+    __tablename__ = "sessions"
 
-            from codeloop.core.sqlite_storage import SqliteStorage
+    key = Column(String, primary_key=True)
+    system_prompt = Column(String, nullable=False)
+    cwd = Column(String, nullable=False)
+    messages = Column(String, nullable=False)
+    updated_at = Column(Float, nullable=False)
+    message_count = Column(Integer, nullable=False)
 
-    Persists each `Session` as a row in a SQLite database — one file,
-    queryable with plain SQL, no server to run. Defaults to
-    `~/.codeloop/sessions.db`, next to `config.json`.
 
-    Args:
-        path (str | Path): Where the database file is written.
-            Defaults to `~/.codeloop/sessions.db`.
-    """
+class SqliteSessions(Sessions):
+    """Session storage backed by a SQLAlchemy model in a single SQLite
+    file. Defaults to `~/.codeloop/codeloop.db`, next to `config.json`
+    — a generic, app-wide database file, not sessions-only, so other
+    features can add their own tables to it later."""
 
     def __init__(self, path: str | Path | None = None) -> None:
-        self.path = Path(path or Path.home() / ".codeloop" / "sessions.db")
+        self.path = Path(path or Path.home() / ".codeloop" / "codeloop.db")
         self.path.parent.mkdir(parents=True, exist_ok=True)
 
-        with self._connect() as conn:
-            conn.execute(_SCHEMA)
+        self._engine = create_engine(f"sqlite:///{self.path}")
+        Base.metadata.create_all(self._engine)
+        self._session_factory = sessionmaker(bind=self._engine)
 
-    def _connect(self) -> sqlite3.Connection:
-        return sqlite3.connect(self.path)
+    def _db(self) -> OrmSession:
+        return self._session_factory()
 
     def post(self, key: str, session: Session) -> None:
         messages_json = json.dumps([asdict(m) for m in session.messages])
 
-        with self._connect() as conn:
-            conn.execute(
-                """
-                INSERT INTO sessions
-                    (key, system_prompt, cwd, messages, updated_at, message_count)
-                VALUES (?, ?, ?, ?, ?, ?)
-                ON CONFLICT(key) DO UPDATE SET
-                    system_prompt = excluded.system_prompt,
-                    cwd = excluded.cwd,
-                    messages = excluded.messages,
-                    updated_at = excluded.updated_at,
-                    message_count = excluded.message_count
-                """,
-                (
-                    key,
-                    session.system_prompt,
-                    session.cwd,
-                    messages_json,
-                    time.time(),
-                    len(session.messages),
-                ),
-            )
+        with self._db() as db:
+            record = db.get(SessionRecord, key)
+
+            if record is None:
+                record = SessionRecord(key=key)
+                db.add(record)
+
+            record.system_prompt = session.system_prompt
+            record.cwd = session.cwd
+            record.messages = messages_json
+            record.updated_at = time.time()
+            record.message_count = len(session.messages)
+
+            db.commit()
 
     def get(self, key: str) -> Session | None:
-        with self._connect() as conn:
-            row = conn.execute(
-                "SELECT system_prompt, cwd, messages FROM sessions WHERE key = ?",
-                (key,),
-            ).fetchone()
+        with self._db() as db:
+            record = db.get(SessionRecord, key)
 
-        if row is None:
+        if record is None:
             return None
 
-        system_prompt, cwd, messages_json = row
-
         return Session(
-            system_prompt=system_prompt,
-            cwd=cwd,
-            messages=[Message(**m) for m in json.loads(messages_json)],
+            system_prompt=record.system_prompt,
+            cwd=record.cwd,
+            messages=[Message(**m) for m in json.loads(record.messages)],
         )
 
     def delete(self, key: str) -> None:
-        with self._connect() as conn:
-            conn.execute("DELETE FROM sessions WHERE key = ?", (key,))
+        with self._db() as db:
+            record = db.get(SessionRecord, key)
+
+            if record is not None:
+                db.delete(record)
+                db.commit()
 
     def list_sessions(self) -> dict:
-        """Return the saved-session index: key -> {updated_at,
-        message_count, cwd}."""
-        with self._connect() as conn:
-            rows = conn.execute(
-                "SELECT key, updated_at, message_count, cwd FROM sessions"
-            ).fetchall()
+        """key -> {updated_at, message_count, cwd}"""
+        with self._db() as db:
+            records = db.query(SessionRecord).all()
 
         return {
-            key: {"updated_at": updated_at, "message_count": count, "cwd": cwd}
-            for key, updated_at, count, cwd in rows
+            r.key: {
+                "updated_at": r.updated_at,
+                "message_count": r.message_count,
+                "cwd": r.cwd,
+            }
+            for r in records
         }

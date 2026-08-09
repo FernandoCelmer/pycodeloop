@@ -1,29 +1,32 @@
-"""User settings — persisted defaults in ~/.codeloop/config.json"""
+"""User Settings"""
 
 from __future__ import annotations
 
-from codeloop.core.local_config import get_section, set_section
+from codeloop.abc.settings import Settings
+from codeloop.core.persistence.local_config import default_store
 
 _SECTION = "settings"
 
 
-def get_settings() -> dict:
-    """Return the saved user-level defaults (provider, model, max_turns,
-    max_history_turns, ...) — empty dict if none were ever saved."""
-    return get_section(_SECTION)
+class UserSettings:
+    """Saved user-level defaults (provider, model, max_turns,
+    max_history_turns, ...) in `~/.codeloop/config.json` under
+    "settings", so future runs don't need an env var every time."""
 
+    def __init__(self, store: Settings | None = None) -> None:
+        self.store = store or default_store
 
-def set_setting(key: str, value) -> None:
-    """Persist one default under `key`, e.g. set_setting("provider",
-    "openai") so every future run defaults to it without an env var."""
-    settings = get_settings()
-    settings[key] = value
+    def get_settings(self) -> dict:
+        return self.store.get_section(_SECTION)
 
-    set_section(_SECTION, settings)
+    def set_setting(self, key: str, value) -> None:
+        settings = self.get_settings()
+        settings[key] = value
 
+        self.store.set_section(_SECTION, settings)
 
-def clear_setting(key: str) -> None:
-    settings = get_settings()
-    settings.pop(key, None)
+    def clear_setting(self, key: str) -> None:
+        settings = self.get_settings()
+        settings.pop(key, None)
 
-    set_section(_SECTION, settings)
+        self.store.set_section(_SECTION, settings)

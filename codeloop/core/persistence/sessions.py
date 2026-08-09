@@ -1,4 +1,4 @@
-"""File Storage"""
+"""File Sessions"""
 
 from __future__ import annotations
 
@@ -7,19 +7,19 @@ import time
 from dataclasses import asdict
 from pathlib import Path
 
-from codeloop.abc.storage import Storage
-from codeloop.core.local_config import get_section, set_section
+from codeloop.abc.sessions import Sessions
+from codeloop.core.persistence.local_config import default_store
 from codeloop.core.session import Message, Session
 
 _SESSIONS_SECTION = "sessions"
 
 
-class FileStorage(Storage):
+class FileSessions(Sessions):
     """
     Import:
-        You can import the **FileStorage** class with:
+        You can import the **FileSessions** class with:
 
-            from codeloop.core.storage import FileStorage
+            from codeloop.core.persistence.sessions import FileSessions
 
     Persists each `Session` as a JSON file under `directory`, one file
     per key — the simplest way to resume a conversation across process
@@ -50,23 +50,23 @@ class FileStorage(Storage):
 
     def _index(self, key: str, session: Session) -> None:
         """Record key/updated_at/message_count in ~/.codeloop/config.json
-        under "sessions", so `FileStorage.list_sessions()` (and CLI
+        under "sessions", so `FileSessions.list_sessions()` (and CLI
         tooling built on it) can list saved conversations without
         reading every session file."""
-        sessions = get_section(_SESSIONS_SECTION)
+        sessions = default_store.get_section(_SESSIONS_SECTION)
         sessions[key] = {
             "updated_at": time.time(),
             "message_count": len(session.messages),
             "cwd": session.cwd,
         }
 
-        set_section(_SESSIONS_SECTION, sessions)
+        default_store.set_section(_SESSIONS_SECTION, sessions)
 
     @staticmethod
     def list_sessions() -> dict:
         """Return the saved-session index: key -> {updated_at,
         message_count, cwd}."""
-        return get_section(_SESSIONS_SECTION)
+        return default_store.get_section(_SESSIONS_SECTION)
 
     def get(self, key: str) -> Session | None:
         path = self._path(key)
@@ -85,7 +85,7 @@ class FileStorage(Storage):
     def delete(self, key: str) -> None:
         self._path(key).unlink(missing_ok=True)
 
-        sessions = get_section(_SESSIONS_SECTION)
+        sessions = default_store.get_section(_SESSIONS_SECTION)
         sessions.pop(key, None)
 
-        set_section(_SESSIONS_SECTION, sessions)
+        default_store.set_section(_SESSIONS_SECTION, sessions)

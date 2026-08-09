@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from codeloop.core.agent import Agent
 from codeloop.core.config import Config
+from codeloop.core.persistence.usage import UsageTracker
 from codeloop.core.session import Session
-from codeloop.core.usage import record_usage
+
+_usage_tracker = UsageTracker()
 
 
 class CodeLoop:
@@ -72,7 +74,7 @@ class CodeLoop:
         result = self.agent.run(prompt, session=self.session)
         usage_after = self.agent.usage
 
-        record_usage(
+        _usage_tracker.record_usage(
             session_key or "global",
             usage_after.input_tokens - usage_before.input_tokens,
             usage_after.output_tokens - usage_before.output_tokens,

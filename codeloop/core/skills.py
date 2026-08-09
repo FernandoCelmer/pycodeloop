@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from codeloop.abc.tool import Tool, ToolResult
-from codeloop.core.local_config import get_section, set_section
+from codeloop.core.persistence.local_config import default_store
 
 _MAX_DESCRIPTION = 100
 _CACHE_SECTION = "skills"
@@ -191,7 +191,7 @@ def discover_skills(
     fingerprint = _fingerprint(jobs)
     key = _cache_key(cwd, home, sources)
 
-    cache = get_section(_CACHE_SECTION)
+    cache = default_store.get_section(_CACHE_SECTION)
     cached_entry = cache.get(key)
 
     if use_cache and cached_entry and cached_entry.get("fingerprint") == fingerprint:
@@ -204,7 +204,7 @@ def discover_skills(
             "fingerprint": fingerprint,
             "skills": [_skill_to_dict(s) for s in skills],
         }
-        set_section(_CACHE_SECTION, cache)
+        default_store.set_section(_CACHE_SECTION, cache)
 
     return skills
 

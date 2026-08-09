@@ -1,4 +1,4 @@
-"""Storage ABC"""
+"""Sessions ABC"""
 
 from __future__ import annotations
 
@@ -7,12 +7,12 @@ from abc import ABC, abstractmethod
 from codeloop.core.session import Session
 
 
-class Storage(ABC):
+class Sessions(ABC):
     """
     Import:
-        You can import the **Storage** class with:
+        You can import the **Sessions** class with:
 
-            from codeloop.abc.storage import Storage
+            from codeloop.abc.sessions import Sessions
 
     Persist and retrieve a `Session` by key, so a conversation can
     resume across process restarts. Inject via `Config(storage=...)`;

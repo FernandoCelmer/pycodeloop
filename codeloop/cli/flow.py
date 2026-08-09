@@ -20,7 +20,7 @@ from codeloop.cli.render import (
 )
 from codeloop.core.codeloop import CodeLoop
 from codeloop.core.config import Config
-from codeloop.core.mcp import MCPServer, load_mcp_server, load_mcp_tools
+from codeloop.core.mcp import MCPServer, MCPServerRegistry, load_mcp_tools
 from codeloop.core.tools import DEFAULT_TOOLS
 from codeloop.providers import get_provider
 from codeloop.settings import Settings
@@ -39,7 +39,7 @@ def _load_mcp_tools(specs: list[str] | None) -> list:
     for spec in specs or []:
         if spec.startswith("saved:"):
             name = spec[len("saved:") :]
-            server = load_mcp_server(name)
+            server = MCPServerRegistry().load(name)
 
             if server is None:
                 console.print(

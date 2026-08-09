@@ -7,8 +7,9 @@ import threading
 from contextlib import AsyncExitStack
 from dataclasses import dataclass, field
 
+from codeloop.abc.settings import Settings
 from codeloop.abc.tool import Tool, ToolResult
-from codeloop.core.local_config import get_section, set_section
+from codeloop.core.persistence.local_config import default_store
 
 _MCP_SECTION = "mcp_servers"
 
@@ -146,38 +147,39 @@ def load_mcp_tools(server: MCPServer) -> list[Tool]:
     return [MCPTool(client, schema) for schema in client.list_tools()]
 
 
-def save_mcp_server(name: str, server: MCPServer) -> None:
-    """Save `server` under `name` in ~/.codeloop/config.json, so the CLI
-    can reference it later as `--mcp saved:<name>` instead of repeating
-    the full command every time."""
-    servers = get_section(_MCP_SECTION)
-    servers[name] = {
-        "command": server.command,
-        "args": server.args,
-        "env": server.env,
-    }
+class MCPServerRegistry:
+    """Named `MCPServer` configs saved in `~/.codeloop/config.json`
+    under "mcp_servers", so the CLI can reference one later as
+    `--mcp saved:<name>` instead of repeating the full command."""
 
-    set_section(_MCP_SECTION, servers)
+    def __init__(self, store: Settings | None = None) -> None:
+        self.store = store or default_store
 
+    def save(self, name: str, server: MCPServer) -> None:
+        servers = self.store.get_section(_MCP_SECTION)
+        servers[name] = {
+            "command": server.command,
+            "args": server.args,
+            "env": server.env,
+        }
 
-def load_mcp_server(name: str) -> MCPServer | None:
-    """Return the saved server registered under `name`, or None."""
-    data = get_section(_MCP_SECTION).get(name)
+        self.store.set_section(_MCP_SECTION, servers)
 
-    if data is None:
-        return None
+    def load(self, name: str) -> MCPServer | None:
+        data = self.store.get_section(_MCP_SECTION).get(name)
 
-    return MCPServer(
-        command=data["command"], args=data.get("args", []), env=data.get("env")
-    )
+        if data is None:
+            return None
 
+        return MCPServer(
+            command=data["command"], args=data.get("args", []), env=data.get("env")
+        )
 
-def list_mcp_servers() -> dict:
-    return get_section(_MCP_SECTION)
+    def list(self) -> dict:
+        return self.store.get_section(_MCP_SECTION)
 
+    def delete(self, name: str) -> None:
+        servers = self.store.get_section(_MCP_SECTION)
+        servers.pop(name, None)
 
-def delete_mcp_server(name: str) -> None:
-    servers = get_section(_MCP_SECTION)
-    servers.pop(name, None)
-
-    set_section(_MCP_SECTION, servers)
+        self.store.set_section(_MCP_SECTION, servers)
