@@ -1,7 +1,7 @@
-# Storage ABC
+# Sessions ABC
 
-::: codeloop.abc.storage.Storage
+::: codeloop.abc.sessions.Sessions
 
-::: codeloop.core.storage.FileStorage
+::: codeloop.core.persistence.sessions.FileSessions
 
-::: codeloop.core.sqlite_storage.SqliteStorage
+::: codeloop.core.persistence.sqlite_sessions.SqliteSessions

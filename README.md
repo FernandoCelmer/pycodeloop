@@ -136,14 +136,14 @@ config = Config(provider=provider, max_history_turns=20)
 
 Two more pluggable pieces, both optional:
 
-- **`Storage`** — persists a `Session` by key so a conversation survives process restarts. Pass one to `Config(storage=...)` and call `CodeLoop.run(prompt, session_key=...)`. Two built-in implementations: `FileStorage` writes one JSON file per session under `~/.codeloop/sessions/`; `SqliteStorage` (`from codeloop.core.sqlite_storage import SqliteStorage`) writes to a single queryable `~/.codeloop/sessions.db` instead.
+- **`Sessions`** — persists a `Session` by key so a conversation survives process restarts. Pass one to `Config(storage=...)` and call `CodeLoop.run(prompt, session_key=...)`. Two built-in implementations: `FileSessions` writes one JSON file per session under `~/.codeloop/sessions/`; `SqliteSessions` (`from codeloop.core.persistence.sqlite_sessions import SqliteSessions`) is a SQLAlchemy model backed by a single queryable `~/.codeloop/codeloop.db` instead.
 - **`Confirm`** — an ABC form of the `confirm` callback (`Agent(confirm=...)`) for when you want a reusable class instead of a closure — same `bool | str` contract, just `.ask(name, preview)` instead of calling it directly. A plain callable still works everywhere `confirm` is accepted.
 
 ```python
 from codeloop import CodeLoop, Config
-from codeloop.core.storage import FileStorage
+from codeloop.core.persistence.sessions import FileSessions
 
-config = Config(provider=provider, storage=FileStorage())
+config = Config(provider=provider, storage=FileSessions())
 flow = CodeLoop(config=config)
 
 flow.run("remember this", session_key="user-42")
