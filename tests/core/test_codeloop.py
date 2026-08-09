@@ -3,8 +3,10 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from codeloop.abc.provider import Provider, ProviderResponse
+from codeloop.core import local_config
 from codeloop.core.codeloop import CodeLoop
 from codeloop.core.config import Config
 from codeloop.core.storage import FileStorage
@@ -28,6 +30,15 @@ class TestCodeLoopSessionStorage(unittest.TestCase):
         self._tmpdir = tempfile.TemporaryDirectory()
         self.addCleanup(self._tmpdir.cleanup)
         self.storage = FileStorage(directory=Path(self._tmpdir.name))
+
+        # record_usage()/FileStorage's session index both write to
+        # ~/.codeloop/config.json via local_config — redirect that to a
+        # scratch file so tests never touch the real user config.
+        patcher = mock.patch.object(
+            local_config, "CONFIG_PATH", Path(self._tmpdir.name) / "config.json"
+        )
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     def test_run_without_session_key_never_touches_storage(self):
         config = Config(

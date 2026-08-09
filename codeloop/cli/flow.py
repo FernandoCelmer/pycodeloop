@@ -20,7 +20,7 @@ from codeloop.cli.render import (
 )
 from codeloop.core.codeloop import CodeLoop
 from codeloop.core.config import Config
-from codeloop.core.mcp import MCPServer, load_mcp_tools
+from codeloop.core.mcp import MCPServer, load_mcp_server, load_mcp_tools
 from codeloop.core.tools import DEFAULT_TOOLS
 from codeloop.providers import get_provider
 from codeloop.settings import Settings
@@ -35,11 +35,24 @@ _CONFIRM_TIMEOUT = 3.0
 
 def _load_mcp_tools(specs: list[str] | None) -> list:
     tools = list(DEFAULT_TOOLS)
+
     for spec in specs or []:
-        parts = shlex.split(spec)
-        server = MCPServer(command=parts[0], args=parts[1:])
+        if spec.startswith("saved:"):
+            name = spec[len("saved:") :]
+            server = load_mcp_server(name)
+
+            if server is None:
+                console.print(
+                    f"{Settings.ERROR_ALERT} no saved MCP server named '{name}'"
+                )
+                raise typer.Exit(code=1)
+        else:
+            parts = shlex.split(spec)
+            server = MCPServer(command=parts[0], args=parts[1:])
+
         console.print(f"{Settings.INFO_ALERT} connecting to MCP server '{spec}'")
         tools.extend(load_mcp_tools(server))
+
     return tools
 
 

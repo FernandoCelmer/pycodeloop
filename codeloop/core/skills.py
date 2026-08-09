@@ -9,7 +9,7 @@ from codeloop.abc.tool import Tool, ToolResult
 from codeloop.core.local_config import get_section, set_section
 
 _MAX_DESCRIPTION = 100
-_CACHE_SECTION = "skills_cache"
+_CACHE_SECTION = "skills"
 
 
 @dataclass
@@ -48,6 +48,7 @@ def _load_skill_md(path: Path, source: str) -> Skill | None:
     meta, body = _parse_frontmatter(text)
     name = meta.get("name") or path.stem
     description = meta.get("description") or (body.splitlines()[0] if body else "")
+
     return Skill(
         name=name,
         description=description,
@@ -74,6 +75,7 @@ def _load_plain_doc(path: Path, source: str, name: str) -> Skill | None:
         if len(first_line) <= _MAX_DESCRIPTION
         else first_line[:_MAX_DESCRIPTION] + "…"
     )
+
     return Skill(
         name=name,
         description=description,
@@ -191,6 +193,7 @@ def discover_skills(
 
     cache = get_section(_CACHE_SECTION)
     cached_entry = cache.get(key)
+
     if use_cache and cached_entry and cached_entry.get("fingerprint") == fingerprint:
         return [_skill_from_dict(item) for item in cached_entry["skills"]]
 
@@ -239,10 +242,12 @@ class ReadSkillTool(Tool):
 
     def run(self, name: str) -> ToolResult:
         skill = self._skills.get(name)
+
         if skill is None:
             available = ", ".join(sorted(self._skills)) or "(none)"
             return ToolResult(
                 output=f"Unknown skill '{name}'. Available: {available}",
                 is_error=True,
             )
+
         return ToolResult(output=skill.content)

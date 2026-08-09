@@ -128,9 +128,15 @@ config = Config(
 
 Passing anything that isn't a `Provider` instance raises `NotProviderInstance` at construction time, not mid-run.
 
+By default the session grows without bound — every turn's full history is resent to the provider every call. Pass `max_history_turns` to cap it: older turns are dropped as a whole unit (never mid tool_calls/tool_result, which every provider rejects) before each provider call.
+
+```python
+config = Config(provider=provider, max_history_turns=20)
+```
+
 Two more pluggable pieces, both optional:
 
-- **`Storage`** — persists a `Session` by key so a conversation survives process restarts. Pass one to `Config(storage=...)` and call `CodeLoop.run(prompt, session_key=...)`; the built-in `FileStorage` writes one JSON file per session under `~/.codeloop/sessions/`.
+- **`Storage`** — persists a `Session` by key so a conversation survives process restarts. Pass one to `Config(storage=...)` and call `CodeLoop.run(prompt, session_key=...)`. Two built-in implementations: `FileStorage` writes one JSON file per session under `~/.codeloop/sessions/`; `SqliteStorage` (`from codeloop.core.sqlite_storage import SqliteStorage`) writes to a single queryable `~/.codeloop/sessions.db` instead.
 - **`Confirm`** — an ABC form of the `confirm` callback (`Agent(confirm=...)`) for when you want a reusable class instead of a closure — same `bool | str` contract, just `.ask(name, preview)` instead of calling it directly. A plain callable still works everywhere `confirm` is accepted.
 
 ```python

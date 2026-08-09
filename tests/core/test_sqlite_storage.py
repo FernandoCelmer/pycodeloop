@@ -1,28 +1,18 @@
-"""Test Storage ABC and FileStorage"""
+"""Test SqliteStorage"""
 
 import tempfile
 import unittest
 from pathlib import Path
-from unittest import mock
 
-from codeloop.core import local_config
 from codeloop.core.session import Message, Session
-from codeloop.core.storage import FileStorage
+from codeloop.core.sqlite_storage import SqliteStorage
 
 
-class TestFileStorage(unittest.TestCase):
+class TestSqliteStorage(unittest.TestCase):
     def setUp(self):
         self._tmpdir = tempfile.TemporaryDirectory()
         self.addCleanup(self._tmpdir.cleanup)
-        self.storage = FileStorage(directory=Path(self._tmpdir.name))
-
-        # post()/delete() also write a session index entry to
-        # ~/.codeloop/config.json — redirect that to a scratch file.
-        patcher = mock.patch.object(
-            local_config, "CONFIG_PATH", Path(self._tmpdir.name) / "config.json"
-        )
-        patcher.start()
-        self.addCleanup(patcher.stop)
+        self.storage = SqliteStorage(path=Path(self._tmpdir.name) / "sessions.db")
 
     def test_post_then_get_roundtrips_session(self):
         session = Session(system_prompt="sys", cwd="/tmp")
@@ -42,6 +32,20 @@ class TestFileStorage(unittest.TestCase):
     def test_get_missing_key_returns_none(self):
         self.assertIsNone(self.storage.get("nope"))
 
+    def test_post_overwrites_existing_key(self):
+        first = Session(system_prompt="sys")
+        first.add_user("first")
+        self.storage.post("s1", first)
+
+        second = Session(system_prompt="sys")
+        second.add_user("second")
+        second.add_assistant("reply")
+        self.storage.post("s1", second)
+
+        restored = self.storage.get("s1")
+        self.assertEqual(len(restored.messages), 2)
+        self.assertEqual(restored.messages[0].content, "second")
+
     def test_delete_removes_stored_session(self):
         session = Session(system_prompt="sys")
         self.storage.post("s1", session)
@@ -53,25 +57,23 @@ class TestFileStorage(unittest.TestCase):
     def test_delete_missing_key_is_a_noop(self):
         self.storage.delete("nope")  # should not raise
 
-    def test_post_indexes_session_for_list_sessions(self):
+    def test_list_sessions_returns_index(self):
         session = Session(system_prompt="sys", cwd="/tmp/proj")
         session.add_user("hi")
         session.add_assistant("hello")
-
         self.storage.post("s1", session)
 
-        index = FileStorage.list_sessions()
+        index = self.storage.list_sessions()
+
         self.assertIn("s1", index)
         self.assertEqual(index["s1"]["message_count"], 2)
         self.assertEqual(index["s1"]["cwd"], "/tmp/proj")
 
-    def test_delete_removes_session_from_index(self):
-        session = Session(system_prompt="sys")
-        self.storage.post("s1", session)
+    def test_creates_db_file_and_parent_dir(self):
+        nested = Path(self._tmpdir.name) / "nested" / "sessions.db"
+        SqliteStorage(path=nested)
 
-        self.storage.delete("s1")
-
-        self.assertNotIn("s1", FileStorage.list_sessions())
+        self.assertTrue(nested.exists())
 
 
 if __name__ == "__main__":

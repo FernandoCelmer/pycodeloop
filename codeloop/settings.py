@@ -4,10 +4,14 @@ import os
 
 from dotenv import load_dotenv
 
+from codeloop.core.user_settings import get_settings
+
 load_dotenv()
 
-_PROVIDER = os.environ.get("CODELOOP_PROVIDER", "anthropic")
-_MODEL = os.environ.get("CODELOOP_MODEL")
+_saved = get_settings()
+
+_PROVIDER = os.environ.get("CODELOOP_PROVIDER") or _saved.get("provider") or "anthropic"
+_MODEL = os.environ.get("CODELOOP_MODEL") or _saved.get("model")
 
 DEFAULT_MODELS = {
     "anthropic": "claude-sonnet-5",
@@ -22,13 +26,20 @@ API_KEY_ENV = {
 
 
 class Settings:
-    """Settings CodeLoop"""
+    """Settings CodeLoop.
+
+    Resolution order for provider/model/max_turns: env var (CODELOOP_*)
+    > saved default (~/.codeloop/config.json, see user_settings.py) >
+    hardcoded fallback.
+    """
 
     PROVIDER = _PROVIDER
     MODEL = _MODEL or DEFAULT_MODELS.get(_PROVIDER)
     API_KEY = os.environ.get(API_KEY_ENV.get(_PROVIDER, ""))
 
-    MAX_TURNS = int(os.environ.get("CODELOOP_MAX_TURNS", "25"))
+    MAX_TURNS = int(
+        os.environ.get("CODELOOP_MAX_TURNS") or _saved.get("max_turns") or 25
+    )
 
     ICON = ":robot:"
     STEP_ICON = ":gear:"

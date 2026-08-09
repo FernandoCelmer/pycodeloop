@@ -96,7 +96,7 @@ class TestSkillsCache(SkillsTestCase):
         )
 
         first = self._discover(sources={"claude-skill"})
-        cache = local_config.get_section("skills_cache")
+        cache = local_config.get_section("skills")
         self.assertEqual(len(cache), 1)
 
         second = self._discover(sources={"claude-skill"})
@@ -127,7 +127,7 @@ class TestSkillsCache(SkillsTestCase):
         skills = self._discover(sources={"claude-skill"}, use_cache=False)
 
         self.assertEqual(skills[0].name, "a")
-        self.assertEqual(local_config.get_section("skills_cache"), {})
+        self.assertEqual(local_config.get_section("skills"), {})
 
 
 class TestRenderSkillsIndex(SkillsTestCase):

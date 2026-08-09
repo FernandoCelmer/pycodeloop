@@ -5,6 +5,7 @@ from __future__ import annotations
 from codeloop.core.agent import Agent
 from codeloop.core.config import Config
 from codeloop.core.session import Session
+from codeloop.core.usage import record_usage
 
 
 class CodeLoop:
@@ -48,8 +49,10 @@ class CodeLoop:
             provider=self.config.provider,
             tools=self.config.tools,
             max_turns=self.config.max_turns,
+            max_history_turns=self.config.max_history_turns,
             **agent_kwargs,
         )
+
         self.session = Session(system_prompt=self.agent.system_prompt)
 
     def run(self, prompt: str, session_key: str | None = None) -> str:
@@ -65,7 +68,15 @@ class CodeLoop:
             if stored is not None:
                 self.session = stored
 
+        usage_before = self.agent.usage
         result = self.agent.run(prompt, session=self.session)
+        usage_after = self.agent.usage
+
+        record_usage(
+            session_key or "global",
+            usage_after.input_tokens - usage_before.input_tokens,
+            usage_after.output_tokens - usage_before.output_tokens,
+        )
 
         if session_key is not None and self.config.storage is not None:
             self.config.storage.post(session_key, self.session)

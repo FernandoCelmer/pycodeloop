@@ -8,6 +8,9 @@ from contextlib import AsyncExitStack
 from dataclasses import dataclass, field
 
 from codeloop.abc.tool import Tool, ToolResult
+from codeloop.core.local_config import get_section, set_section
+
+_MCP_SECTION = "mcp_servers"
 
 
 @dataclass
@@ -51,6 +54,7 @@ class MCPClient:
         self._thread.start()
         self._exit_stack = None
         self._session = None
+
         self._run(self._connect())
 
     def _run(self, coro, timeout: float = 30):
@@ -67,9 +71,11 @@ class MCPClient:
             args=self.server.args,
             env=self.server.env,
         )
+
         read, write = await self._exit_stack.enter_async_context(stdio_client(params))
         session = await self._exit_stack.enter_async_context(ClientSession(read, write))
         await session.initialize()
+
         self._session = session
 
     def list_tools(self) -> list[dict]:
@@ -101,6 +107,7 @@ class MCPClient:
     def close(self) -> None:
         if self._exit_stack is not None:
             self._run(self._exit_stack.aclose())
+
         self._loop.call_soon_threadsafe(self._loop.stop)
         self._thread.join(timeout=5)
 
@@ -128,10 +135,49 @@ class MCPTool(Tool):
                 output=f"Error calling MCP tool '{self.name}': {exc}",
                 is_error=True,
             )
+
         return ToolResult(output=output)
 
 
 def load_mcp_tools(server: MCPServer) -> list[Tool]:
     """Connect to an MCP server, return its tools as codeloop Tools."""
     client = MCPClient(server)
+
     return [MCPTool(client, schema) for schema in client.list_tools()]
+
+
+def save_mcp_server(name: str, server: MCPServer) -> None:
+    """Save `server` under `name` in ~/.codeloop/config.json, so the CLI
+    can reference it later as `--mcp saved:<name>` instead of repeating
+    the full command every time."""
+    servers = get_section(_MCP_SECTION)
+    servers[name] = {
+        "command": server.command,
+        "args": server.args,
+        "env": server.env,
+    }
+
+    set_section(_MCP_SECTION, servers)
+
+
+def load_mcp_server(name: str) -> MCPServer | None:
+    """Return the saved server registered under `name`, or None."""
+    data = get_section(_MCP_SECTION).get(name)
+
+    if data is None:
+        return None
+
+    return MCPServer(
+        command=data["command"], args=data.get("args", []), env=data.get("env")
+    )
+
+
+def list_mcp_servers() -> dict:
+    return get_section(_MCP_SECTION)
+
+
+def delete_mcp_server(name: str) -> None:
+    servers = get_section(_MCP_SECTION)
+    servers.pop(name, None)
+
+    set_section(_MCP_SECTION, servers)

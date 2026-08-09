@@ -1,11 +1,15 @@
 """Test flow.py's build_flow error paths and JSON-provider dispatch"""
 
+import tempfile
 import unittest
+from pathlib import Path
 from unittest import mock
 
 import typer
 
-from codeloop.cli.flow import build_flow
+from codeloop.cli.flow import _load_mcp_tools, build_flow
+from codeloop.core import local_config
+from codeloop.core.mcp import MCPServer, save_mcp_server
 from codeloop.providers.generic import GenericProvider
 
 
@@ -78,6 +82,34 @@ class TestBuildFlowCallbackWiring(unittest.TestCase):
             result = flow.agent.confirm("bash", "$ echo hi")
 
         self.assertTrue(result)
+
+
+class TestLoadMcpToolsSavedServers(unittest.TestCase):
+    def setUp(self):
+        self._tmpdir = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmpdir.cleanup)
+
+        patcher = mock.patch.object(
+            local_config, "CONFIG_PATH", Path(self._tmpdir.name) / "config.json"
+        )
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_resolves_saved_server_by_name(self):
+        save_mcp_server("fs", MCPServer(command="npx", args=["-y", "fs-server"]))
+
+        with mock.patch(
+            "codeloop.cli.flow.load_mcp_tools", return_value=[]
+        ) as load_tools:
+            _load_mcp_tools(["saved:fs"])
+
+        called_server = load_tools.call_args[0][0]
+        self.assertEqual(called_server.command, "npx")
+        self.assertEqual(called_server.args, ["-y", "fs-server"])
+
+    def test_unknown_saved_server_exits(self):
+        with self.assertRaises(typer.Exit):
+            _load_mcp_tools(["saved:nope"])
 
 
 if __name__ == "__main__":

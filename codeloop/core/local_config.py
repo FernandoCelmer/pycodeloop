@@ -29,4 +29,5 @@ def get_section(name: str) -> dict:
 def set_section(name: str, value: dict) -> None:
     data = read()
     data[name] = value
+
     write(data)
