@@ -6,6 +6,7 @@ from codeloop.abc.confirm import Confirm
 from codeloop.abc.provider import Provider, ProviderResponse, ToolCall
 from codeloop.abc.tool import Tool, ToolResult
 from codeloop.core.agent import Agent
+from codeloop.core.session import Session
 
 
 class FakeProvider(Provider):
@@ -228,6 +229,33 @@ class TestAgent(unittest.TestCase):
 
         self.assertEqual(len(calls), 2)
         self.assertEqual(calls[0], (1, 1))
+
+    def test_max_history_turns_trims_session_before_each_run(self):
+        session = Session(system_prompt="sys")
+        session.add_user("old-1")
+        session.add_assistant("old-1-reply")
+        session.add_user("old-2")
+        session.add_assistant("old-2-reply")
+
+        provider = FakeProvider([ProviderResponse(text="new-reply")])
+        agent = Agent(provider=provider, max_history_turns=1)
+
+        agent.run("new", session=session)
+
+        contents = [m.content for m in session.messages]
+        self.assertEqual(contents, ["new", "new-reply"])
+
+    def test_no_max_history_turns_leaves_session_unbounded(self):
+        session = Session(system_prompt="sys")
+        session.add_user("old-1")
+        session.add_assistant("old-1-reply")
+
+        provider = FakeProvider([ProviderResponse(text="new-reply")])
+        agent = Agent(provider=provider)
+
+        agent.run("new", session=session)
+
+        self.assertEqual(len(session.messages), 4)
 
     def test_on_usage_reports_elapsed_time(self):
         provider = FakeProvider([ProviderResponse(text="hello")])

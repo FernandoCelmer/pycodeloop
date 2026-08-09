@@ -32,6 +32,7 @@ class Agent:
         tools: list[Tool] | None = None,
         system_prompt: str = DEFAULT_SYSTEM_PROMPT,
         max_turns: int = 25,
+        max_history_turns: int | None = None,
         on_tool_call: Callable[[str, dict], None] | None = None,
         on_tool_result: Callable[[str, str, bool], None] | None = None,
         on_text_delta: Callable[[str], None] | None = None,
@@ -43,6 +44,7 @@ class Agent:
         self.tools = {tool.name: tool for tool in (tools or DEFAULT_TOOLS)}
         self.system_prompt = system_prompt
         self.max_turns = max_turns
+        self.max_history_turns = max_history_turns
         self.on_tool_call = on_tool_call
         self.on_tool_result = on_tool_result
         self.on_text_delta = on_text_delta
@@ -56,6 +58,7 @@ class Agent:
 
     def _execute(self, name: str, arguments: dict) -> tuple[str, bool]:
         tool = self.tools.get(name)
+
         if tool is None:
             return f"Unknown tool: {name}", True
 
@@ -76,6 +79,9 @@ class Agent:
     def run(self, prompt: str, session: Session | None = None) -> str:
         session = session or Session(system_prompt=self.system_prompt)
         session.add_user(prompt)
+
+        if self.max_history_turns is not None:
+            session.trim(self.max_history_turns)
 
         for _ in range(self.max_turns):
             tools = self._tool_schemas()

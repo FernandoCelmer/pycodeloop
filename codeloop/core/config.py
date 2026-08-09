@@ -55,6 +55,12 @@ class Config:
 
         max_turns (int): Hard cap on tool-use loop iterations.
 
+        max_history_turns (Optional[int]): Cap the session on the
+            number of most recent user-initiated turns kept — older
+            turns are dropped as a whole unit (never mid tool_calls/
+            tool_result) before each provider call. Unset means the
+            session grows without bound for the life of the process.
+
         skills (bool): Discover Claude Code skills/memory, Cursor rules,
             and AGENTS.md files on this machine and this project, expose
             them as a `read_skill` tool, and list them in the system
@@ -89,6 +95,7 @@ class Config:
         tools: list[Tool] | None = None,
         system_prompt: str | None = None,
         max_turns: int = Settings.MAX_TURNS,
+        max_history_turns: int | None = None,
         skills: bool = False,
         skill_sources: set[str] | None = None,
         skills_refresh: bool = False,
@@ -98,6 +105,7 @@ class Config:
         self.tools = list(tools) if tools is not None else list(DEFAULT_TOOLS)
         self.system_prompt = system_prompt
         self.max_turns = max_turns
+        self.max_history_turns = max_history_turns
         self.skills = self._discover_skills(skills, skill_sources, skills_refresh)
         self.storage = storage
 
@@ -110,6 +118,7 @@ class Config:
             return []
 
         found = discover_skills(sources=sources, use_cache=not refresh)
+
         if not found:
             return found
 
@@ -125,5 +134,6 @@ class Config:
     def _validate(self) -> None:
         for name, abc in self._PROVIDERS.items():
             value = getattr(self, name)
+
             if value is not None and not isinstance(value, abc):
                 raise NotProviderInstance(name=name)

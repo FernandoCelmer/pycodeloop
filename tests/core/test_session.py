@@ -1,0 +1,54 @@
+"""Test Session.trim()"""
+
+import unittest
+
+from codeloop.core.session import Session
+
+
+def _add_turn(session: Session, user_text: str, assistant_text: str) -> None:
+    session.add_user(user_text)
+    session.add_assistant(assistant_text)
+
+
+class TestSessionTrim(unittest.TestCase):
+    def test_trim_keeps_last_n_turns(self):
+        session = Session(system_prompt="sys")
+        for i in range(5):
+            _add_turn(session, f"user-{i}", f"assistant-{i}")
+
+        session.trim(max_turns=2)
+
+        self.assertEqual(len(session.messages), 4)
+        self.assertEqual(session.messages[0].content, "user-3")
+        self.assertEqual(session.messages[-1].content, "assistant-4")
+
+    def test_trim_is_a_noop_when_under_the_cap(self):
+        session = Session(system_prompt="sys")
+        for i in range(2):
+            _add_turn(session, f"user-{i}", f"assistant-{i}")
+
+        session.trim(max_turns=5)
+
+        self.assertEqual(len(session.messages), 4)
+
+    def test_trim_never_splits_a_tool_call_tool_result_pair(self):
+        session = Session(system_prompt="sys")
+        _add_turn(session, "user-0", "assistant-0")
+        session.add_user("user-1")
+        session.add_assistant(
+            "", tool_calls=[{"id": "c1", "name": "bash", "arguments": {}}]
+        )
+        session.add_tool_result("c1", "output")
+        session.add_assistant("final")
+
+        session.trim(max_turns=1)
+
+        # Only the "user-1" turn survives, with its assistant/tool_result
+        # messages intact — never truncated mid-turn.
+        self.assertEqual(session.messages[0].content, "user-1")
+        roles = [m.role for m in session.messages]
+        self.assertEqual(roles, ["user", "assistant", "tool", "assistant"])
+
+
+if __name__ == "__main__":
+    unittest.main()

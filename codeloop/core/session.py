@@ -35,3 +35,16 @@ class Session:
 
     def history(self) -> list[Message]:
         return self.messages
+
+    def trim(self, max_turns: int) -> None:
+        """Keep only the most recent `max_turns` user-initiated turns,
+        dropping older ones as a whole unit — trimming mid-turn would
+        split an assistant tool_calls message from its tool_result
+        replies, which every provider rejects."""
+        turn_starts = [i for i, m in enumerate(self.messages) if m.role == "user"]
+
+        if len(turn_starts) <= max_turns:
+            return
+
+        cutoff = turn_starts[-max_turns]
+        self.messages = self.messages[cutoff:]
