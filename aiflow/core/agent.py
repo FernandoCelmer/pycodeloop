@@ -12,9 +12,13 @@ from aiflow.core.tools import DEFAULT_TOOLS
 
 DEFAULT_SYSTEM_PROMPT = (
     "You are AIFlow, an autonomous coding agent. You have tools to read, "
-    "write, and edit files, search the codebase, and run shell commands. "
-    "Use them to accomplish the user's request. Be direct and make changes "
-    "instead of only describing them."
+    "write, edit, and delete files, list directories, search the codebase "
+    "(grep/glob), fetch web pages, and run shell commands. Use them to "
+    "accomplish the user's request directly instead of only describing "
+    "what to do. Investigate before acting: read relevant files and search "
+    "for existing patterns rather than guessing. Prefer the smallest change "
+    "that solves the request. Be concise — state what you did, not what "
+    "you're about to do."
 )
 
 
@@ -30,7 +34,7 @@ class Agent:
         on_tool_call: Callable[[str, dict], None] | None = None,
         on_tool_result: Callable[[str, str, bool], None] | None = None,
         on_text_delta: Callable[[str], None] | None = None,
-        confirm: Callable[[str, str], bool] | None = None,
+        confirm: Callable[[str, str], bool | str] | None = None,
         on_usage: Callable[[Usage, Usage, float], None] | None = None,
         on_request: Callable[[int, int], None] | None = None,
     ) -> None:
@@ -56,7 +60,10 @@ class Agent:
 
         if tool.dangerous and self.confirm is not None:
             preview = tool.preview(**arguments)
-            if not self.confirm(name, preview):
+            answer = self.confirm(name, preview)
+            if answer is not True:
+                if isinstance(answer, str) and answer:
+                    return f"User declined and said: {answer}", True
                 return "User declined to run this tool.", True
 
         result = tool.run(**arguments)
@@ -97,9 +104,7 @@ class Agent:
                 if self.on_tool_call:
                     self.on_tool_call(call.name, call.arguments)
 
-                result_text, is_error = self._execute(
-                    call.name, call.arguments
-                )
+                result_text, is_error = self._execute(call.name, call.arguments)
 
                 if self.on_tool_result:
                     self.on_tool_result(call.name, result_text, is_error)
