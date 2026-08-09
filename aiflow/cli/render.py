@@ -6,6 +6,7 @@ from pathlib import Path
 
 from rich.console import Console
 from rich.markdown import Markdown
+from rich.markup import escape
 from rich.panel import Panel
 from rich.text import Text
 
@@ -21,6 +22,13 @@ _TOOL_ICONS = {
     "grep": "🔍",
     "bash": "💻",
     "web_fetch": "🌐",
+    "http_request": "🔌",
+    "git_status": "🌿",
+    "git_diff": "🌿",
+    "git_log": "🌿",
+    "git_commit": "🌿",
+    "env": "🧾",
+    "todo": "✅",
     "read_skill": "🧠",
 }
 
@@ -34,8 +42,24 @@ def format_tokens(count: int) -> str:
 
 
 def format_args(args: dict) -> str:
-    preview = ", ".join(f"{key}={value!r}" for key, value in args.items())
+    if len(args) == 1:
+        (value,) = args.values()
+        preview = str(value)
+    else:
+        preview = ", ".join(f"{key}={value}" for key, value in args.items())
     return preview if len(preview) <= 100 else preview[:100] + "…"
+
+
+def format_tool_call(name: str, args: dict) -> str:
+    """One clean, markup-safe line for a tool call — `bash` shows the
+    real shell command with a `$` prompt instead of `command='...'`."""
+    if name == "bash" and "command" in args:
+        command = str(args["command"])
+        command = command if len(command) <= 100 else command[:100] + "…"
+        return f"💻 [bold white]$[/bold white] {escape(command)}"
+    icon = tool_icon(name)
+    preview = escape(format_args(args))
+    return f"{icon} [bold white]{name}[/bold white] [dim]{preview}[/dim]"
 
 
 class TurnBuffer:
@@ -51,7 +75,14 @@ class TurnBuffer:
 
     def flush(self) -> None:
         if self._text.strip():
-            self._console.print(Markdown(self._text))
+            self._console.print(
+                Panel(
+                    Markdown(self._text),
+                    border_style="grey50",
+                    subtitle=("[bold white on grey30] AIFlow [/bold white on grey30]"),
+                    subtitle_align="right",
+                )
+            )
         self._text = ""
 
 
@@ -59,11 +90,11 @@ def render_preview(preview: str) -> Text:
     text = Text()
     for line in preview.splitlines(keepends=True):
         if line.startswith("+") and not line.startswith("+++"):
-            text.append(line, style="green")
+            text.append(line, style="bold white")
         elif line.startswith("-") and not line.startswith("---"):
-            text.append(line, style="red")
+            text.append(line, style="grey50")
         elif line.startswith("$"):
-            text.append(line, style="bold yellow")
+            text.append(line, style="bold white")
         else:
             text.append(line, style="dim")
     return text
@@ -71,9 +102,9 @@ def render_preview(preview: str) -> Text:
 
 def print_header(provider_name: str, model: str, hint: str) -> None:
     body = Text()
-    body.append("AIFlow", style="bold")
-    body.append(f"  {provider_name}", style="cyan")
-    body.append(f" · {model}\n", style="cyan")
+    body.append("AIFlow", style="bold white")
+    body.append(f"  {provider_name}", style="grey70")
+    body.append(f" · {model}\n", style="grey70")
     body.append(f"{Path.cwd()}\n", style="dim")
     body.append(hint, style="dim")
-    console.print(Panel(body, border_style="green"))
+    console.print(Panel(body, border_style="grey50"))
