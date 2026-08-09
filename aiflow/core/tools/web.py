@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from html.parser import HTMLParser
+from urllib.parse import urlparse
 
 import httpx
 
 from aiflow.abc.tool import Tool, ToolResult
+from aiflow.core.tools._net import is_blocked_host
 
 _MAX_CHARS = 20000
 _SKIP_TAGS = {"script", "style", "noscript"}
@@ -50,20 +52,32 @@ class WebFetchTool(Tool):
     }
 
     def run(self, url: str, timeout: float = 30) -> ToolResult:
-        try:
-            response = httpx.get(url, timeout=timeout, follow_redirects=True)
-            response.raise_for_status()
-        except httpx.HTTPError as exc:
+        hostname = urlparse(url).hostname
+        if not hostname or is_blocked_host(hostname):
             return ToolResult(
-                output=f"Error fetching {url}: {exc}", is_error=True
+                output=f"Refused to fetch {url}: host is not a public address",
+                is_error=True,
             )
 
+        try:
+            response = httpx.get(url, timeout=timeout, follow_redirects=False)
+        except httpx.HTTPError as exc:
+            return ToolResult(output=f"Error fetching {url}: {exc}", is_error=True)
+
+        if response.is_redirect:
+            return ToolResult(
+                output=f"{url} redirects to "
+                f"{response.headers.get('location')} — fetch that URL "
+                "directly if it's safe to follow",
+                is_error=True,
+            )
+        try:
+            response.raise_for_status()
+        except httpx.HTTPError as exc:
+            return ToolResult(output=f"Error fetching {url}: {exc}", is_error=True)
+
         content_type = response.headers.get("content-type", "")
-        text = (
-            _html_to_text(response.text)
-            if "html" in content_type
-            else response.text
-        )
+        text = _html_to_text(response.text) if "html" in content_type else response.text
 
         if len(text) > _MAX_CHARS:
             text = text[:_MAX_CHARS] + "\n… (truncated)"
