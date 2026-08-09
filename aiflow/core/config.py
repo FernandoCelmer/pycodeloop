@@ -86,15 +86,11 @@ class Config:
         skill_sources: set[str] | None = None,
         skills_refresh: bool = False,
     ) -> None:
-        self.provider = (
-            provider if provider is not None else _default_provider()
-        )
-        self.tools = tools if tools is not None else DEFAULT_TOOLS
+        self.provider = provider if provider is not None else _default_provider()
+        self.tools = list(tools) if tools is not None else list(DEFAULT_TOOLS)
         self.system_prompt = system_prompt
         self.max_turns = max_turns
-        self.skills = self._discover_skills(
-            skills, skill_sources, skills_refresh
-        )
+        self.skills = self._discover_skills(skills, skill_sources, skills_refresh)
 
         self._validate()
 
