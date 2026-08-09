@@ -8,8 +8,8 @@ from unittest import mock
 import typer
 
 from codeloop.cli.flow import _load_mcp_tools, build_flow
-from codeloop.core import local_config
-from codeloop.core.mcp import MCPServer, save_mcp_server
+from codeloop.core.mcp import MCPServer, MCPServerRegistry
+from codeloop.core.persistence.local_config import JsonFileStore
 from codeloop.providers.generic import GenericProvider
 
 
@@ -89,14 +89,15 @@ class TestLoadMcpToolsSavedServers(unittest.TestCase):
         self._tmpdir = tempfile.TemporaryDirectory()
         self.addCleanup(self._tmpdir.cleanup)
 
-        patcher = mock.patch.object(
-            local_config, "CONFIG_PATH", Path(self._tmpdir.name) / "config.json"
-        )
+        store = JsonFileStore(Path(self._tmpdir.name) / "config.json")
+        patcher = mock.patch("codeloop.core.mcp.default_store", store)
         patcher.start()
         self.addCleanup(patcher.stop)
 
     def test_resolves_saved_server_by_name(self):
-        save_mcp_server("fs", MCPServer(command="npx", args=["-y", "fs-server"]))
+        MCPServerRegistry().save(
+            "fs", MCPServer(command="npx", args=["-y", "fs-server"])
+        )
 
         with mock.patch(
             "codeloop.cli.flow.load_mcp_tools", return_value=[]

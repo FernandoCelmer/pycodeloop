@@ -5,7 +5,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-import codeloop.core.local_config as local_config
+import codeloop.core.skills as skills_module
+from codeloop.core.persistence.local_config import JsonFileStore
 from codeloop.core.skills import (
     ReadSkillTool,
     discover_skills,
@@ -20,9 +21,8 @@ class SkillsTestCase(unittest.TestCase):
         self.tmp_path = Path(self._tmpdir.name)
         self.home_path = self.tmp_path / "home"
 
-        patcher = mock.patch.object(
-            local_config, "CONFIG_PATH", self.tmp_path / "config.json"
-        )
+        self.store = JsonFileStore(self.tmp_path / "config.json")
+        patcher = mock.patch.object(skills_module, "default_store", self.store)
         patcher.start()
         self.addCleanup(patcher.stop)
 
@@ -96,7 +96,7 @@ class TestSkillsCache(SkillsTestCase):
         )
 
         first = self._discover(sources={"claude-skill"})
-        cache = local_config.get_section("skills")
+        cache = self.store.get_section("skills")
         self.assertEqual(len(cache), 1)
 
         second = self._discover(sources={"claude-skill"})
@@ -127,7 +127,7 @@ class TestSkillsCache(SkillsTestCase):
         skills = self._discover(sources={"claude-skill"}, use_cache=False)
 
         self.assertEqual(skills[0].name, "a")
-        self.assertEqual(local_config.get_section("skills"), {})
+        self.assertEqual(self.store.get_section("skills"), {})
 
 
 class TestRenderSkillsIndex(SkillsTestCase):

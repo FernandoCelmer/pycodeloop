@@ -6,10 +6,13 @@ from pathlib import Path
 from unittest import mock
 
 from codeloop.abc.provider import Provider, ProviderResponse
-from codeloop.core import local_config
+from codeloop.core import codeloop as codeloop_module
 from codeloop.core.codeloop import CodeLoop
 from codeloop.core.config import Config
-from codeloop.core.storage import FileStorage
+from codeloop.core.persistence import sessions as sessions_module
+from codeloop.core.persistence.local_config import JsonFileStore
+from codeloop.core.persistence.sessions import FileSessions
+from codeloop.core.persistence.usage import UsageTracker
 
 
 class FakeProvider(Provider):
@@ -29,16 +32,22 @@ class TestCodeLoopSessionStorage(unittest.TestCase):
     def setUp(self):
         self._tmpdir = tempfile.TemporaryDirectory()
         self.addCleanup(self._tmpdir.cleanup)
-        self.storage = FileStorage(directory=Path(self._tmpdir.name))
+        self.storage = FileSessions(directory=Path(self._tmpdir.name))
 
-        # record_usage()/FileStorage's session index both write to
-        # ~/.codeloop/config.json via local_config — redirect that to a
-        # scratch file so tests never touch the real user config.
-        patcher = mock.patch.object(
-            local_config, "CONFIG_PATH", Path(self._tmpdir.name) / "config.json"
+        # FileSessions' session index and usage tracking both write to
+        # ~/.codeloop/config.json — redirect that to a scratch file so
+        # tests never touch the real user config.
+        store = JsonFileStore(Path(self._tmpdir.name) / "config.json")
+
+        sessions_patcher = mock.patch.object(sessions_module, "default_store", store)
+        sessions_patcher.start()
+        self.addCleanup(sessions_patcher.stop)
+
+        usage_patcher = mock.patch.object(
+            codeloop_module, "_usage_tracker", UsageTracker(store=store)
         )
-        patcher.start()
-        self.addCleanup(patcher.stop)
+        usage_patcher.start()
+        self.addCleanup(usage_patcher.stop)
 
     def test_run_without_session_key_never_touches_storage(self):
         config = Config(

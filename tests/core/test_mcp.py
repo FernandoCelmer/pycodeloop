@@ -3,17 +3,9 @@
 import tempfile
 import unittest
 from pathlib import Path
-from unittest import mock
 
-from codeloop.core import local_config
-from codeloop.core.mcp import (
-    MCPServer,
-    MCPTool,
-    delete_mcp_server,
-    list_mcp_servers,
-    load_mcp_server,
-    save_mcp_server,
-)
+from codeloop.core.persistence.local_config import JsonFileStore
+from codeloop.core.mcp import MCPServer, MCPServerRegistry, MCPTool
 
 
 class FakeMCPClient:
@@ -73,37 +65,34 @@ class TestSavedMCPServers(unittest.TestCase):
         self._tmpdir = tempfile.TemporaryDirectory()
         self.addCleanup(self._tmpdir.cleanup)
 
-        patcher = mock.patch.object(
-            local_config, "CONFIG_PATH", Path(self._tmpdir.name) / "config.json"
-        )
-        patcher.start()
-        self.addCleanup(patcher.stop)
+        store = JsonFileStore(Path(self._tmpdir.name) / "config.json")
+        self.registry = MCPServerRegistry(store=store)
 
     def test_save_then_load_roundtrips(self):
         server = MCPServer(command="npx", args=["-y", "server-filesystem", "."])
 
-        save_mcp_server("fs", server)
-        loaded = load_mcp_server("fs")
+        self.registry.save("fs", server)
+        loaded = self.registry.load("fs")
 
         self.assertEqual(loaded, server)
 
     def test_load_missing_name_returns_none(self):
-        self.assertIsNone(load_mcp_server("nope"))
+        self.assertIsNone(self.registry.load("nope"))
 
     def test_list_mcp_servers_returns_all_saved(self):
-        save_mcp_server("fs", MCPServer(command="npx", args=["fs"]))
-        save_mcp_server("db", MCPServer(command="npx", args=["db"]))
+        self.registry.save("fs", MCPServer(command="npx", args=["fs"]))
+        self.registry.save("db", MCPServer(command="npx", args=["db"]))
 
-        names = set(list_mcp_servers())
+        names = set(self.registry.list())
 
         self.assertEqual(names, {"fs", "db"})
 
     def test_delete_mcp_server_removes_it(self):
-        save_mcp_server("fs", MCPServer(command="npx", args=["fs"]))
+        self.registry.save("fs", MCPServer(command="npx", args=["fs"]))
 
-        delete_mcp_server("fs")
+        self.registry.delete("fs")
 
-        self.assertIsNone(load_mcp_server("fs"))
+        self.assertIsNone(self.registry.load("fs"))
 
 
 if __name__ == "__main__":
