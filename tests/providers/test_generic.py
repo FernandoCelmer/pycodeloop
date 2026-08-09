@@ -1,19 +1,26 @@
-"""Test load_provider_from_json"""
+"""Test GenericProvider"""
 
+import io
 import json
 import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
 
-import httpx
-
 from aiflow.providers import get_provider
 from aiflow.providers.generic import GenericProvider
-from aiflow.providers.json_provider import load_provider_from_json
 
 
-class JsonProviderTestCase(unittest.TestCase):
+class _FakeResponse(io.BytesIO):
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self.close()
+        return False
+
+
+class GenericProviderTestCase(unittest.TestCase):
     def setUp(self):
         tmpdir = tempfile.TemporaryDirectory()
         self.addCleanup(tmpdir.cleanup)
@@ -25,7 +32,7 @@ class JsonProviderTestCase(unittest.TestCase):
         return path
 
 
-class TestLoadProviderFromJson(JsonProviderTestCase):
+class TestLoadProviderFromJson(GenericProviderTestCase):
     def test_builds_generic_provider_from_config(self):
         path = self._write_config(
             {
@@ -36,7 +43,7 @@ class TestLoadProviderFromJson(JsonProviderTestCase):
             }
         )
 
-        provider = load_provider_from_json(path)
+        provider = GenericProvider.from_json(path)
 
         self.assertIsInstance(provider, GenericProvider)
         self.assertEqual(provider.url, "http://fake/v1/chat/completions")
@@ -54,7 +61,7 @@ class TestLoadProviderFromJson(JsonProviderTestCase):
         )
 
         with mock.patch.dict("os.environ", {"MY_FAKE_KEY": "from-env"}):
-            provider = load_provider_from_json(path)
+            provider = GenericProvider.from_json(path)
 
         self.assertEqual(provider.api_key, "from-env")
 
@@ -62,21 +69,20 @@ class TestLoadProviderFromJson(JsonProviderTestCase):
         path = self._write_config(
             {"url": "http://fake/v1/chat/completions", "model": "my-model"}
         )
-        provider = load_provider_from_json(path)
+        provider = GenericProvider.from_json(path)
 
-        def handler(request: httpx.Request) -> httpx.Response:
-            return httpx.Response(
-                200,
-                json={
-                    "choices": [
-                        {"message": {"content": "hi"}, "finish_reason": "stop"}
-                    ],
-                    "usage": {"prompt_tokens": 1, "completion_tokens": 1},
-                },
-            )
+        response_body = json.dumps(
+            {
+                "choices": [{"message": {"content": "hi"}, "finish_reason": "stop"}],
+                "usage": {"prompt_tokens": 1, "completion_tokens": 1},
+            }
+        ).encode()
 
-        provider.client = httpx.Client(transport=httpx.MockTransport(handler))
-        result = provider.complete("sys", [], [])
+        with mock.patch(
+            "aiflow.providers.generic.urllib.request.urlopen",
+            return_value=_FakeResponse(response_body),
+        ):
+            result = provider.complete("sys", [], [])
 
         self.assertEqual(result.text, "hi")
 
@@ -92,19 +98,20 @@ class TestLoadProviderFromJson(JsonProviderTestCase):
                 },
             }
         )
-        provider = load_provider_from_json(path)
+        provider = GenericProvider.from_json(path)
 
-        def handler(request: httpx.Request) -> httpx.Response:
-            return httpx.Response(
-                200,
-                json={
-                    "result": {"answer": "custom shape works"},
-                    "meta": {"tokens_in": 7, "tokens_out": 4},
-                },
-            )
+        response_body = json.dumps(
+            {
+                "result": {"answer": "custom shape works"},
+                "meta": {"tokens_in": 7, "tokens_out": 4},
+            }
+        ).encode()
 
-        provider.client = httpx.Client(transport=httpx.MockTransport(handler))
-        result = provider.complete("sys", [], [])
+        with mock.patch(
+            "aiflow.providers.generic.urllib.request.urlopen",
+            return_value=_FakeResponse(response_body),
+        ):
+            result = provider.complete("sys", [], [])
 
         self.assertEqual(result.text, "custom shape works")
         self.assertEqual(result.usage.input_tokens, 7)
@@ -124,32 +131,33 @@ class TestLoadProviderFromJson(JsonProviderTestCase):
                 },
             }
         )
-        provider = load_provider_from_json(path)
+        provider = GenericProvider.from_json(path)
 
-        def handler(request: httpx.Request) -> httpx.Response:
-            return httpx.Response(
-                200,
-                json={
-                    "text": "",
-                    "actions": [
-                        {
-                            "call_id": "1",
-                            "fn": "read_file",
-                            "args": '{"path": "a.py"}',
-                        }
-                    ],
-                },
-            )
+        response_body = json.dumps(
+            {
+                "text": "",
+                "actions": [
+                    {
+                        "call_id": "1",
+                        "fn": "read_file",
+                        "args": '{"path": "a.py"}',
+                    }
+                ],
+            }
+        ).encode()
 
-        provider.client = httpx.Client(transport=httpx.MockTransport(handler))
-        result = provider.complete("sys", [], [])
+        with mock.patch(
+            "aiflow.providers.generic.urllib.request.urlopen",
+            return_value=_FakeResponse(response_body),
+        ):
+            result = provider.complete("sys", [], [])
 
         self.assertEqual(len(result.tool_calls), 1)
         self.assertEqual(result.tool_calls[0].name, "read_file")
         self.assertEqual(result.tool_calls[0].arguments, {"path": "a.py"})
 
 
-class TestGetProviderJsonDispatch(JsonProviderTestCase):
+class TestGetProviderJsonDispatch(GenericProviderTestCase):
     def test_get_provider_loads_json_config_by_path(self):
         path = self._write_config(
             {"url": "http://fake/v1/chat/completions", "model": "my-model"}
