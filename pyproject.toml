@@ -7,7 +7,7 @@ authors = [
 license = {file = "LICENSE"}
 description = "AIFlow — an agentic coding assistant core and CLI, multi-provider (Anthropic, OpenAI)."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<4.0"
 dependencies = [
   "rich",
   "pydantic",
@@ -67,7 +67,7 @@ packages = [{ include = "aiflow" }]
 aiflow = "aiflow.cli.main:main"
 
 [tool.poetry.dependencies]
-python = ">=3.10.0"
+python = ">=3.10.0,<4.0"
 rich = "^14.1.0"
 pydantic = "^2.11.7"
 typer = "^0.15.0"
