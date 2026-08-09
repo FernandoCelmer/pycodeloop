@@ -47,9 +47,7 @@ class MCPClient:
     def __init__(self, server: MCPServer) -> None:
         self.server = server
         self._loop = asyncio.new_event_loop()
-        self._thread = threading.Thread(
-            target=self._loop.run_forever, daemon=True
-        )
+        self._thread = threading.Thread(target=self._loop.run_forever, daemon=True)
         self._thread.start()
         self._exit_stack = None
         self._session = None
@@ -69,12 +67,8 @@ class MCPClient:
             args=self.server.args,
             env=self.server.env,
         )
-        read, write = await self._exit_stack.enter_async_context(
-            stdio_client(params)
-        )
-        session = await self._exit_stack.enter_async_context(
-            ClientSession(read, write)
-        )
+        read, write = await self._exit_stack.enter_async_context(stdio_client(params))
+        session = await self._exit_stack.enter_async_context(ClientSession(read, write))
         await session.initialize()
         self._session = session
 
@@ -101,11 +95,7 @@ class MCPClient:
 
     async def _call_tool(self, name: str, arguments: dict) -> str:
         result = await self._session.call_tool(name, arguments)
-        parts = [
-            block.text
-            for block in result.content
-            if getattr(block, "text", None)
-        ]
+        parts = [block.text for block in result.content if getattr(block, "text", None)]
         return "\n".join(parts) if parts else str(result.content)
 
     def close(self) -> None:
@@ -134,7 +124,10 @@ class MCPTool(Tool):
         try:
             output = self.client.call_tool(self.name, kwargs)
         except Exception as exc:
-            return ToolResult(output=str(exc), is_error=True)
+            return ToolResult(
+                output=f"Error calling MCP tool '{self.name}': {exc}",
+                is_error=True,
+            )
         return ToolResult(output=output)
 
 
