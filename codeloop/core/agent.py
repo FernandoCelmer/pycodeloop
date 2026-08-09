@@ -5,6 +5,7 @@ from __future__ import annotations
 import time
 from collections.abc import Callable
 
+from codeloop.abc.confirm import Confirm
 from codeloop.abc.provider import Provider, Usage
 from codeloop.abc.tool import Tool
 from codeloop.core.session import Session
@@ -34,7 +35,7 @@ class Agent:
         on_tool_call: Callable[[str, dict], None] | None = None,
         on_tool_result: Callable[[str, str, bool], None] | None = None,
         on_text_delta: Callable[[str], None] | None = None,
-        confirm: Callable[[str, str], bool | str] | None = None,
+        confirm: Callable[[str, str], bool | str] | Confirm | None = None,
         on_usage: Callable[[Usage, Usage, float], None] | None = None,
         on_request: Callable[[int, int], None] | None = None,
     ) -> None:
@@ -60,7 +61,10 @@ class Agent:
 
         if tool.dangerous and self.confirm is not None:
             preview = tool.preview(**arguments)
-            answer = self.confirm(name, preview)
+            ask = (
+                self.confirm.ask if isinstance(self.confirm, Confirm) else self.confirm
+            )
+            answer = ask(name, preview)
             if answer is not True:
                 if isinstance(answer, str) and answer:
                     return f"User declined and said: {answer}", True

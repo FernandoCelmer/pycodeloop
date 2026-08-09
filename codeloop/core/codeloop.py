@@ -52,6 +52,22 @@ class CodeLoop:
         )
         self.session = Session(system_prompt=self.agent.system_prompt)
 
-    def run(self, prompt: str) -> str:
-        """Run prompt to completion, keeping history across calls."""
-        return self.agent.run(prompt, session=self.session)
+    def run(self, prompt: str, session_key: str | None = None) -> str:
+        """Run prompt to completion, keeping history across calls.
+
+        Pass `session_key` with a `Config(storage=...)` configured to
+        resume a previous conversation: the session is loaded from
+        storage before the run (falling back to the in-memory session
+        on a cache miss) and saved back after.
+        """
+        if session_key is not None and self.config.storage is not None:
+            stored = self.config.storage.get(session_key)
+            if stored is not None:
+                self.session = stored
+
+        result = self.agent.run(prompt, session=self.session)
+
+        if session_key is not None and self.config.storage is not None:
+            self.config.storage.post(session_key, self.session)
+
+        return result

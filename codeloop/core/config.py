@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from codeloop.abc.provider import Provider
+from codeloop.abc.storage import Storage
 from codeloop.abc.tool import Tool
 from codeloop.core.agent import DEFAULT_SYSTEM_PROMPT
 from codeloop.core.exception import NotProviderInstance
@@ -66,15 +67,21 @@ class Config:
         skills_refresh (bool): Skip the `~/.codeloop/config.json` skills
             cache and force a full rescan.
 
+        storage (Optional[Storage]): Persists the session so
+            `CodeLoop.run(prompt, session_key=...)` can resume a
+            conversation across process restarts. Unset means sessions
+            stay in memory only, for the life of the `CodeLoop` instance.
+
     Attributes:
         provider (Provider):
         tools (List[Tool]):
         system_prompt (Optional[str]):
         max_turns (int):
         skills (List[Skill]):
+        storage (Optional[Storage]):
     """
 
-    _PROVIDERS = {"provider": Provider}
+    _PROVIDERS = {"provider": Provider, "storage": Storage}
 
     def __init__(
         self,
@@ -85,12 +92,14 @@ class Config:
         skills: bool = False,
         skill_sources: set[str] | None = None,
         skills_refresh: bool = False,
+        storage: Storage | None = None,
     ) -> None:
         self.provider = provider if provider is not None else _default_provider()
         self.tools = list(tools) if tools is not None else list(DEFAULT_TOOLS)
         self.system_prompt = system_prompt
         self.max_turns = max_turns
         self.skills = self._discover_skills(skills, skill_sources, skills_refresh)
+        self.storage = storage
 
         self._validate()
 

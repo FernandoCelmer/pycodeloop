@@ -2,6 +2,7 @@
 
 import unittest
 
+from codeloop.abc.confirm import Confirm
 from codeloop.abc.provider import Provider, ProviderResponse, ToolCall
 from codeloop.abc.tool import Tool, ToolResult
 from codeloop.core.agent import Agent
@@ -170,6 +171,35 @@ class TestAgent(unittest.TestCase):
             provider=provider,
             tools=[DeleteTool()],
             confirm=lambda _name, _preview: True,
+            on_tool_result=lambda _name, result, _is_error: results.append(result),
+        )
+
+        agent.run("do it")
+
+        self.assertEqual(results, ["deleted"])
+
+    def test_accepts_confirm_abc_instance_instead_of_callable(self):
+        provider = FakeProvider(
+            [
+                ProviderResponse(
+                    text="",
+                    tool_calls=[
+                        ToolCall(id="1", name="delete_everything", arguments={})
+                    ],
+                ),
+                ProviderResponse(text="ok"),
+            ]
+        )
+
+        class AlwaysConfirm(Confirm):
+            def ask(self, name: str, preview: str) -> bool | str:
+                return True
+
+        results = []
+        agent = Agent(
+            provider=provider,
+            tools=[DeleteTool()],
+            confirm=AlwaysConfirm(),
             on_tool_result=lambda _name, result, _is_error: results.append(result),
         )
 

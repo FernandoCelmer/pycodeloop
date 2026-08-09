@@ -130,6 +130,8 @@ nav:
     - nav/reference/session.md
     - "Provider ABC": nav/reference/abc-provider.md
     - "Tool ABC": nav/reference/abc-tool.md
+    - "Storage ABC": nav/reference/abc-storage.md
+    - "Confirm ABC": nav/reference/abc-confirm.md
     - Providers: nav/reference/providers.md
     - Tools: nav/reference/tools.md
     - MCP: nav/reference/mcp.md

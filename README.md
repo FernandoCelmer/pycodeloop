@@ -128,6 +128,23 @@ config = Config(
 
 Passing anything that isn't a `Provider` instance raises `NotProviderInstance` at construction time, not mid-run.
 
+Two more pluggable pieces, both optional:
+
+- **`Storage`** — persists a `Session` by key so a conversation survives process restarts. Pass one to `Config(storage=...)` and call `CodeLoop.run(prompt, session_key=...)`; the built-in `FileStorage` writes one JSON file per session under `~/.codeloop/sessions/`.
+- **`Confirm`** — an ABC form of the `confirm` callback (`Agent(confirm=...)`) for when you want a reusable class instead of a closure — same `bool | str` contract, just `.ask(name, preview)` instead of calling it directly. A plain callable still works everywhere `confirm` is accepted.
+
+```python
+from codeloop import CodeLoop, Config
+from codeloop.core.storage import FileStorage
+
+config = Config(provider=provider, storage=FileStorage())
+flow = CodeLoop(config=config)
+
+flow.run("remember this", session_key="user-42")
+# ... later, even in a new process:
+flow.run("what did I say?", session_key="user-42")
+```
+
 ---
 
 </details>
