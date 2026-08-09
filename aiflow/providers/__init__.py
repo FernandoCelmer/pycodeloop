@@ -27,12 +27,10 @@ __all__ = [
 def get_provider(name: str, **kwargs):
     """Build a Provider by registry name (anthropic, openai, ollama,
     generic), by path to a JSON config file (see
-    `aiflow.providers.json_provider`), or by dotted path
+    `aiflow.providers.generic`), or by dotted path
     'module.path:ClassName' for a custom Provider subclass."""
     if name.endswith(".json"):
-        from aiflow.providers.json_provider import load_provider_from_json
-
-        provider = load_provider_from_json(name)
+        provider = GenericProvider.from_json(name)
         if kwargs.get("model"):
             provider.model = kwargs["model"]
         if kwargs.get("api_key"):
