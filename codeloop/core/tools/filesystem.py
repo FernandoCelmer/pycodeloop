@@ -45,6 +45,7 @@ class ReadFileTool(Tool):
         numbered = [
             f"{i + start + 1}\t{line}" for i, line in enumerate(lines[start:end])
         ]
+
         return ToolResult(output="\n".join(numbered))
 
 
@@ -75,6 +76,7 @@ class WriteFileTool(Tool):
             target.write_text(content)
         except OSError as exc:
             return ToolResult(output=f"Error writing {path}: {exc}", is_error=True)
+
         return ToolResult(output=f"Wrote {len(content)} bytes to {path}")
 
 
@@ -102,8 +104,10 @@ class EditFileTool(Tool):
             return ToolResult(output=f"Error reading {path}: {exc}", is_error=True)
 
         count = text.count(old_string)
+
         if count == 0:
             return ToolResult(output=f"old_string not found in {path}", is_error=True)
+
         if count > 1 and not replace_all:
             return ToolResult(
                 output=(
@@ -119,6 +123,7 @@ class EditFileTool(Tool):
             if replace_all
             else text.replace(old_string, new_string, 1)
         )
+
         return text, new_text
 
     def preview(
@@ -130,9 +135,12 @@ class EditFileTool(Tool):
         **_,
     ) -> str:
         result = self._apply(path, old_string, new_string, replace_all)
+
         if isinstance(result, ToolResult):
             return result.output
+
         before, after = result
+
         return _diff(path, before, after)
 
     def run(
@@ -143,10 +151,13 @@ class EditFileTool(Tool):
         replace_all: bool = False,
     ) -> ToolResult:
         result = self._apply(path, old_string, new_string, replace_all)
+
         if isinstance(result, ToolResult):
             return result
+
         _before, after = result
         Path(path).write_text(after)
+
         return ToolResult(output=f"Edited {path}")
 
 
@@ -172,6 +183,7 @@ class DeleteFileTool(Tool):
             Path(path).unlink()
         except OSError as exc:
             return ToolResult(output=f"Error deleting {path}: {exc}", is_error=True)
+
         return ToolResult(output=f"Deleted {path}")
 
 
@@ -188,5 +200,7 @@ class ListDirTool(Tool):
             entries = sorted(Path(path).iterdir())
         except OSError as exc:
             return ToolResult(output=f"Error listing {path}: {exc}", is_error=True)
+
         lines = [f"{'d' if e.is_dir() else 'f'} {e.name}" for e in entries]
+
         return ToolResult(output="\n".join(lines))

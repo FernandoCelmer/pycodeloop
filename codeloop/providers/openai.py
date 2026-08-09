@@ -116,6 +116,7 @@ class OpenAIProvider(Provider):
                 input_tokens=response.usage.prompt_tokens if response.usage else 0,
                 output_tokens=response.usage.completion_tokens if response.usage else 0,
             )
+
             return ProviderResponse(
                 text=text,
                 tool_calls=tool_calls,
@@ -170,6 +171,7 @@ class OpenAIProvider(Provider):
             )
             for acc in pending.values()
         ]
+
         return ProviderResponse(
             text=text,
             tool_calls=tool_calls,

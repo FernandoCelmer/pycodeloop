@@ -52,15 +52,20 @@ class TodoTool(Tool):
         if action == "add":
             if not text:
                 return ToolResult(output="text is required", is_error=True)
+
             self._items.append({"id": self._next_id, "text": text, "done": False})
             self._next_id += 1
+
             return ToolResult(output=self._render())
 
         if action == "complete":
             item = next((i for i in self._items if i["id"] == item_id), None)
+
             if item is None:
                 return ToolResult(output=f"No item with id {item_id}", is_error=True)
+
             item["done"] = True
+
             return ToolResult(output=self._render())
 
         if action == "clear":

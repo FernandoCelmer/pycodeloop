@@ -21,6 +21,7 @@ def _run_git(*args: str, timeout: int = 30) -> ToolResult:
         return ToolResult(output=f"git {' '.join(args)} timed out", is_error=True)
 
     output = proc.stdout + proc.stderr
+
     return ToolResult(
         output=output.strip() or "(no output)",
         is_error=proc.returncode != 0,
@@ -49,10 +50,13 @@ class GitDiffTool(Tool):
 
     def run(self, path: str = "", staged: bool = False) -> ToolResult:
         args = ["diff"]
+
         if staged:
             args.append("--staged")
+
         if path:
             args.extend(["--", path])
+
         return _run_git(*args)
 
 
@@ -69,8 +73,10 @@ class GitLogTool(Tool):
 
     def run(self, max_count: int = 20, path: str = "") -> ToolResult:
         args = ["log", f"-n{max_count}", "--oneline"]
+
         if path:
             args.extend(["--", path])
+
         return _run_git(*args)
 
 
@@ -97,6 +103,7 @@ class GitCommitTool(Tool):
 
     def run(self, message: str, paths: list[str] | None = None) -> ToolResult:
         add_result = _run_git("add", *(paths or ["-A"]))
+
         if add_result.is_error:
             return add_result
 

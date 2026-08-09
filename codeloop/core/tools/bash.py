@@ -38,4 +38,5 @@ class BashTool(Tool):
             )
 
         output = proc.stdout + proc.stderr
+
         return ToolResult(output=output, is_error=proc.returncode != 0)

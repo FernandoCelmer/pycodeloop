@@ -44,10 +44,13 @@ class HttpRequestTool(Tool):
         **_,
     ) -> str:
         lines = [f"$ {method.upper()} {url}"]
+
         if headers:
             lines.append(f"headers: {headers}")
+
         if json_body is not None:
             lines.append(f"body: {json_body}")
+
         return "\n".join(lines)
 
     def run(
@@ -59,6 +62,7 @@ class HttpRequestTool(Tool):
         timeout: float = 30,
     ) -> ToolResult:
         method = method.upper()
+
         if method not in _METHODS:
             return ToolResult(output=f"Unsupported method: {method}", is_error=True)
 
@@ -90,8 +94,10 @@ class HttpRequestTool(Tool):
             )
 
         text = response.text
+
         if len(text) > _MAX_CHARS:
             text = text[:_MAX_CHARS] + "\n… (truncated)"
 
         summary = f"{response.status_code} {response.reason_phrase}\n{text}"
+
         return ToolResult(output=summary, is_error=response.is_error)

@@ -78,4 +78,5 @@ class GlobTool(Tool):
             return ToolResult(output=f"Invalid glob: {exc}", is_error=True)
 
         matches = sorted(matches)[:max_results]
+
         return ToolResult(output="\n".join(matches) if matches else "No matches.")

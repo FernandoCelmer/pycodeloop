@@ -136,6 +136,7 @@ class GenericProvider(Provider):
         restart. No-op if this provider wasn't built via `from_json`."""
         if self._config_path is None:
             return
+
         fresh = self._build_from_json(self._config_path)
         self.url = fresh.url
         self.model = fresh.model
@@ -360,9 +361,12 @@ class GenericProvider(Provider):
 
         with self._open(body) as response:
             data = json.loads(response.read())
+
         result = self.response_parser(data)
+
         if on_delta is not None and result.text:
             on_delta(result.text)
+
         return result
 
     def _stream(self, body: dict, on_delta: Callable[[str], None]) -> ProviderResponse:
@@ -422,6 +426,7 @@ class GenericProvider(Provider):
             )
             for acc in pending.values()
         ]
+
         return ProviderResponse(
             text=text,
             tool_calls=tool_calls,

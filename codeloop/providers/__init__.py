@@ -31,16 +31,20 @@ def get_provider(name: str, **kwargs):
     'module.path:ClassName' for a custom Provider subclass."""
     if name.endswith(".json"):
         provider = GenericProvider.from_json(name)
+
         if kwargs.get("model"):
             provider.model = kwargs["model"]
+
         if kwargs.get("api_key"):
             provider.api_key = kwargs["api_key"]
+
         return provider
 
     if ":" in name:
         module_path, class_name = name.split(":", 1)
         module = importlib.import_module(module_path)
         provider_cls = getattr(module, class_name)
+
         return provider_cls(**kwargs)
 
     try:
@@ -50,4 +54,5 @@ def get_provider(name: str, **kwargs):
             f"Unknown provider '{name}'. Available: {list(PROVIDERS)}, "
             "or 'module.path:ClassName' for a custom Provider."
         ) from None
+
     return provider_cls(**kwargs)

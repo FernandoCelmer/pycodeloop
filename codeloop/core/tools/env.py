@@ -33,11 +33,14 @@ class EnvTool(Tool):
     def run(self, name: str = "") -> ToolResult:
         if name:
             value = os.environ.get(name)
+
             if value is None:
                 return ToolResult(output=f"{name} is not set", is_error=True)
+
             return ToolResult(output=f"{name}={_mask(name, value)}")
 
         lines = [
             f"{key}={_mask(key, value)}" for key, value in sorted(os.environ.items())
         ]
+
         return ToolResult(output="\n".join(lines))

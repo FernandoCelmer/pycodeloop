@@ -53,6 +53,7 @@ class WebFetchTool(Tool):
 
     def run(self, url: str, timeout: float = 30) -> ToolResult:
         hostname = urlparse(url).hostname
+
         if not hostname or is_blocked_host(hostname):
             return ToolResult(
                 output=f"Refused to fetch {url}: host is not a public address",
@@ -71,6 +72,7 @@ class WebFetchTool(Tool):
                 "directly if it's safe to follow",
                 is_error=True,
             )
+
         try:
             response.raise_for_status()
         except httpx.HTTPError as exc:
@@ -81,4 +83,5 @@ class WebFetchTool(Tool):
 
         if len(text) > _MAX_CHARS:
             text = text[:_MAX_CHARS] + "\n… (truncated)"
+
         return ToolResult(output=text)
