@@ -1,6 +1,6 @@
 # Overview
 
-<div class="grid cards aiflow-howto-sections" markdown>
+<div class="grid cards codeloop-howto-sections" markdown>
 
 - :material-rocket-launch-outline: __Getting Started__
 
@@ -18,7 +18,7 @@
 
     [:octicons-arrow-right-24: How-to guides](streaming.md)
 
-- :material-console: __AIFlow CLI__
+- :material-console: __CodeLoop CLI__
 
     ---
 

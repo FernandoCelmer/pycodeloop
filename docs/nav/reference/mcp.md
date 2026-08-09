@@ -1,9 +1,9 @@
 # MCP
 
-::: aiflow.core.mcp.MCPServer
+::: codeloop.core.mcp.MCPServer
 
-::: aiflow.core.mcp.MCPClient
+::: codeloop.core.mcp.MCPClient
 
-::: aiflow.core.mcp.MCPTool
+::: codeloop.core.mcp.MCPTool
 
-::: aiflow.core.mcp.load_mcp_tools
+::: codeloop.core.mcp.load_mcp_tools

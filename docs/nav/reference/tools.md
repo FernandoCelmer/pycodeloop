@@ -1,19 +1,19 @@
 # Tools
 
-::: aiflow.core.tools.filesystem.ReadFileTool
+::: codeloop.core.tools.filesystem.ReadFileTool
 
-::: aiflow.core.tools.filesystem.WriteFileTool
+::: codeloop.core.tools.filesystem.WriteFileTool
 
-::: aiflow.core.tools.filesystem.EditFileTool
+::: codeloop.core.tools.filesystem.EditFileTool
 
-::: aiflow.core.tools.filesystem.DeleteFileTool
+::: codeloop.core.tools.filesystem.DeleteFileTool
 
-::: aiflow.core.tools.filesystem.ListDirTool
+::: codeloop.core.tools.filesystem.ListDirTool
 
-::: aiflow.core.tools.search.GlobTool
+::: codeloop.core.tools.search.GlobTool
 
-::: aiflow.core.tools.search.GrepTool
+::: codeloop.core.tools.search.GrepTool
 
-::: aiflow.core.tools.bash.BashTool
+::: codeloop.core.tools.bash.BashTool
 
-::: aiflow.core.tools.web.WebFetchTool
+::: codeloop.core.tools.web.WebFetchTool

@@ -4,10 +4,10 @@
 
 We use GitHub issues for tracking bugs and feature requests.
 
-- 🐛 [Bug Report](https://github.com/dotflow-io/aiflow/issues/new/choose)
-- 📕 [Documentation](https://github.com/dotflow-io/aiflow/issues/new/choose)
-- 🚀 [Feature Request](https://github.com/dotflow-io/aiflow/issues/new/choose)
-- 💬 [General Question](https://github.com/dotflow-io/aiflow/issues/new/choose)
+- 🐛 [Bug Report](https://github.com/FernandoCelmer/codeloop/issues/new/choose)
+- 📕 [Documentation](https://github.com/FernandoCelmer/codeloop/issues/new/choose)
+- 🚀 [Feature Request](https://github.com/FernandoCelmer/codeloop/issues/new/choose)
+- 💬 [General Question](https://github.com/FernandoCelmer/codeloop/issues/new/choose)
 
 ## Git Workflow
 
@@ -81,7 +81,7 @@ Each commit stays scoped to one file or one concern — implementation, tests, a
 
 ## Code Quality
 
-This project uses **ruff** (lint + format), **flake8**, **mypy**, **isort**, and **black** configs, all under [`.code_quality/`](https://github.com/dotflow-io/aiflow/tree/master/.code_quality) and wired into `.pre-commit-config.yaml`.
+This project uses **ruff** (lint + format), **flake8**, **mypy**, **isort**, and **black** configs, all under [`.code_quality/`](https://github.com/FernandoCelmer/codeloop/tree/master/.code_quality) and wired into `.pre-commit-config.yaml`.
 
 ```bash
 # Lint + format
@@ -95,8 +95,8 @@ pytest
 ## Project Structure
 
 ```
-aiflow/
-├── aiflow/
+codeloop/
+├── codeloop/
 │   ├── abc/          # Abstract base classes (Provider, Tool)
 │   ├── cli/           # Typer CLI (run, chat)
 │   ├── core/          # Agent loop, Config, Session, tools, MCP client
@@ -110,8 +110,8 @@ aiflow/
 ## Development Setup
 
 ```bash
-git clone https://github.com/dotflow-io/aiflow.git
-cd aiflow
+git clone https://github.com/FernandoCelmer/codeloop.git
+cd codeloop
 
 poetry install --extras all --with dev,code-quality,docs
 ```

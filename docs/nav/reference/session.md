@@ -1,5 +1,5 @@
 # Session
 
-::: aiflow.core.session.Session
+::: codeloop.core.session.Session
 
-::: aiflow.core.session.Message
+::: codeloop.core.session.Message

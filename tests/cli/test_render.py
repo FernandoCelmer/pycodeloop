@@ -5,7 +5,7 @@ import unittest
 
 from rich.console import Console
 
-from aiflow.cli.render import (
+from codeloop.cli.render import (
     TurnBuffer,
     format_args,
     format_tokens,

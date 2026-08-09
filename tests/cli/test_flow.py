@@ -5,8 +5,8 @@ from unittest import mock
 
 import typer
 
-from aiflow.cli.flow import build_flow
-from aiflow.providers.generic import GenericProvider
+from codeloop.cli.flow import build_flow
+from codeloop.providers.generic import GenericProvider
 
 
 class TestBuildFlowGenericProvider(unittest.TestCase):
@@ -71,7 +71,7 @@ class TestBuildFlowCallbackWiring(unittest.TestCase):
             url="http://fake/v1/chat/completions",
         )
 
-        with mock.patch("aiflow.cli.flow._CONFIRM_TIMEOUT", 0.05):
+        with mock.patch("codeloop.cli.flow._CONFIRM_TIMEOUT", 0.05):
             # No stdin input is available in a test process, so the
             # background reader thread just blocks on input() forever
             # and this must time out and auto-confirm rather than hang.

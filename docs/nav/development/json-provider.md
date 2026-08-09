@@ -29,13 +29,13 @@ For an HTTP LLM API, you don't need to write a `Provider` subclass at all — po
 ```
 
 ```bash
-aiflow run "list the files here" --provider ./provider.example.json
+codeloop run "list the files here" --provider ./provider.example.json
 ```
 
 Or as a library:
 
 ```python
-from aiflow.providers import get_provider
+from codeloop.providers import get_provider
 
 provider = get_provider("./provider.example.json")
 ```

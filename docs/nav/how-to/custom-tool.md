@@ -1,9 +1,9 @@
 # Custom tools
 
-Subclass `Tool` (`aiflow.abc.tool.Tool`):
+Subclass `Tool` (`codeloop.abc.tool.Tool`):
 
 ```python
-from aiflow.abc.tool import Tool, ToolResult
+from codeloop.abc.tool import Tool, ToolResult
 
 class MyTool(Tool):
     name = "my_tool"
@@ -43,8 +43,8 @@ See [Permission prompts](permission-prompts.md) for how `preview()` and the `con
 ## Wiring it in
 
 ```python
-from aiflow import Config
-from aiflow.core.tools import DEFAULT_TOOLS
+from codeloop import Config
+from codeloop.core.tools import DEFAULT_TOOLS
 
 config = Config(tools=DEFAULT_TOOLS + [MyTool()])
 ```

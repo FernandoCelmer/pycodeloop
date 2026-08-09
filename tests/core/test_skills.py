@@ -5,8 +5,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-import aiflow.core.local_config as local_config
-from aiflow.core.skills import (
+import codeloop.core.local_config as local_config
+from codeloop.core.skills import (
     ReadSkillTool,
     discover_skills,
     render_skills_index,

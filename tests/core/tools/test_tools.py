@@ -4,14 +4,14 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from aiflow.core.tools.filesystem import (
+from codeloop.core.tools.filesystem import (
     DeleteFileTool,
     EditFileTool,
     ListDirTool,
     ReadFileTool,
     WriteFileTool,
 )
-from aiflow.core.tools.search import GlobTool, GrepTool
+from codeloop.core.tools.search import GlobTool, GrepTool
 
 
 class ToolTestCase(unittest.TestCase):
@@ -38,11 +38,11 @@ class TestEditFileTool(ToolTestCase):
         target.write_text("hello world")
 
         result = EditFileTool().run(
-            path=str(target), old_string="world", new_string="aiflow"
+            path=str(target), old_string="world", new_string="codeloop"
         )
 
         self.assertFalse(result.is_error)
-        self.assertEqual(target.read_text(), "hello aiflow")
+        self.assertEqual(target.read_text(), "hello codeloop")
 
     def test_rejects_ambiguous_match(self):
         target = self.tmp_path / "note.txt"

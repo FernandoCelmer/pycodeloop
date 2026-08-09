@@ -1,6 +1,6 @@
 # Agent loop
 
-`Agent` (`aiflow.core.agent.Agent`) drives a `Provider` through a tool-use loop until the model stops calling tools or `max_turns` is reached:
+`Agent` (`codeloop.core.agent.Agent`) drives a `Provider` through a tool-use loop until the model stops calling tools or `max_turns` is reached:
 
 ```
 loop until max_turns:

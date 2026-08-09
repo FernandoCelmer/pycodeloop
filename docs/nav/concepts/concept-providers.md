@@ -1,6 +1,6 @@
 # Providers
 
-`Provider` (`aiflow.abc.provider.Provider`) is the interface every LLM backend implements. One method:
+`Provider` (`codeloop.abc.provider.Provider`) is the interface every LLM backend implements. One method:
 
 ```python
 def complete(
@@ -19,10 +19,10 @@ def complete(
 
 | Provider | Class | Notes |
 |----------|-------|-------|
-| Anthropic | `aiflow.providers.AnthropicProvider` | Claude models, native streaming and tool use |
-| OpenAI | `aiflow.providers.OpenAIProvider` | GPT models; `base_url` makes it work with any OpenAI-compatible server |
-| Ollama | `aiflow.providers.OllamaProvider` | `OpenAIProvider` pointed at a local Ollama server by default |
-| Generic | `aiflow.providers.GenericProvider` | Any HTTP endpoint; pluggable request/response shape, real SSE streaming |
+| Anthropic | `codeloop.providers.AnthropicProvider` | Claude models, native streaming and tool use |
+| OpenAI | `codeloop.providers.OpenAIProvider` | GPT models; `base_url` makes it work with any OpenAI-compatible server |
+| Ollama | `codeloop.providers.OllamaProvider` | `OpenAIProvider` pointed at a local Ollama server by default |
+| Generic | `codeloop.providers.GenericProvider` | Any HTTP endpoint; pluggable request/response shape, real SSE streaming |
 
 `GenericProvider` can also be built entirely from a JSON file — no Python required. See [JSON-configured providers](../development/json-provider.md).
 
@@ -35,8 +35,8 @@ When `on_delta` is given, a provider calls it with each text chunk as it arrives
 Providers are constructed and injected, never selected by a hardcoded switch:
 
 ```python
-from aiflow import Config
-from aiflow.providers import AnthropicProvider, OpenAIProvider
+from codeloop import Config
+from codeloop.providers import AnthropicProvider, OpenAIProvider
 
 config = Config(provider=AnthropicProvider(model="claude-sonnet-5"))
 # or

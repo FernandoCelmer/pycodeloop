@@ -1,4 +1,4 @@
-"""Test AIFlowApp's slash-command handling and confirm-queue staleness
+"""Test CodeLoopApp's slash-command handling and confirm-queue staleness
 (unit-level, without spinning up the full Textual app)."""
 
 import time
@@ -6,7 +6,7 @@ import unittest
 from types import SimpleNamespace
 from unittest import mock
 
-from aiflow.cli.tui import AIFlowApp
+from codeloop.cli.tui import CodeLoopApp
 
 
 def _fake_app(model="claude-sonnet-5", reloadable=False):
@@ -16,7 +16,7 @@ def _fake_app(model="claude-sonnet-5", reloadable=False):
             side_effect=lambda: setattr(provider, "model", "reloaded-model")
         )
     flow = SimpleNamespace(agent=SimpleNamespace(provider=provider))
-    app = AIFlowApp(flow, "generic", model)
+    app = CodeLoopApp(flow, "generic", model)
     app._log = mock.Mock()
     app.call_from_thread = lambda fn, *a, **k: fn(*a, **k)
     return app

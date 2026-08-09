@@ -1,9 +1,9 @@
 # Skills
 
-::: aiflow.core.skills.Skill
+::: codeloop.core.skills.Skill
 
-::: aiflow.core.skills.discover_skills
+::: codeloop.core.skills.discover_skills
 
-::: aiflow.core.skills.render_skills_index
+::: codeloop.core.skills.render_skills_index
 
-::: aiflow.core.skills.ReadSkillTool
+::: codeloop.core.skills.ReadSkillTool

@@ -4,11 +4,11 @@
 
 ## Ollama
 
-`OllamaProvider` (`aiflow.providers.OllamaProvider`) is `OpenAIProvider` pre-configured for a local Ollama server:
+`OllamaProvider` (`codeloop.providers.OllamaProvider`) is `OpenAIProvider` pre-configured for a local Ollama server:
 
 ```python
-from aiflow import Config
-from aiflow.providers import OllamaProvider
+from codeloop import Config
+from codeloop.providers import OllamaProvider
 
 config = Config(provider=OllamaProvider(model="llama3.1"))
 ```
@@ -18,7 +18,7 @@ Defaults: `base_url="http://localhost:11434/v1"`, `api_key="ollama"` (Ollama ign
 From the CLI:
 
 ```bash
-aiflow run "..." --provider ollama --model llama3.1
+codeloop run "..." --provider ollama --model llama3.1
 ```
 
 ## Any other OpenAI-compatible server
@@ -26,7 +26,7 @@ aiflow run "..." --provider ollama --model llama3.1
 LM Studio, vLLM, llama.cpp server, text-generation-webui, and similar all expose an OpenAI-compatible endpoint. Point `OpenAIProvider` at it directly:
 
 ```python
-from aiflow.providers import OpenAIProvider
+from codeloop.providers import OpenAIProvider
 
 provider = OpenAIProvider(model="my-local-model", base_url="http://localhost:8000/v1", api_key="not-needed")
 ```
@@ -34,7 +34,7 @@ provider = OpenAIProvider(model="my-local-model", base_url="http://localhost:800
 Or from the CLI with `--base-url`:
 
 ```bash
-aiflow run "..." --provider openai --model my-local-model --base-url http://localhost:8000/v1
+codeloop run "..." --provider openai --model my-local-model --base-url http://localhost:8000/v1
 ```
 
 Tool-calling support depends on the server and the model — not every local model handles the tool-use protocol as reliably as Claude or GPT. If tool calls come back malformed, try a model explicitly documented as supporting function calling.

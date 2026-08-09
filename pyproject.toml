@@ -1,11 +1,11 @@
 [project]
-name = "aiflow"
+name = "codeloop"
 version = "0.1.0"
 authors = [
   { name="Fernando Celmer", email="email@fernandocelmer.com" },
 ]
 license = {file = "LICENSE"}
-description = "AIFlow — an agentic coding assistant core and CLI, multi-provider (Anthropic, OpenAI)."
+description = "CodeLoop — an agentic coding assistant core and CLI, multi-provider (Anthropic, OpenAI)."
 readme = "README.md"
 requires-python = ">=3.10,<4.0"
 dependencies = [
@@ -41,9 +41,9 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/dotflow-io/aiflow"
-Issues = "https://github.com/dotflow-io/aiflow/issues"
-Repository = "https://github.com/dotflow-io/aiflow"
+Homepage = "https://github.com/FernandoCelmer/codeloop"
+Issues = "https://github.com/FernandoCelmer/codeloop/issues"
+Repository = "https://github.com/FernandoCelmer/codeloop"
 
 [project.optional-dependencies]
 anthropic = ["anthropic"]
@@ -52,19 +52,19 @@ mcp = ["mcp"]
 all = ["anthropic", "openai", "mcp"]
 
 [tool.poetry]
-name = "aiflow"
+name = "codeloop"
 version = "0.1.0"
-description = "AIFlow — an agentic coding assistant core and CLI, multi-provider (Anthropic, OpenAI)."
+description = "CodeLoop — an agentic coding assistant core and CLI, multi-provider (Anthropic, OpenAI)."
 authors = ["Fernando Celmer <email@fernandocelmer.com>"]
 readme = "README.md"
 license = "MIT"
 package-mode = true
-homepage = "https://github.com/dotflow-io/aiflow"
-repository = "https://github.com/dotflow-io/aiflow"
-packages = [{ include = "aiflow" }]
+homepage = "https://github.com/FernandoCelmer/codeloop"
+repository = "https://github.com/FernandoCelmer/codeloop"
+packages = [{ include = "codeloop" }]
 
 [tool.poetry.scripts]
-aiflow = "aiflow.cli.main:main"
+codeloop = "codeloop.cli.main:main"
 
 [tool.poetry.dependencies]
 python = ">=3.10.0,<4.0"

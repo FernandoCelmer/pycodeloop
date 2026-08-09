@@ -1,13 +1,13 @@
-# Contributing to AIFlow
+# Contributing to CodeLoop
 
 ## Getting Help
 
 We use GitHub issues for tracking bugs and feature requests and have limited bandwidth to address them. If you need anything, I ask you to please follow our templates for opening issues or discussions.
 
-- 🐛 [Bug Report](https://github.com/dotflow-io/aiflow/issues/new/choose)
-- 📕 [Documentation](https://github.com/dotflow-io/aiflow/issues/new/choose)
-- 🚀 [Feature Request](https://github.com/dotflow-io/aiflow/issues/new/choose)
-- 💬 [General Question](https://github.com/dotflow-io/aiflow/issues/new/choose)
+- 🐛 [Bug Report](https://github.com/FernandoCelmer/codeloop/issues/new/choose)
+- 📕 [Documentation](https://github.com/FernandoCelmer/codeloop/issues/new/choose)
+- 🚀 [Feature Request](https://github.com/FernandoCelmer/codeloop/issues/new/choose)
+- 💬 [General Question](https://github.com/FernandoCelmer/codeloop/issues/new/choose)
 
 ## Git Workflow
 
@@ -132,7 +132,7 @@ ruff format .
 ruff check .
 
 # Type check
-mypy aiflow/
+mypy codeloop/
 ```
 
 ### Tests
@@ -146,8 +146,8 @@ pytest
 ## Project Structure
 
 ```
-aiflow/
-├── aiflow/           # Main library
+codeloop/
+├── codeloop/           # Main library
 │   ├── abc/          # Abstract base classes (Provider, Tool)
 │   ├── cli/          # CLI commands and the Textual TUI
 │   ├── core/         # Agent loop, session, config, tools
@@ -161,8 +161,8 @@ aiflow/
 
 ```bash
 # Clone the repository
-git clone https://github.com/dotflow-io/aiflow.git
-cd aiflow
+git clone https://github.com/FernandoCelmer/codeloop.git
+cd codeloop
 
 # Install dependencies with Poetry
 poetry install --all-extras

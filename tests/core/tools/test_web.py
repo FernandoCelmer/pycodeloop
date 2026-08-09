@@ -5,7 +5,7 @@ from unittest import mock
 
 import httpx
 
-from aiflow.core.tools.web import WebFetchTool
+from codeloop.core.tools.web import WebFetchTool
 
 
 def _fake_public_dns(hostname, *_args, **_kwargs):
@@ -25,7 +25,7 @@ class TestWebFetchTool(unittest.TestCase):
         with (
             mock.patch("httpx.get", side_effect=lambda url, **_kw: client.get(url)),
             mock.patch(
-                "aiflow.core.tools._net.socket.getaddrinfo",
+                "codeloop.core.tools._net.socket.getaddrinfo",
                 side_effect=_fake_public_dns,
             ),
         ):
@@ -47,7 +47,7 @@ class TestWebFetchTool(unittest.TestCase):
         with (
             mock.patch("httpx.get", side_effect=lambda url, **_kw: client.get(url)),
             mock.patch(
-                "aiflow.core.tools._net.socket.getaddrinfo",
+                "codeloop.core.tools._net.socket.getaddrinfo",
                 side_effect=_fake_public_dns,
             ),
         ):
@@ -65,7 +65,7 @@ class TestWebFetchTool(unittest.TestCase):
         with (
             mock.patch("httpx.get", side_effect=lambda url, **_kw: client.get(url)),
             mock.patch(
-                "aiflow.core.tools._net.socket.getaddrinfo",
+                "codeloop.core.tools._net.socket.getaddrinfo",
                 side_effect=_fake_public_dns,
             ),
         ):
@@ -93,7 +93,7 @@ class TestWebFetchTool(unittest.TestCase):
         with (
             mock.patch("httpx.get", side_effect=lambda url, **_kw: client.get(url)),
             mock.patch(
-                "aiflow.core.tools._net.socket.getaddrinfo",
+                "codeloop.core.tools._net.socket.getaddrinfo",
                 side_effect=_fake_public_dns,
             ),
         ):

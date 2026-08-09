@@ -2,9 +2,9 @@
 
 import unittest
 
-from aiflow.abc.provider import Provider, ProviderResponse, ToolCall
-from aiflow.abc.tool import Tool, ToolResult
-from aiflow.core.agent import Agent
+from codeloop.abc.provider import Provider, ProviderResponse, ToolCall
+from codeloop.abc.tool import Tool, ToolResult
+from codeloop.core.agent import Agent
 
 
 class FakeProvider(Provider):

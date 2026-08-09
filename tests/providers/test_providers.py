@@ -5,8 +5,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from aiflow.abc.provider import Provider, ProviderResponse
-from aiflow.providers import OllamaProvider, get_provider
+from codeloop.abc.provider import Provider, ProviderResponse
+from codeloop.providers import OllamaProvider, get_provider
 
 
 class TestOllamaProvider(unittest.TestCase):
@@ -35,7 +35,7 @@ class TestGetProvider(unittest.TestCase):
 
         module_path = tmp_path / "my_custom_provider.py"
         module_path.write_text(
-            "from aiflow.abc.provider import Provider, ProviderResponse\n"
+            "from codeloop.abc.provider import Provider, ProviderResponse\n"
             "\n"
             "class MyProvider(Provider):\n"
             "    def complete(\n"

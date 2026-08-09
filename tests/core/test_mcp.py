@@ -2,7 +2,7 @@
 
 import unittest
 
-from aiflow.core.mcp import MCPTool
+from codeloop.core.mcp import MCPTool
 
 
 class FakeMCPClient:

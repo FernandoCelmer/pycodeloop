@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-import aiflow.core.local_config as local_config
+import codeloop.core.local_config as local_config
 
 
 class TestLocalConfig(unittest.TestCase):

@@ -3,7 +3,7 @@
 Every `ProviderResponse` carries a `Usage(input_tokens, output_tokens)`. `Agent` accumulates it across the whole run and exposes both the per-turn delta and the running total through the `on_usage` hook:
 
 ```python
-from aiflow.core.agent import Agent
+from codeloop.core.agent import Agent
 
 agent = Agent(
     provider=provider,
@@ -21,7 +21,7 @@ print(agent.usage)  # Usage(input_tokens=..., output_tokens=...) — cumulative 
 
 ## In the CLI
 
-`aiflow run` and the TUI print the running total after every turn:
+`codeloop run` and the TUI print the running total after every turn:
 
 ```
 🤖 1.2k in / 340 out

@@ -33,5 +33,5 @@ repos:
         entry: poetry run pytest tests/ --tb=short -q
         language: system
         types: [python]
-        files: ^(aiflow|tests)/
+        files: ^(codeloop|tests)/
         pass_filenames: false

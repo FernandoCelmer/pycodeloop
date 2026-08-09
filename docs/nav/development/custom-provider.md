@@ -1,15 +1,15 @@
 # Custom providers
 
-Any LLM backend can drive AIFlow — implement the `Provider` ABC (`aiflow.abc.provider.Provider`):
+Any LLM backend can drive CodeLoop — implement the `Provider` ABC (`codeloop.abc.provider.Provider`):
 
 ```python
-from aiflow.abc.provider import Provider, ProviderResponse, ToolCall, Usage
+from codeloop.abc.provider import Provider, ProviderResponse, ToolCall, Usage
 
 class MyProvider(Provider):
     def complete(self, system_prompt, messages, tools, on_delta=None) -> ProviderResponse:
         response = my_api.chat(
             system=system_prompt,
-            messages=messages,   # list[aiflow.core.session.Message]
+            messages=messages,   # list[codeloop.core.session.Message]
             tools=tools,         # list[dict] JSON schema per tool
         )
 
@@ -35,7 +35,7 @@ Streaming and usage tracking are both optional — return `ProviderResponse(text
 Pass an instance directly:
 
 ```python
-from aiflow import Config
+from codeloop import Config
 
 config = Config(provider=MyProvider(model="my-model"))
 ```
@@ -43,10 +43,10 @@ config = Config(provider=MyProvider(model="my-model"))
 Or load it dynamically by dotted path — useful for the CLI, which only takes strings:
 
 ```bash
-aiflow run "..." --provider "my_package.my_module:MyProvider" --model my-model
+codeloop run "..." --provider "my_package.my_module:MyProvider" --model my-model
 ```
 
-`aiflow.providers.get_provider(name, **kwargs)` treats any name containing `:` as `module.path:ClassName`, imports the module, and instantiates the class with `**kwargs`. The CLI adds the current working directory to `sys.path` at startup, so a provider class in a plain `.py` file next to where you run `aiflow` is importable without installing anything.
+`codeloop.providers.get_provider(name, **kwargs)` treats any name containing `:` as `module.path:ClassName`, imports the module, and instantiates the class with `**kwargs`. The CLI adds the current working directory to `sys.path` at startup, so a provider class in a plain `.py` file next to where you run `codeloop` is importable without installing anything.
 
 ## Validation
 

@@ -1,9 +1,9 @@
-# aiflow run
+# codeloop run
 
 Run a single prompt to completion, non-interactively.
 
 ```bash
-aiflow run "add a docstring to aiflow/core/agent.py"
+codeloop run "add a docstring to codeloop/core/agent.py"
 ```
 
 ## Options
@@ -23,16 +23,16 @@ aiflow run "add a docstring to aiflow/core/agent.py"
 
 ```bash
 # Different provider and model
-aiflow run "..." --provider openai --model gpt-5
+codeloop run "..." --provider openai --model gpt-5
 
 # Local model via Ollama
-aiflow run "..." --provider ollama --model llama3.1
+codeloop run "..." --provider ollama --model llama3.1
 
 # JSON-configured provider, no Python required
-aiflow run "..." --provider ./provider.example.json
+codeloop run "..." --provider ./provider.example.json
 
 # With an MCP server, no confirmation prompts
-aiflow run "..." --mcp "npx -y @modelcontextprotocol/server-filesystem ." --yes
+codeloop run "..." --mcp "npx -y @modelcontextprotocol/server-filesystem ." --yes
 ```
 
-See also: [`aiflow tui`](tui.md) for the full-screen interactive interface (the default with no subcommand).
+See also: [`codeloop tui`](tui.md) for the full-screen interactive interface (the default with no subcommand).

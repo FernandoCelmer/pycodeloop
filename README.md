@@ -2,56 +2,56 @@
 
 **Bring your own model. Swap providers. Ship an agent.**
 
-[![PyPI](https://img.shields.io/pypi/v/aiflow?style=flat-square)](https://pypi.org/project/aiflow/)
-[![Python](https://img.shields.io/pypi/pyversions/aiflow?style=flat-square)](https://pypi.org/project/aiflow/)
-[![Stars](https://img.shields.io/github/stars/dotflow-io?label=Stars&style=flat-square)](https://github.com/dotflow-io/aiflow)
+[![PyPI](https://img.shields.io/pypi/v/codeloop?style=flat-square)](https://pypi.org/project/codeloop/)
+[![Python](https://img.shields.io/pypi/pyversions/codeloop?style=flat-square)](https://pypi.org/project/codeloop/)
+[![Stars](https://img.shields.io/github/stars/FernandoCelmer/codeloop?label=Stars&style=flat-square)](https://github.com/FernandoCelmer/codeloop)
 
-[Repository](https://github.com/dotflow-io/aiflow)
+[Repository](https://github.com/FernandoCelmer/codeloop)
 
 </div>
 
 ---
 
-# AIFlow
+# CodeLoop
 
-AIFlow is a lightweight Python library for building agentic coding assistants — in the shape of Claude Code, Codex, or Gemini CLI. Give it a provider and a prompt, it drives a tool-use loop (read, write, edit, grep, bash, web fetch) until the task is done. Same shape everywhere: swap Anthropic for OpenAI without touching the agent loop.
+CodeLoop is a lightweight Python library for building agentic coding assistants — in the shape of Claude Code, Codex, or Gemini CLI. Give it a provider and a prompt, it drives a tool-use loop (read, write, edit, grep, bash, web fetch) until the task is done. Same shape everywhere: swap Anthropic for OpenAI without touching the agent loop.
 
-## Why AIFlow?
+## Why CodeLoop?
 
-- **Simple** — `AIFlow(config=Config(...)).run("do the thing")`. That's it.
+- **Simple** — `CodeLoop(config=Config(...)).run("do the thing")`. That's it.
 - **Multi-provider** — Anthropic, OpenAI, Ollama, any OpenAI-compatible server, or a JSON-configured/custom backend.
 - **Decoupled** — providers, tools, and the system prompt are injected, not hardcoded.
-- **Embeddable** — use it as a library inside your own app, or drive it from the `aiflow` CLI.
+- **Embeddable** — use it as a library inside your own app, or drive it from the `codeloop` CLI.
 - **Extensible tools** — read/write/edit/delete/list/glob/grep/bash/web-fetch out of the box; add your own by subclassing `Tool`.
-- **Full-screen TUI** — bare `aiflow` drops you into a Textual-based interface; `run` stays available for one-shot/scripting use.
+- **Full-screen TUI** — bare `codeloop` drops you into a Textual-based interface; `run` stays available for one-shot/scripting use.
 - **Skills-aware** — auto-discovers Claude Code, Cursor, and `AGENTS.md` skills already on disk and exposes them to the agent.
 
 ## Install
 
 ```bash
-pip install aiflow[anthropic]   # or: aiflow[openai], aiflow[all]
+pip install codeloop[anthropic]   # or: codeloop[openai], codeloop[all]
 ```
 
 ## Quick Start
 
 ```python
-from aiflow import AIFlow, Config
-from aiflow.providers import AnthropicProvider
+from codeloop import CodeLoop, Config
+from codeloop.providers import AnthropicProvider
 
 config = Config(
     provider=AnthropicProvider(model="claude-sonnet-5"),
 )
 
-flow = AIFlow(config=config)
+flow = CodeLoop(config=config)
 print(flow.run("list the files in this repo and summarize the project"))
 ```
 
 ## Optional extras
 
 ```bash
-pip install aiflow[anthropic]   # Claude
-pip install aiflow[openai]      # GPT
-pip install aiflow[all]         # both
+pip install codeloop[anthropic]   # Claude
+pip install codeloop[openai]      # GPT
+pip install codeloop[all]         # both
 ```
 
 ## Features
@@ -62,8 +62,8 @@ pip install aiflow[all]         # both
 Swap the LLM backend without touching the agent loop:
 
 ```python
-from aiflow import Config
-from aiflow.providers import AnthropicProvider, OpenAIProvider
+from codeloop import Config
+from codeloop.providers import AnthropicProvider, OpenAIProvider
 
 # Anthropic
 config = Config(provider=AnthropicProvider(model="claude-sonnet-5"))
@@ -72,24 +72,24 @@ config = Config(provider=AnthropicProvider(model="claude-sonnet-5"))
 config = Config(provider=OpenAIProvider(model="gpt-5"))
 ```
 
-Env-based defaults, resolved by `aiflow.settings.Settings` when `Config()` gets no explicit provider:
+Env-based defaults, resolved by `codeloop.settings.Settings` when `Config()` gets no explicit provider:
 
 ```bash
-export AIFLOW_PROVIDER=anthropic   # or: openai
-export AIFLOW_MODEL=claude-sonnet-5
+export CODELOOP_PROVIDER=anthropic   # or: openai
+export CODELOOP_MODEL=claude-sonnet-5
 export ANTHROPIC_API_KEY=sk-...    # or OPENAI_API_KEY
 ```
 
 Point `GenericProvider` at any OpenAI-compatible HTTP endpoint, or configure one entirely from a JSON file — no Python required:
 
 ```python
-from aiflow.providers import get_provider
+from codeloop.providers import get_provider
 
 provider = get_provider("./provider.example.json")
 ```
 
 ```bash
-aiflow run "list the files here" --provider ./provider.example.json
+codeloop run "list the files here" --provider ./provider.example.json
 ```
 
 See [`docs/examples/provider.example.json`](docs/examples/provider.example.json) and the [JSON provider guide](docs/nav/development/json-provider.md).
@@ -97,7 +97,7 @@ See [`docs/examples/provider.example.json`](docs/examples/provider.example.json)
 Bring your own backend by implementing the `Provider` ABC:
 
 ```python
-from aiflow.abc.provider import Provider, ProviderResponse
+from codeloop.abc.provider import Provider, ProviderResponse
 
 class MyProvider(Provider):
     def complete(self, system_prompt, messages, tools) -> ProviderResponse:
@@ -114,9 +114,9 @@ class MyProvider(Provider):
 The `Config` class validates and injects the pieces an agent run needs:
 
 ```python
-from aiflow import Config
-from aiflow.providers import AnthropicProvider
-from aiflow.core.tools import DEFAULT_TOOLS
+from codeloop import Config
+from codeloop.providers import AnthropicProvider
+from codeloop.core.tools import DEFAULT_TOOLS
 
 config = Config(
     provider=AnthropicProvider(model="claude-sonnet-5"),
@@ -159,7 +159,7 @@ Ships with the actions an agent needs to actually change code:
 Add your own by subclassing `Tool`:
 
 ```python
-from aiflow.abc.tool import Tool, ToolResult
+from codeloop.abc.tool import Tool, ToolResult
 
 class MyTool(Tool):
     name = "my_tool"
@@ -173,7 +173,7 @@ class MyTool(Tool):
 Mark a tool `dangerous = True` and it gets a confirmation gate before it runs — `write_file`, `edit_file`, `delete_file`, `bash`, `git_commit`, `http_request`, and every MCP tool already are. Override `preview(**kwargs)` to control what's shown at confirmation time (defaults to a diff for file tools, the command line for `bash`):
 
 ```python
-from aiflow.core.agent import Agent
+from codeloop.core.agent import Agent
 
 def confirm(name: str, preview: str) -> bool:
     print(preview)
@@ -192,7 +192,7 @@ agent = Agent(provider=provider, confirm=confirm)
 `Agent` exposes hooks for everything the terminal UI needs — streamed text, per-turn and cumulative token usage:
 
 ```python
-from aiflow.core.agent import Agent
+from codeloop.core.agent import Agent
 
 agent = Agent(
     provider=provider,
@@ -214,28 +214,28 @@ print(agent.usage)  # Usage(input_tokens=..., output_tokens=...)
 <summary><strong>MCP servers</strong></summary>
 
 ```bash
-pip install aiflow[mcp]
+pip install codeloop[mcp]
 ```
 
 Connect to any Model Context Protocol server over stdio and expose its remote tools to the agent alongside the built-in ones:
 
 ```python
-from aiflow import AIFlow, Config
-from aiflow.core.mcp import MCPServer, load_mcp_tools
-from aiflow.core.tools import DEFAULT_TOOLS
-from aiflow.providers import AnthropicProvider
+from codeloop import CodeLoop, Config
+from codeloop.core.mcp import MCPServer, load_mcp_tools
+from codeloop.core.tools import DEFAULT_TOOLS
+from codeloop.providers import AnthropicProvider
 
 server = MCPServer(command="npx", args=["-y", "@modelcontextprotocol/server-filesystem", "."])
 tools = DEFAULT_TOOLS + load_mcp_tools(server)
 
 config = Config(provider=AnthropicProvider(model="claude-sonnet-5"), tools=tools)
-flow = AIFlow(config=config)
+flow = CodeLoop(config=config)
 ```
 
 Or from the CLI, one `--mcp` flag per server:
 
 ```bash
-aiflow run "list every allowed directory" \
+codeloop run "list every allowed directory" \
   --mcp "npx -y @modelcontextprotocol/server-filesystem ."
 ```
 
@@ -251,20 +251,20 @@ aiflow run "list every allowed directory" \
 Run the agent directly from the command line:
 
 ```bash
-# Bare aiflow drops into the full-screen Textual TUI
-aiflow
+# Bare codeloop drops into the full-screen Textual TUI
+codeloop
 
 # One-shot, non-interactive (scripting/CI)
-aiflow run "add a docstring to aiflow/core/agent.py"
+codeloop run "add a docstring to codeloop/core/agent.py"
 
 # Override provider/model per invocation
-aiflow run "..." --provider openai --model gpt-5
+codeloop run "..." --provider openai --model gpt-5
 
 # Skip confirmation prompts for dangerous tools
-aiflow run "..." --yes
+codeloop run "..." --yes
 
 # Skip skills auto-discovery
-aiflow run "..." --no-skills
+codeloop run "..." --no-skills
 ```
 
 The CLI behaves like a terminal coding agent:
@@ -272,7 +272,7 @@ The CLI behaves like a terminal coding agent:
 - **Streams** the model's text as it arrives instead of waiting for the full reply.
 - **Asks before running** `write_file`, `edit_file`, `delete_file`, `bash`, `git_commit`, `http_request`, or any MCP tool — shows a diff (or the shell command) and waits for confirmation, auto-running after 3s of no response. `--yes` skips this.
 - **Reports token usage** after every turn: input/output tokens for that turn plus the running session total.
-- **Discovers skills automatically** — `SKILL.md`/`CLAUDE.md` (Claude Code), `.mdc`/`.cursorrules` (Cursor), and `AGENTS.md` files already on disk are indexed and exposed to the agent via a `read_skill` tool, cached in `~/.aiflow/config.json` until something changes. `--no-skills` turns this off; `--skills-refresh` bypasses the cache.
+- **Discovers skills automatically** — `SKILL.md`/`CLAUDE.md` (Claude Code), `.mdc`/`.cursorrules` (Cursor), and `AGENTS.md` files already on disk are indexed and exposed to the agent via a `read_skill` tool, cached in `~/.codeloop/config.json` until something changes. `--no-skills` turns this off; `--skills-refresh` bypasses the cache.
 
 ---
 
@@ -281,11 +281,11 @@ The CLI behaves like a terminal coding agent:
 <details>
 <summary><strong>Low-level Agent loop</strong></summary>
 
-`AIFlow` is a thin wrapper around `Agent` + `Session` for when you want direct control over the tool-use loop, hooks, or multi-turn state:
+`CodeLoop` is a thin wrapper around `Agent` + `Session` for when you want direct control over the tool-use loop, hooks, or multi-turn state:
 
 ```python
-from aiflow.core.agent import Agent
-from aiflow.providers import AnthropicProvider
+from codeloop.core.agent import Agent
+from codeloop.providers import AnthropicProvider
 
 def on_tool_call(name, args):
     print(f"-> {name} {args}")
@@ -318,6 +318,6 @@ reply = agent.run("fix the failing test in tests/test_agent.py")
 
 ## License
 
-![GitHub License](https://img.shields.io/github/license/dotflow-io/aiflow)
+![GitHub License](https://img.shields.io/github/license/FernandoCelmer/codeloop)
 
 This project is licensed under the terms of the MIT License.

@@ -1,3 +1,3 @@
 # Config
 
-::: aiflow.core.config.Config
+::: codeloop.core.config.Config

@@ -1,10 +1,10 @@
-site_name: AIFlow
-site_url: https://dotflow-io.github.io/aiflow/
+site_name: CodeLoop
+site_url: https://fernandocelmer.github.io/codeloop/
 site_author: Fernando Celmer
 
 copyright: Fernando Celmer
-repo_name: dotflow-io/aiflow
-repo_url: https://github.com/dotflow-io/aiflow
+repo_name: FernandoCelmer/codeloop
+repo_url: https://github.com/FernandoCelmer/codeloop
 
 theme:
   name: material
@@ -114,7 +114,7 @@ nav:
     - nav/how-to/mcp-servers.md
     - nav/how-to/skills.md
     - nav/how-to/custom-tool.md
-    - AIFlow CLI:
+    - CodeLoop CLI:
       - nav/how-to/cli/run.md
       - nav/how-to/cli/tui.md
   - Development Guide:
@@ -124,7 +124,7 @@ nav:
     - nav/development/development-guide.md
     - nav/development/release-notes.md
   - Reference:
-    - nav/reference/aiflow.md
+    - nav/reference/codeloop.md
     - nav/reference/config.md
     - nav/reference/agent.md
     - nav/reference/session.md

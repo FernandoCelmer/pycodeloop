@@ -1,11 +1,11 @@
 # Providers
 
-::: aiflow.providers.AnthropicProvider
+::: codeloop.providers.AnthropicProvider
 
-::: aiflow.providers.OpenAIProvider
+::: codeloop.providers.OpenAIProvider
 
-::: aiflow.providers.OllamaProvider
+::: codeloop.providers.OllamaProvider
 
-::: aiflow.providers.GenericProvider
+::: codeloop.providers.GenericProvider
 
-::: aiflow.providers.get_provider
+::: codeloop.providers.get_provider

@@ -1,9 +1,9 @@
 # Concepts
 
-AIFlow has four moving pieces:
+CodeLoop has four moving pieces:
 
 ```
-Config(provider, tools) → AIFlow → Agent → loop(Provider ↔ Tools) → Session
+Config(provider, tools) → CodeLoop → Agent → loop(Provider ↔ Tools) → Session
 ```
 
 - **[Agent loop](concept-agent-loop.md)** — the tool-use loop that drives a conversation until the model stops calling tools.

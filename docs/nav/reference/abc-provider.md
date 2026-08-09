@@ -1,9 +1,9 @@
 # Provider ABC
 
-::: aiflow.abc.provider.Provider
+::: codeloop.abc.provider.Provider
 
-::: aiflow.abc.provider.ProviderResponse
+::: codeloop.abc.provider.ProviderResponse
 
-::: aiflow.abc.provider.ToolCall
+::: codeloop.abc.provider.ToolCall
 
-::: aiflow.abc.provider.Usage
+::: codeloop.abc.provider.Usage

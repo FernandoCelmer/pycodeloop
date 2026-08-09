@@ -3,8 +3,8 @@
 Pass `on_text_delta` to `Agent` and it's called with each chunk of text as the model generates it, instead of only getting the assembled reply at the end:
 
 ```python
-from aiflow.core.agent import Agent
-from aiflow.providers import AnthropicProvider
+from codeloop.core.agent import Agent
+from codeloop.providers import AnthropicProvider
 
 agent = Agent(
     provider=AnthropicProvider(model="claude-sonnet-5"),
@@ -18,4 +18,4 @@ Both built-in providers (`AnthropicProvider`, `OpenAIProvider`) stream natively 
 
 ## In the CLI
 
-`aiflow run` and the TUI always stream — the reply prints as it arrives, matching a terminal coding agent's feel rather than waiting on a spinner.
+`codeloop run` and the TUI always stream — the reply prints as it arrives, matching a terminal coding agent's feel rather than waiting on a spinner.

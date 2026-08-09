@@ -5,7 +5,7 @@ from unittest import mock
 
 import httpx
 
-from aiflow.core.tools.http_request import HttpRequestTool
+from codeloop.core.tools.http_request import HttpRequestTool
 
 
 def _fake_public_dns(hostname, *_args, **_kwargs):
@@ -24,7 +24,7 @@ class TestHttpRequestTool(unittest.TestCase):
                 side_effect=lambda method, url, **kw: client.request(method, url),
             ),
             mock.patch(
-                "aiflow.core.tools._net.socket.getaddrinfo",
+                "codeloop.core.tools._net.socket.getaddrinfo",
                 side_effect=_fake_public_dns,
             ),
         ):
@@ -44,7 +44,7 @@ class TestHttpRequestTool(unittest.TestCase):
                 side_effect=lambda method, url, **kw: client.request(method, url),
             ),
             mock.patch(
-                "aiflow.core.tools._net.socket.getaddrinfo",
+                "codeloop.core.tools._net.socket.getaddrinfo",
                 side_effect=_fake_public_dns,
             ),
         ):

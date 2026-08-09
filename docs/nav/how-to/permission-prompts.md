@@ -3,7 +3,7 @@
 Tools that change state — `write_file`, `edit_file`, `delete_file`, `bash`, `git_commit`, `http_request`, and every MCP tool — are marked `dangerous = True`. Give `Agent` a `confirm` callback and it gates every dangerous call behind it:
 
 ```python
-from aiflow.core.agent import Agent
+from codeloop.core.agent import Agent
 
 def confirm(name: str, preview: str) -> bool:
     print(preview)
@@ -18,18 +18,18 @@ agent = Agent(provider=provider, confirm=confirm)
 - `False` — skip it; the model gets back `"User declined to run this tool."` and can adjust its plan.
 - Any other non-empty string — skip it and feed that text back to the model as `"User declined and said: <text>"`, so you can redirect the agent instead of just blocking it.
 
-No `confirm` callback set (the default) means dangerous tools just run — that's the library default so embedding AIFlow in an automated pipeline doesn't require wiring a prompt.
+No `confirm` callback set (the default) means dangerous tools just run — that's the library default so embedding CodeLoop in an automated pipeline doesn't require wiring a prompt.
 
 ## In the CLI
 
-`aiflow run` and the TUI show a panel with the diff (or `$ command`) and ask a yes/no question before running anything dangerous, auto-confirming after 3 seconds of no response:
+`codeloop run` and the TUI show a panel with the diff (or `$ command`) and ask a yes/no question before running anything dangerous, auto-confirming after 3 seconds of no response:
 
 ```bash
-aiflow run "delete the old config file and rewrite main.py"
+codeloop run "delete the old config file and rewrite main.py"
 ```
 
 Pass `--yes` / `-y` to skip every confirmation — equivalent to not setting `confirm` at all:
 
 ```bash
-aiflow run "..." --yes
+codeloop run "..." --yes
 ```

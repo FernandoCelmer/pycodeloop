@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from aiflow.core.tools.git import (
+from codeloop.core.tools.git import (
     GitCommitTool,
     GitDiffTool,
     GitLogTool,
