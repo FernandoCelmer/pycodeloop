@@ -23,7 +23,7 @@ AIFlow is a lightweight Python library for building agentic coding assistants �
 - **Decoupled** — providers, tools, and the system prompt are injected, not hardcoded.
 - **Embeddable** — use it as a library inside your own app, or drive it from the `aiflow` CLI.
 - **Extensible tools** — read/write/edit/delete/list/glob/grep/bash/web-fetch out of the box; add your own by subclassing `Tool`.
-- **Full-screen TUI** — bare `aiflow` drops you into a Textual-based interface; `run`/`chat` stay available for scripting.
+- **Full-screen TUI** — bare `aiflow` drops you into a Textual-based interface; `run` stays available for one-shot/scripting use.
 - **Skills-aware** — auto-discovers Claude Code, Cursor, and `AGENTS.md` skills already on disk and exposes them to the agent.
 
 ## Install
@@ -148,6 +148,13 @@ Ships with the actions an agent needs to actually change code:
 | `grep` | Regex search across files |
 | `bash` | Run a shell command with a timeout |
 | `web_fetch` | Fetch a URL and extract its text |
+| `http_request` | Call a JSON HTTP API — any method, headers, body |
+| `git_status` | Show the working tree status |
+| `git_diff` | Show unstaged or staged changes |
+| `git_log` | Show recent commit history |
+| `git_commit` | Stage and commit changes |
+| `env` | Read environment variables (secrets masked) |
+| `todo` | Track a checklist across turns in a session |
 
 Add your own by subclassing `Tool`:
 
@@ -163,7 +170,7 @@ class MyTool(Tool):
         return ToolResult(output=f"did {x}")
 ```
 
-Mark a tool `dangerous = True` and it gets a confirmation gate before it runs — `write_file`, `edit_file`, `delete_file`, `bash`, and every MCP tool already are. Override `preview(**kwargs)` to control what's shown at confirmation time (defaults to a diff for file tools, the command line for `bash`):
+Mark a tool `dangerous = True` and it gets a confirmation gate before it runs — `write_file`, `edit_file`, `delete_file`, `bash`, `git_commit`, `http_request`, and every MCP tool already are. Override `preview(**kwargs)` to control what's shown at confirmation time (defaults to a diff for file tools, the command line for `bash`):
 
 ```python
 from aiflow.core.agent import Agent
@@ -247,11 +254,8 @@ Run the agent directly from the command line:
 # Bare aiflow drops into the full-screen Textual TUI
 aiflow
 
-# One-shot
+# One-shot, non-interactive (scripting/CI)
 aiflow run "add a docstring to aiflow/core/agent.py"
-
-# Interactive plain-terminal session, conversation history kept across turns
-aiflow chat
 
 # Override provider/model per invocation
 aiflow run "..." --provider openai --model gpt-5
@@ -266,7 +270,7 @@ aiflow run "..." --no-skills
 The CLI behaves like a terminal coding agent:
 
 - **Streams** the model's text as it arrives instead of waiting for the full reply.
-- **Asks before running** `write_file`, `edit_file`, `delete_file`, `bash`, or any MCP tool — shows a colored diff (or the shell command) and waits for confirmation. `--yes` skips this.
+- **Asks before running** `write_file`, `edit_file`, `delete_file`, `bash`, `git_commit`, `http_request`, or any MCP tool — shows a diff (or the shell command) and waits for confirmation, auto-running after 3s of no response. `--yes` skips this.
 - **Reports token usage** after every turn: input/output tokens for that turn plus the running session total.
 - **Discovers skills automatically** — `SKILL.md`/`CLAUDE.md` (Claude Code), `.mdc`/`.cursorrules` (Cursor), and `AGENTS.md` files already on disk are indexed and exposed to the agent via a `read_skill` tool, cached in `~/.aiflow/config.json` until something changes. `--no-skills` turns this off; `--skills-refresh` bypasses the cache.
 

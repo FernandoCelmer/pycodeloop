@@ -35,4 +35,4 @@ aiflow run "..." --provider ./provider.example.json
 aiflow run "..." --mcp "npx -y @modelcontextprotocol/server-filesystem ." --yes
 ```
 
-See also: [`aiflow tui`](tui.md) for the full-screen interface, [`aiflow chat`](chat.md) for a plain-terminal session.
+See also: [`aiflow tui`](tui.md) for the full-screen interactive interface (the default with no subcommand).

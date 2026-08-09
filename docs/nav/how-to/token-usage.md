@@ -21,7 +21,7 @@ print(agent.usage)  # Usage(input_tokens=..., output_tokens=...) — cumulative 
 
 ## In the CLI
 
-`aiflow run` / `aiflow chat` print the running total after every turn:
+`aiflow run` and the TUI print the running total after every turn:
 
 ```
 🤖 1.2k in / 340 out

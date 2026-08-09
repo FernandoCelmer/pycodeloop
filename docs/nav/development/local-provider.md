@@ -18,7 +18,7 @@ Defaults: `base_url="http://localhost:11434/v1"`, `api_key="ollama"` (Ollama ign
 From the CLI:
 
 ```bash
-aiflow chat --provider ollama --model llama3.1
+aiflow run "..." --provider ollama --model llama3.1
 ```
 
 ## Any other OpenAI-compatible server
@@ -34,7 +34,7 @@ provider = OpenAIProvider(model="my-local-model", base_url="http://localhost:800
 Or from the CLI with `--base-url`:
 
 ```bash
-aiflow chat --provider openai --model my-local-model --base-url http://localhost:8000/v1
+aiflow run "..." --provider openai --model my-local-model --base-url http://localhost:8000/v1
 ```
 
 Tool-calling support depends on the server and the model — not every local model handles the tool-use protocol as reliably as Claude or GPT. If tool calls come back malformed, try a model explicitly documented as supporting function calling.

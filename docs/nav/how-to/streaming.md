@@ -18,4 +18,4 @@ Both built-in providers (`AnthropicProvider`, `OpenAIProvider`) stream natively 
 
 ## In the CLI
 
-`aiflow run` and `aiflow chat` always stream — the reply prints as it arrives, matching a terminal coding agent's feel rather than waiting on a spinner.
+`aiflow run` and the TUI always stream — the reply prints as it arrives, matching a terminal coding agent's feel rather than waiting on a spinner.

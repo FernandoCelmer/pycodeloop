@@ -1,13 +1,29 @@
-# How-to guides
+# Overview
 
-Step-by-step guides for using AIFlow, as a library or from the CLI.
+<div class="grid cards aiflow-howto-sections" markdown>
 
-- [Install](install.md)
-- [Quick start](quick-start.md)
-- [Streaming](streaming.md)
-- [Permission prompts](permission-prompts.md)
-- [Token usage](token-usage.md)
-- [MCP servers](mcp-servers.md)
-- [Skills](skills.md)
-- [Custom tools](custom-tool.md)
-- [AIFlow CLI](cli/run.md)
+- :material-rocket-launch-outline: __Getting Started__
+
+    ---
+
+    **Install** the library and providers you need, then follow the **quick start** to run your first agent.
+
+    [:octicons-arrow-right-24: How-to guides](install.md)
+
+- :material-tools: __Providers &amp; Tools__
+
+    ---
+
+    Wire up **streaming**, **token usage** reporting, **permission prompts** for dangerous tools, **MCP servers**, **skills** discovery, and **custom tools**.
+
+    [:octicons-arrow-right-24: How-to guides](streaming.md)
+
+- :material-console: __AIFlow CLI__
+
+    ---
+
+    Drive the agent from the terminal — **one-shot** runs (`run`) for scripting, and the full-screen **TUI** for interactive sessions.
+
+    [:octicons-arrow-right-24: How-to guides](cli/run.md)
+
+</div>

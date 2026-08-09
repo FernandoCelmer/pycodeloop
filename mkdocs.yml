@@ -34,6 +34,10 @@ theme:
   - navigation.path
   - navigation.indexes
   - search.share
+  - search.suggest
+
+extra_css:
+  - assets/style.css
 
 extra:
   python_supported_version: '3.10'
@@ -53,8 +57,15 @@ markdown_extensions:
   pymdownx.inlinehilite: null
   pymdownx.keys: null
   pymdownx.mark: null
-  pymdownx.superfences: null
+  pymdownx.superfences:
+    custom_fences:
+    - name: mermaid
+      class: mermaid
+      format: !!python/name:pymdownx.superfences.fence_code_format ''
   pymdownx.tilde: null
+  pymdownx.emoji:
+    emoji_index: !!python/name:material.extensions.emoji.twemoji
+    emoji_generator: !!python/name:material.extensions.emoji.to_svg
   pymdownx.blocks.admonition:
     types:
     - note
@@ -105,7 +116,6 @@ nav:
     - nav/how-to/custom-tool.md
     - AIFlow CLI:
       - nav/how-to/cli/run.md
-      - nav/how-to/cli/chat.md
       - nav/how-to/cli/tui.md
   - Development Guide:
     - nav/development/custom-provider.md

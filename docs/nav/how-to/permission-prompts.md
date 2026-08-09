@@ -1,6 +1,6 @@
 # Permission prompts
 
-Tools that change state — `write_file`, `edit_file`, `bash`, and every MCP tool — are marked `dangerous = True`. Give `Agent` a `confirm` callback and it gates every dangerous call behind it:
+Tools that change state — `write_file`, `edit_file`, `delete_file`, `bash`, `git_commit`, `http_request`, and every MCP tool — are marked `dangerous = True`. Give `Agent` a `confirm` callback and it gates every dangerous call behind it:
 
 ```python
 from aiflow.core.agent import Agent
@@ -12,13 +12,17 @@ def confirm(name: str, preview: str) -> bool:
 agent = Agent(provider=provider, confirm=confirm)
 ```
 
-`confirm` receives the tool name and a `preview` string — a unified diff for `write_file`/`edit_file`, the literal command line for `bash`, or `tool_name(arg=value, ...)` for MCP tools. Return `False` and the tool never runs; the model gets back `"User declined to run this tool."` instead of a result, and can adjust its plan.
+`confirm` receives the tool name and a `preview` string — a unified diff for `write_file`/`edit_file`, the literal command line for `bash`, or `tool_name(arg=value, ...)` for MCP tools. It can return:
+
+- `True` — run the tool.
+- `False` — skip it; the model gets back `"User declined to run this tool."` and can adjust its plan.
+- Any other non-empty string — skip it and feed that text back to the model as `"User declined and said: <text>"`, so you can redirect the agent instead of just blocking it.
 
 No `confirm` callback set (the default) means dangerous tools just run — that's the library default so embedding AIFlow in an automated pipeline doesn't require wiring a prompt.
 
 ## In the CLI
 
-`aiflow run` / `aiflow chat` show a colored panel (diff in green/red, `$ command` in yellow) and ask a yes/no question before running anything dangerous:
+`aiflow run` and the TUI show a panel with the diff (or `$ command`) and ask a yes/no question before running anything dangerous, auto-confirming after 3 seconds of no response:
 
 ```bash
 aiflow run "delete the old config file and rewrite main.py"

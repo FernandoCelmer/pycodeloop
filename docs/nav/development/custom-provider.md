@@ -43,7 +43,7 @@ config = Config(provider=MyProvider(model="my-model"))
 Or load it dynamically by dotted path — useful for the CLI, which only takes strings:
 
 ```bash
-aiflow chat --provider "my_package.my_module:MyProvider" --model my-model
+aiflow run "..." --provider "my_package.my_module:MyProvider" --model my-model
 ```
 
 `aiflow.providers.get_provider(name, **kwargs)` treats any name containing `:` as `module.path:ClassName`, imports the module, and instantiates the class with `**kwargs`. The CLI adds the current working directory to `sys.path` at startup, so a provider class in a plain `.py` file next to where you run `aiflow` is importable without installing anything.
