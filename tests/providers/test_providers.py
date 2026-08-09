@@ -51,9 +51,7 @@ class TestGetProvider(unittest.TestCase):
         sys.modules.pop("my_custom_provider", None)
         self.addCleanup(sys.modules.pop, "my_custom_provider", None)
 
-        provider = get_provider(
-            "my_custom_provider:MyProvider", model="local-model"
-        )
+        provider = get_provider("my_custom_provider:MyProvider", model="local-model")
 
         self.assertIsInstance(provider, Provider)
         result = provider.complete("sys", [], [])

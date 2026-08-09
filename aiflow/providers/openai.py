@@ -32,9 +32,7 @@ class OpenAIProvider(Provider):
         if self._client is None:
             import openai
 
-            self._client = openai.OpenAI(
-                api_key=self.api_key, base_url=self.base_url
-            )
+            self._client = openai.OpenAI(api_key=self.api_key, base_url=self.base_url)
         return self._client
 
     @staticmethod
@@ -54,9 +52,7 @@ class OpenAIProvider(Provider):
         ]
 
     @staticmethod
-    def _to_openai_messages(
-        system_prompt: str, messages: list[Message]
-    ) -> list[dict]:
+    def _to_openai_messages(system_prompt: str, messages: list[Message]) -> list[dict]:
         out: list[dict] = [{"role": "system", "content": system_prompt}]
         for msg in messages:
             if msg.role == "user":
@@ -117,12 +113,8 @@ class OpenAIProvider(Provider):
             ]
             stop_reason = choice.finish_reason or "stop"
             usage = Usage(
-                input_tokens=response.usage.prompt_tokens
-                if response.usage
-                else 0,
-                output_tokens=response.usage.completion_tokens
-                if response.usage
-                else 0,
+                input_tokens=response.usage.prompt_tokens if response.usage else 0,
+                output_tokens=response.usage.completion_tokens if response.usage else 0,
             )
             return ProviderResponse(
                 text=text,

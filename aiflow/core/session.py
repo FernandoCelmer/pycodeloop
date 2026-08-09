@@ -8,7 +8,7 @@ from typing import Any
 
 @dataclass
 class Message:
-    role: str  # "user" | "assistant" | "tool"
+    role: str
     content: Any
     tool_call_id: str | None = None
     tool_calls: list[dict] | None = None
@@ -23,9 +23,7 @@ class Session:
     def add_user(self, text: str) -> None:
         self.messages.append(Message(role="user", content=text))
 
-    def add_assistant(
-        self, text: str, tool_calls: list[dict] | None = None
-    ) -> None:
+    def add_assistant(self, text: str, tool_calls: list[dict] | None = None) -> None:
         self.messages.append(
             Message(role="assistant", content=text, tool_calls=tool_calls)
         )

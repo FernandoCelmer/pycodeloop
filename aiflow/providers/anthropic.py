@@ -106,9 +106,7 @@ class AnthropicProvider(Provider):
                 text += block.text
             elif block.type == "tool_use":
                 tool_calls.append(
-                    ToolCall(
-                        id=block.id, name=block.name, arguments=block.input
-                    )
+                    ToolCall(id=block.id, name=block.name, arguments=block.input)
                 )
 
         usage = Usage(

@@ -44,8 +44,7 @@ class TestDiscoverSkills(SkillsTestCase):
     def test_finds_claude_skill_md(self):
         self._write(
             ".claude/skills/mytest/SKILL.md",
-            "---\nname: mytest\ndescription: A test skill\n---\n\n"
-            "Do the thing.\n",
+            "---\nname: mytest\ndescription: A test skill\n---\n\nDo the thing.\n",
         )
 
         skills = self._discover(sources={"claude-skill"})
@@ -152,8 +151,7 @@ class TestReadSkillTool(SkillsTestCase):
     def test_returns_content(self):
         self._write(
             ".claude/skills/a/SKILL.md",
-            "---\nname: a\ndescription: does a\n---\n\n"
-            "full instructions here\n",
+            "---\nname: a\ndescription: does a\n---\n\nfull instructions here\n",
         )
         skills = self._discover(sources={"claude-skill"})
         tool = ReadSkillTool(skills)

@@ -1,179 +1,122 @@
-"""Generic Provider"""
+"""Json Provider"""
 
 from __future__ import annotations
 
 import json
+import os
 from collections.abc import Callable
+from pathlib import Path
+from typing import Any
 
-import httpx
-
-from aiflow.abc.provider import Provider, ProviderResponse, ToolCall, Usage
-from aiflow.core.session import Message
-from aiflow.providers.openai import OpenAIProvider
-
-RequestBuilder = Callable[[str, "list[Message]", "list[dict]", str], dict]
-ResponseParser = Callable[[dict], ProviderResponse]
+from aiflow.abc.provider import ProviderResponse, ToolCall, Usage
+from aiflow.providers.generic import GenericProvider
 
 
-def _default_request(
-    system_prompt: str, messages: list[Message], tools: list[dict], model: str
-) -> dict:
-    return {
-        "model": model,
-        "messages": OpenAIProvider._to_openai_messages(
-            system_prompt, messages
-        ),
-        "tools": OpenAIProvider._tool_schema(tools) if tools else None,
-    }
+def _get_path(data: Any, path: str, default: Any = None) -> Any:
+    """Dot-path lookup, e.g. 'choices.0.message.content'."""
+    current = data
+    for part in path.split("."):
+        if current is None:
+            return default
+        if isinstance(current, list):
+            try:
+                current = current[int(part)]
+            except (ValueError, IndexError):
+                return default
+        elif isinstance(current, dict):
+            current = current.get(part)
+        else:
+            return default
+    return current if current is not None else default
 
 
-def _default_response(data: dict) -> ProviderResponse:
-    choice = data["choices"][0]
-    message = choice["message"]
-
-    tool_calls = [
-        ToolCall(
-            id=call["id"],
-            name=call["function"]["name"],
-            arguments=json.loads(call["function"].get("arguments") or "{}"),
-        )
-        for call in (message.get("tool_calls") or [])
-    ]
-
-    usage = data.get("usage") or {}
-    return ProviderResponse(
-        text=message.get("content") or "",
-        tool_calls=tool_calls,
-        stop_reason=choice.get("finish_reason") or "stop",
-        usage=Usage(
-            input_tokens=usage.get("prompt_tokens", 0),
-            output_tokens=usage.get("completion_tokens", 0),
-        ),
-        raw=data,
+def _response_parser_from_paths(
+    paths: dict,
+) -> Callable[[dict], ProviderResponse]:
+    text_path = paths.get("text", "choices.0.message.content")
+    tool_calls_path = paths.get("tool_calls", "choices.0.message.tool_calls")
+    stop_reason_path = paths.get("stop_reason", "choices.0.finish_reason")
+    input_tokens_path = paths.get("input_tokens", "usage.prompt_tokens")
+    output_tokens_path = paths.get("output_tokens", "usage.completion_tokens")
+    tool_call_id_path = paths.get("tool_call_id", "id")
+    tool_call_name_path = paths.get("tool_call_name", "function.name")
+    tool_call_arguments_path = paths.get(
+        "tool_call_arguments", "function.arguments"
     )
 
-
-class GenericProvider(Provider):
-    """Any JSON chat-completions HTTP API via httpx, no vendor SDK.
-    Defaults to the OpenAI request/response shape; override
-    `request_builder`/`response_parser` for a different one."""
-
-    name = "generic"
-
-    def __init__(
-        self,
-        url: str,
-        model: str,
-        api_key: str | None = None,
-        headers: dict[str, str] | None = None,
-        request_builder: RequestBuilder | None = None,
-        response_parser: ResponseParser | None = None,
-        timeout: float = 60.0,
-        **kwargs,
-    ) -> None:
-        super().__init__(model=model, api_key=api_key, **kwargs)
-        self.url = url
-        self.headers = headers or {}
-        self.request_builder = request_builder or _default_request
-        self.response_parser = response_parser or _default_response
-        self.timeout = timeout
-        self._uses_default_parser = response_parser is None
-        self.client = httpx.Client(timeout=timeout)
-
-    def _headers(self) -> dict[str, str]:
-        headers = {"Content-Type": "application/json", **self.headers}
-        if self.api_key and "Authorization" not in headers:
-            headers["Authorization"] = f"Bearer {self.api_key}"
-        return headers
-
-    def complete(
-        self,
-        system_prompt: str,
-        messages: list[Message],
-        tools: list[dict],
-        on_delta: Callable[[str], None] | None = None,
-    ) -> ProviderResponse:
-        body = self.request_builder(system_prompt, messages, tools, self.model)
-
-        if on_delta is not None and self._uses_default_parser:
-            return self._stream(body, on_delta)
-
-        response = self.client.post(
-            self.url, json=body, headers=self._headers()
-        )
-        response.raise_for_status()
-        result = self.response_parser(response.json())
-        if on_delta is not None and result.text:
-            on_delta(result.text)
-        return result
-
-    def _stream(
-        self, body: dict, on_delta: Callable[[str], None]
-    ) -> ProviderResponse:
-        body = {**body, "stream": True}
-        text = ""
-        pending: dict[int, dict] = {}
-        stop_reason = "stop"
-        usage = Usage()
-
-        with self.client.stream(
-            "POST", self.url, json=body, headers=self._headers()
-        ) as response:
-            response.raise_for_status()
-            for line in response.iter_lines():
-                if not line or not line.startswith("data: "):
-                    continue
-                payload = line[len("data: ") :]
-                if payload == "[DONE]":
-                    break
-                chunk = json.loads(payload)
-
-                if chunk.get("usage"):
-                    usage = Usage(
-                        input_tokens=chunk["usage"].get("prompt_tokens", 0),
-                        output_tokens=chunk["usage"].get(
-                            "completion_tokens", 0
-                        ),
-                    )
-
-                choices = chunk.get("choices") or []
-                if not choices:
-                    continue
-                choice = choices[0]
-                delta = choice.get("delta") or {}
-
-                if delta.get("content"):
-                    text += delta["content"]
-                    on_delta(delta["content"])
-
-                for tc in delta.get("tool_calls") or []:
-                    index = tc.get("index", 0)
-                    acc = pending.setdefault(
-                        index, {"id": None, "name": None, "arguments": ""}
-                    )
-                    if tc.get("id"):
-                        acc["id"] = tc["id"]
-                    function = tc.get("function") or {}
-                    if function.get("name"):
-                        acc["name"] = function["name"]
-                    if function.get("arguments"):
-                        acc["arguments"] += function["arguments"]
-
-                if choice.get("finish_reason"):
-                    stop_reason = choice["finish_reason"]
-
-        tool_calls = [
-            ToolCall(
-                id=acc["id"],
-                name=acc["name"],
-                arguments=json.loads(acc["arguments"] or "{}"),
+    def parser(data: dict) -> ProviderResponse:
+        raw_tool_calls = _get_path(data, tool_calls_path, []) or []
+        tool_calls = []
+        for call in raw_tool_calls:
+            arguments = _get_path(call, tool_call_arguments_path, "{}")
+            if isinstance(arguments, str):
+                arguments = json.loads(arguments or "{}")
+            tool_calls.append(
+                ToolCall(
+                    id=_get_path(call, tool_call_id_path, ""),
+                    name=_get_path(call, tool_call_name_path, ""),
+                    arguments=arguments or {},
+                )
             )
-            for acc in pending.values()
-        ]
+
         return ProviderResponse(
-            text=text,
+            text=_get_path(data, text_path, "") or "",
             tool_calls=tool_calls,
-            stop_reason=stop_reason,
-            usage=usage,
-            raw=None,
+            stop_reason=_get_path(data, stop_reason_path, "stop") or "stop",
+            usage=Usage(
+                input_tokens=_get_path(data, input_tokens_path, 0) or 0,
+                output_tokens=_get_path(data, output_tokens_path, 0) or 0,
+            ),
+            raw=data,
         )
+
+    return parser
+
+
+def load_provider_from_json(path: str | Path) -> GenericProvider:
+    """Build a `GenericProvider` from a JSON config file — no Python
+    code needed for an HTTP LLM API close to the OpenAI chat-completions
+    shape (request body always matches it; `response_paths` only needs
+    setting for a different response shape).
+
+    Example config:
+
+        {
+          "url": "https://api.example.com/v1/chat/completions",
+          "model": "my-model",
+          "api_key_env": "MY_API_KEY",
+          "headers": {"X-Custom": "value"},
+          "timeout": 60,
+          "response_paths": {
+            "text": "choices.0.message.content",
+            "tool_calls": "choices.0.message.tool_calls",
+            "stop_reason": "choices.0.finish_reason",
+            "input_tokens": "usage.prompt_tokens",
+            "output_tokens": "usage.completion_tokens",
+            "tool_call_id": "id",
+            "tool_call_name": "function.name",
+            "tool_call_arguments": "function.arguments"
+          }
+        }
+
+    `response_paths` is optional — omit it entirely for an API that
+    already matches the OpenAI shape.
+    """
+    data = json.loads(Path(path).read_text())
+
+    api_key = data.get("api_key")
+    if not api_key and data.get("api_key_env"):
+        api_key = os.environ.get(data["api_key_env"])
+
+    response_parser = None
+    if "response_paths" in data:
+        response_parser = _response_parser_from_paths(data["response_paths"])
+
+    return GenericProvider(
+        url=data["url"],
+        model=data.get("model", ""),
+        api_key=api_key,
+        headers=data.get("headers") or {},
+        response_parser=response_parser,
+        timeout=data.get("timeout", 60.0),
+    )

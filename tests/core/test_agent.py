@@ -65,9 +65,7 @@ class TestAgent(unittest.TestCase):
                 ProviderResponse(
                     text="",
                     tool_calls=[
-                        ToolCall(
-                            id="1", name="echo", arguments={"text": "hey"}
-                        )
+                        ToolCall(id="1", name="echo", arguments={"text": "hey"})
                     ],
                 ),
                 ProviderResponse(text="done"),
@@ -92,9 +90,7 @@ class TestAgent(unittest.TestCase):
             [
                 ProviderResponse(
                     text="",
-                    tool_calls=[
-                        ToolCall(id="1", name="missing", arguments={})
-                    ],
+                    tool_calls=[ToolCall(id="1", name="missing", arguments={})],
                 ),
                 ProviderResponse(text="ok"),
             ]
@@ -103,9 +99,7 @@ class TestAgent(unittest.TestCase):
         agent = Agent(
             provider=provider,
             tools=[EchoTool()],
-            on_tool_result=lambda _name, result, _is_error: results.append(
-                result
-            ),
+            on_tool_result=lambda _name, result, _is_error: results.append(result),
         )
 
         agent.run("do it")
@@ -141,9 +135,7 @@ class TestAgent(unittest.TestCase):
                 ProviderResponse(
                     text="",
                     tool_calls=[
-                        ToolCall(
-                            id="1", name="delete_everything", arguments={}
-                        )
+                        ToolCall(id="1", name="delete_everything", arguments={})
                     ],
                 ),
                 ProviderResponse(text="ok"),
@@ -154,9 +146,7 @@ class TestAgent(unittest.TestCase):
             provider=provider,
             tools=[DeleteTool()],
             confirm=lambda _name, _preview: False,
-            on_tool_result=lambda _name, result, _is_error: results.append(
-                result
-            ),
+            on_tool_result=lambda _name, result, _is_error: results.append(result),
         )
 
         agent.run("do it")
@@ -169,9 +159,7 @@ class TestAgent(unittest.TestCase):
                 ProviderResponse(
                     text="",
                     tool_calls=[
-                        ToolCall(
-                            id="1", name="delete_everything", arguments={}
-                        )
+                        ToolCall(id="1", name="delete_everything", arguments={})
                     ],
                 ),
                 ProviderResponse(text="ok"),
@@ -182,9 +170,7 @@ class TestAgent(unittest.TestCase):
             provider=provider,
             tools=[DeleteTool()],
             confirm=lambda _name, _preview: True,
-            on_tool_result=lambda _name, result, _is_error: results.append(
-                result
-            ),
+            on_tool_result=lambda _name, result, _is_error: results.append(result),
         )
 
         agent.run("do it")
@@ -196,9 +182,7 @@ class TestAgent(unittest.TestCase):
             [
                 ProviderResponse(
                     text="",
-                    tool_calls=[
-                        ToolCall(id="1", name="echo", arguments={"text": "x"})
-                    ],
+                    tool_calls=[ToolCall(id="1", name="echo", arguments={"text": "x"})],
                 ),
                 ProviderResponse(text="done"),
             ]

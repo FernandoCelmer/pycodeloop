@@ -50,9 +50,7 @@ class Provider(ABC):
 
     name: str = "base"
 
-    def __init__(
-        self, model: str, api_key: str | None = None, **kwargs
-    ) -> None:
+    def __init__(self, model: str, api_key: str | None = None, **kwargs) -> None:
         self.model = model
         self.api_key = api_key
         self.extra = kwargs

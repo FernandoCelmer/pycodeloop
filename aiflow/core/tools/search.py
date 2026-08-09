@@ -31,9 +31,7 @@ class GrepTool(Tool):
         "required": ["pattern"],
     }
 
-    def run(
-        self, pattern: str, path: str = ".", max_results: int = 100
-    ) -> ToolResult:
+    def run(self, pattern: str, path: str = ".", max_results: int = 100) -> ToolResult:
         try:
             regex = re.compile(pattern)
         except re.error as exc:
@@ -53,9 +51,7 @@ class GrepTool(Tool):
                     if len(matches) >= max_results:
                         return ToolResult(output="\n".join(matches))
 
-        return ToolResult(
-            output="\n".join(matches) if matches else "No matches."
-        )
+        return ToolResult(output="\n".join(matches) if matches else "No matches.")
 
 
 class GlobTool(Tool):
@@ -71,9 +67,7 @@ class GlobTool(Tool):
         "required": ["pattern"],
     }
 
-    def run(
-        self, pattern: str, path: str = ".", max_results: int = 100
-    ) -> ToolResult:
+    def run(self, pattern: str, path: str = ".", max_results: int = 100) -> ToolResult:
         try:
             matches = [
                 str(p)
@@ -84,6 +78,4 @@ class GlobTool(Tool):
             return ToolResult(output=f"Invalid glob: {exc}", is_error=True)
 
         matches = sorted(matches)[:max_results]
-        return ToolResult(
-            output="\n".join(matches) if matches else "No matches."
-        )
+        return ToolResult(output="\n".join(matches) if matches else "No matches.")

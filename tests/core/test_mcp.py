@@ -49,9 +49,7 @@ class TestMCPTool(unittest.TestCase):
 
     def test_run_reports_remote_error(self):
         client = FakeMCPClient()
-        tool = MCPTool(
-            client, {"name": "boom", "description": "", "input_schema": {}}
-        )
+        tool = MCPTool(client, {"name": "boom", "description": "", "input_schema": {}})
 
         result = tool.run()
 

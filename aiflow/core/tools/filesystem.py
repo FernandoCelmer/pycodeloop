@@ -34,21 +34,16 @@ class ReadFileTool(Tool):
         "required": ["path"],
     }
 
-    def run(
-        self, path: str, offset: int = 1, limit: int | None = None
-    ) -> ToolResult:
+    def run(self, path: str, offset: int = 1, limit: int | None = None) -> ToolResult:
         try:
             lines = Path(path).read_text().splitlines()
         except OSError as exc:
-            return ToolResult(
-                output=f"Error reading {path}: {exc}", is_error=True
-            )
+            return ToolResult(output=f"Error reading {path}: {exc}", is_error=True)
 
         start = max(offset - 1, 0)
         end = start + limit if limit else len(lines)
         numbered = [
-            f"{i + start + 1}\t{line}"
-            for i, line in enumerate(lines[start:end])
+            f"{i + start + 1}\t{line}" for i, line in enumerate(lines[start:end])
         ]
         return ToolResult(output="\n".join(numbered))
 
@@ -79,9 +74,7 @@ class WriteFileTool(Tool):
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(content)
         except OSError as exc:
-            return ToolResult(
-                output=f"Error writing {path}: {exc}", is_error=True
-            )
+            return ToolResult(output=f"Error writing {path}: {exc}", is_error=True)
         return ToolResult(output=f"Wrote {len(content)} bytes to {path}")
 
 
@@ -106,15 +99,11 @@ class EditFileTool(Tool):
         try:
             text = Path(path).read_text()
         except OSError as exc:
-            return ToolResult(
-                output=f"Error reading {path}: {exc}", is_error=True
-            )
+            return ToolResult(output=f"Error reading {path}: {exc}", is_error=True)
 
         count = text.count(old_string)
         if count == 0:
-            return ToolResult(
-                output=f"old_string not found in {path}", is_error=True
-            )
+            return ToolResult(output=f"old_string not found in {path}", is_error=True)
         if count > 1 and not replace_all:
             return ToolResult(
                 output=(
@@ -182,9 +171,7 @@ class DeleteFileTool(Tool):
         try:
             Path(path).unlink()
         except OSError as exc:
-            return ToolResult(
-                output=f"Error deleting {path}: {exc}", is_error=True
-            )
+            return ToolResult(output=f"Error deleting {path}: {exc}", is_error=True)
         return ToolResult(output=f"Deleted {path}")
 
 
@@ -200,8 +187,6 @@ class ListDirTool(Tool):
         try:
             entries = sorted(Path(path).iterdir())
         except OSError as exc:
-            return ToolResult(
-                output=f"Error listing {path}: {exc}", is_error=True
-            )
+            return ToolResult(output=f"Error listing {path}: {exc}", is_error=True)
         lines = [f"{'d' if e.is_dir() else 'f'} {e.name}" for e in entries]
         return ToolResult(output="\n".join(lines))
