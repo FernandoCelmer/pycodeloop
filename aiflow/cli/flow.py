@@ -2,18 +2,19 @@
 
 from __future__ import annotations
 
+import queue
 import shlex
+import threading
 
 import typer
 from rich.panel import Panel
-from rich.prompt import Confirm
 
 from aiflow.abc.provider import Usage
 from aiflow.cli.render import (
     TurnBuffer,
     console,
-    format_args,
     format_tokens,
+    format_tool_call,
     render_preview,
     tool_icon,
 )
@@ -29,15 +30,15 @@ PROVIDER_HELP = (
     "'module.path:ClassName' for a custom Provider"
 )
 
+_CONFIRM_TIMEOUT = 3.0
+
 
 def _load_mcp_tools(specs: list[str] | None) -> list:
     tools = list(DEFAULT_TOOLS)
     for spec in specs or []:
         parts = shlex.split(spec)
         server = MCPServer(command=parts[0], args=parts[1:])
-        console.print(
-            f"{Settings.INFO_ALERT} connecting to MCP server '{spec}'"
-        )
+        console.print(f"{Settings.INFO_ALERT} connecting to MCP server '{spec}'")
         tools.extend(load_mcp_tools(server))
     return tools
 
@@ -73,9 +74,7 @@ def build_flow(
     provider_kwargs = {"model": model, "api_key": Settings.API_KEY}
     if provider_name == "generic":
         if not url:
-            console.print(
-                f"{Settings.ERROR_ALERT} --provider generic requires --url"
-            )
+            console.print(f"{Settings.ERROR_ALERT} --provider generic requires --url")
             raise typer.Exit(code=1)
         provider_kwargs["url"] = url
     elif base_url:
@@ -92,20 +91,19 @@ def build_flow(
 
     def on_tool_call(name: str, args: dict) -> None:
         buffer.flush()
-        icon = tool_icon(name)
-        preview = format_args(args)
-        console.print(
-            f"\n{icon} [bold cyan]{name}[/bold cyan] [dim]{preview}[/dim]"
-        )
+        console.print(f"\n{format_tool_call(name, args)}")
 
     def on_tool_result(name: str, result: str, is_error: bool) -> None:
         preview = result if len(result) < 500 else result[:500] + "…"
         if result == "User declined to run this tool.":
-            console.print("  [yellow]⊘ skipped[/yellow]")
+            console.print("  [dim]⊘ skipped[/dim]")
+        elif result.startswith("User declined and said: "):
+            said = result[len("User declined and said: ") :]
+            console.print(f"  [bold white]↪ redirected:[/bold white] {said}")
         elif is_error:
-            console.print(f"  [red]✗[/red] [dim]{preview}[/dim]")
+            console.print(f"  [bold white]✗[/bold white] [dim]{preview}[/dim]")
         else:
-            console.print(f"  [green]✓[/green] [dim]{preview}[/dim]")
+            console.print(f"  [bold white]✓[/bold white] [dim]{preview}[/dim]")
 
     def on_text_delta(delta: str) -> None:
         buffer.delta(delta)
@@ -120,23 +118,57 @@ def build_flow(
         )
         console.print(f"[dim]{Settings.ICON} {tokens} · {elapsed:.1f}s[/dim]")
 
-    def confirm(name: str, preview: str) -> bool:
+    answer_queue: queue.Queue = queue.Queue()
+    reader_started = False
+
+    def ensure_reader() -> None:
+        """One persistent stdin reader for the whole `run` invocation —
+        a fresh thread per confirm() call would leave orphaned threads
+        racing each other for stdin after every timeout."""
+        nonlocal reader_started
+        if reader_started:
+            return
+        reader_started = True
+
+        def read_loop() -> None:
+            while True:
+                try:
+                    answer_queue.put(input())
+                except (EOFError, KeyboardInterrupt):
+                    answer_queue.put("")
+                    return
+
+        threading.Thread(target=read_loop, daemon=True).start()
+
+    def confirm(name: str, preview: str) -> bool | str:
         if auto_approve:
             console.print("  [dim]running…[/dim]")
             return True
+
         console.print(
             Panel(
                 render_preview(preview),
                 title=f"{tool_icon(name)} {name}",
-                border_style="yellow",
+                border_style="grey50",
             )
         )
-        approved = Confirm.ask(
-            f"{Settings.QUESTION_ALERT} run '{name}'?", default=True
-        )
-        if approved:
+        console.print(f"{Settings.QUESTION_ALERT} run '{name}'? [y/n] (y): ", end="")
+
+        ensure_reader()
+        try:
+            answer = answer_queue.get(timeout=_CONFIRM_TIMEOUT)
+        except queue.Empty:
+            console.print("\n  [dim]⏱ no response — running automatically[/dim]")
+            return True
+
+        text = answer.strip()
+        lowered = text.lower()
+        if lowered in {"", "y", "yes"}:
             console.print("  [dim]running…[/dim]")
-        return approved
+            return True
+        if lowered in {"n", "no"}:
+            return False
+        return text
 
     config = Config(
         provider=provider,
@@ -145,9 +177,7 @@ def build_flow(
         skills_refresh=skills_refresh,
     )
     if config.skills:
-        console.print(
-            f"{Settings.INFO_ALERT} loaded {len(config.skills)} skill(s)"
-        )
+        console.print(f"{Settings.INFO_ALERT} loaded {len(config.skills)} skill(s)")
 
     flow = AIFlow(config=config)
     flow.agent.on_request = on_request

@@ -7,7 +7,7 @@ from pathlib import Path
 
 import typer
 
-from aiflow.cli.commands import chat, run, tui
+from aiflow.cli.commands import run, tui
 from aiflow.cli.flow import PROVIDER_HELP
 
 sys.stdout.reconfigure(line_buffering=True)
@@ -16,11 +16,8 @@ _cwd = str(Path.cwd())
 if _cwd not in sys.path:
     sys.path.insert(0, _cwd)
 
-app = typer.Typer(
-    add_completion=False, help="AIFlow — an agentic coding assistant."
-)
+app = typer.Typer(add_completion=False, help="AIFlow — an agentic coding assistant.")
 app.command()(run)
-app.command(name="chat")(chat)
 app.command(name="tui")(tui)
 
 
@@ -56,7 +53,7 @@ def default(
         help="Skip confirmation prompts for dangerous tools.",
     ),
 ) -> None:
-    """Bare `aiflow` starts the TUI; use `run`/`chat`/`tui` for control."""
+    """Bare `aiflow` starts the TUI; use `run`/`tui` for control."""
     if ctx.invoked_subcommand is None:
         tui(
             provider=provider,
