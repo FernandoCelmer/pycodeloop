@@ -23,7 +23,7 @@ CodeLoop is a lightweight Python library for building agentic coding assistants 
 - **Decoupled** — providers, tools, and the system prompt are injected, not hardcoded.
 - **Embeddable** — use it as a library inside your own app, or drive it from the `pycodeloop` CLI.
 - **Extensible tools** — read/write/edit/delete/list/glob/grep/bash/web-fetch out of the box; add your own by subclassing `Tool`.
-- **Full-screen TUI** — bare `pycodeloop` drops you into a Textual-based interface; `run` stays available for one-shot/scripting use.
+- **Full-screen chat** — bare `pycodeloop` drops you into a Textual-based interface; `run` stays available for one-shot/scripting use.
 - **Skills-aware** — auto-discovers Claude Code, Cursor, and `AGENTS.md` skills already on disk and exposes them to the agent.
 
 ## Install
@@ -136,12 +136,12 @@ config = Config(provider=provider, max_history_turns=20)
 
 Two more pluggable pieces, both optional:
 
-- **`Sessions`** — persists a `Session` by key so a conversation survives process restarts. Pass one to `Config(storage=...)` and call `CodeLoop.run(prompt, session_key=...)`. Two built-in implementations: `FileSessions` writes one JSON file per session under `~/.pycodeloop/sessions/`; `SqliteSessions` (`from pycodeloop.core.persistence.sqlite_sessions import SqliteSessions`) is a SQLAlchemy model backed by a single queryable `~/.pycodeloop/pycodeloop.db` instead.
+- **`Sessions`** — persists a `Session` by key so a conversation survives process restarts. Pass one to `Config(storage=...)` and call `CodeLoop.run(prompt, session_key=...)`. Two built-in implementations: `FileSessions` writes one JSON file per session under `~/.pycodeloop/sessions/`; `SqliteSessions` (`from pycodeloop.core.store.sqlite_sessions import SqliteSessions`) is a SQLAlchemy model backed by a single queryable `~/.pycodeloop/pycodeloop.db` instead.
 - **`Confirm`** — an ABC form of the `confirm` callback (`Agent(confirm=...)`) for when you want a reusable class instead of a closure — same `bool | str` contract, just `.ask(name, preview)` instead of calling it directly. A plain callable still works everywhere `confirm` is accepted.
 
 ```python
 from pycodeloop import CodeLoop, Config
-from pycodeloop.core.persistence.sessions import FileSessions
+from pycodeloop.core.store.file_sessions import FileSessions
 
 config = Config(provider=provider, storage=FileSessions())
 flow = CodeLoop(config=config)
@@ -274,7 +274,7 @@ pycodeloop run "list every allowed directory" \
 Run the agent directly from the command line:
 
 ```bash
-# Bare pycodeloop drops into the full-screen Textual TUI
+# Bare pycodeloop drops into the full-screen chat
 pycodeloop
 
 # One-shot, non-interactive (scripting/CI)

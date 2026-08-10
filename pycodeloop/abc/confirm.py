@@ -15,7 +15,7 @@ class Confirm(ABC):
     Gate a dangerous tool call behind a yes/no/redirect question. Pass
     an instance to `Agent(confirm=...)` — a plain
     `Callable[[str, str], bool | str]` still works too, `Confirm` just
-    gives pluggable implementations (CLI, TUI, Slack bot, ...) a shared
+    gives pluggable implementations (CLI, chat, Slack bot, ...) a shared
     interface instead of an ad-hoc function.
     """
 

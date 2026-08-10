@@ -22,7 +22,7 @@ No `confirm` callback set (the default) means dangerous tools just run — that'
 
 ## In the CLI
 
-`pycodeloop run` and the TUI show a panel with the diff (or `$ command`) and ask a yes/no question before running anything dangerous, auto-confirming after 3 seconds of no response:
+`pycodeloop run` and the chat show a panel with the diff (or `$ command`) and ask a yes/no question before running anything dangerous, auto-confirming after 3 seconds of no response:
 
 ```bash
 pycodeloop run "delete the old config file and rewrite main.py"

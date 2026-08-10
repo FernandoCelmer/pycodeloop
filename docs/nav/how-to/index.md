@@ -22,7 +22,7 @@
 
     ---
 
-    Drive the agent from the terminal — **one-shot** runs (`run`) for scripting, and the full-screen **TUI** for interactive sessions.
+    Drive the agent from the terminal — **one-shot** runs (`run`) for scripting, and the full-screen **chat** for interactive sessions.
 
     [:octicons-arrow-right-24: How-to guides](cli/run.md)
 

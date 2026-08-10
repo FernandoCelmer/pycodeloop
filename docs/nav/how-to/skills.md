@@ -36,7 +36,7 @@ config = Config(provider=..., skills=True, skill_sources={"agents-md"})
 
 ## From the CLI
 
-On by default for `run`, `chat`, and `tui`:
+On by default for both `run` and `chat`:
 
 ```bash
 pycodeloop run "..."              # skills discovered automatically

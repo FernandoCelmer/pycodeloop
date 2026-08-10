@@ -12,7 +12,7 @@
 
 CodeLoop is a lightweight Python library for building agentic coding assistants — in the shape of Claude Code, Codex, or Gemini CLI. Give it a provider and a prompt, it drives a tool-use loop (read, write, edit, grep, bash, web fetch, MCP) until the task is done.
 
-Every piece is injected, not hardcoded: swap the LLM backend, the tool set, or the system prompt without touching the agent loop. Bare `pycodeloop` starts a full-screen Textual TUI; `run` covers one-shot and scripted use. Skills already on disk (Claude Code, Cursor, `AGENTS.md`) are discovered automatically.
+Every piece is injected, not hardcoded: swap the LLM backend, the tool set, or the system prompt without touching the agent loop. Bare `pycodeloop` starts a full-screen chat; `run` covers one-shot and scripted use. Skills already on disk (Claude Code, Cursor, `AGENTS.md`) are discovered automatically.
 
 Start with the basics [here](nav/how-to/install.md).
 

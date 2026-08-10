@@ -16,7 +16,7 @@ print(flow.run("list the files in this repo and summarize the project"))
 
 ```bash
 pycodeloop run "add a docstring to pycodeloop/core/agent.py"  # one-shot, scriptable
-pycodeloop                                                 # full-screen Textual TUI (the default with no args)
+pycodeloop                                                 # full-screen chat (the default with no args)
 ```
 
 ## Low-level: Agent directly
