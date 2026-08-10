@@ -18,6 +18,7 @@ from pycodeloop.cli.render import (
     format_tokens,
     format_tool_call,
     render_preview,
+    styled_text,
     tool_icon,
 )
 from pycodeloop.core.codeloop import CodeLoop
@@ -149,11 +150,13 @@ def build_flow(
             console.print("  [dim]⊘ skipped[/dim]")
         elif result.startswith("User declined and said: "):
             said = result[len("User declined and said: ") :]
-            console.print(f"  [bold white]↪ redirected:[/bold white] {said}")
+            console.print(
+                styled_text("  [bold white]↪ redirected:[/bold white] ", said)
+            )
         elif is_error:
-            console.print(f"  [bold white]✗[/bold white] [dim]{preview}[/dim]")
+            console.print(styled_text("  [bold white]✗[/bold white] ", preview, "dim"))
         else:
-            console.print(f"  [bold white]✓[/bold white] [dim]{preview}[/dim]")
+            console.print(styled_text("  [bold white]✓[/bold white] ", preview, "dim"))
 
     def on_text_delta(delta: str) -> None:
         buffer.delta(delta)

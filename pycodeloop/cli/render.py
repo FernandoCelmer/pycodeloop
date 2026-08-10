@@ -88,6 +88,16 @@ class TurnBuffer:
         self._text = ""
 
 
+def styled_text(prefix_markup: str, plain: str, style: str = "") -> Text:
+    """A self-contained `prefix_markup` (its own tags balanced) followed
+    by `plain` appended as literal text, never parsed as markup — an
+    arbitrary `[` in tool output/file content/user text can otherwise
+    crash a Rich `Console`/Textual `Static` with a `MarkupError`."""
+    text = Text.from_markup(prefix_markup)
+    text.append(plain, style=style or None)
+    return text
+
+
 def render_preview(preview: str) -> Text:
     text = Text()
     for line in preview.splitlines(keepends=True):
