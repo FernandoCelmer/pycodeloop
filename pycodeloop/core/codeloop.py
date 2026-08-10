@@ -59,7 +59,12 @@ class CodeLoop:
 
         self.session = Session(system_prompt=self.agent.system_prompt, cwd=os.getcwd())
 
-    def run(self, prompt: str, session_key: str | None = None) -> str:
+    def run(
+        self,
+        prompt: str,
+        session_key: str | None = None,
+        images: list[str] | None = None,
+    ) -> str:
         """Run prompt to completion, keeping history across calls.
 
         Pass `session_key` with a `Config(storage=...)` configured to
@@ -67,13 +72,19 @@ class CodeLoop:
         storage before the run (falling back to the in-memory session
         on a cache miss) and saved back after.
         """
-        if session_key is not None and self.config.storage is not None:
+        can_persist = session_key is not None and self.config.storage is not None
+        if can_persist:
             stored = self.config.storage.get(session_key)
             if stored is not None:
                 self.session = stored
+            self.agent.on_message = lambda: self.config.storage.post(
+                session_key, self.session
+            )
+        else:
+            self.agent.on_message = None
 
         usage_before = self.agent.usage
-        result = self.agent.run(prompt, session=self.session)
+        result = self.agent.run(prompt, session=self.session, images=images)
         usage_after = self.agent.usage
 
         _usage_tracker.record_usage(
@@ -82,7 +93,7 @@ class CodeLoop:
             usage_after.output_tokens - usage_before.output_tokens,
         )
 
-        if session_key is not None and self.config.storage is not None:
+        if can_persist:
             self.config.storage.post(session_key, self.session)
 
         return result

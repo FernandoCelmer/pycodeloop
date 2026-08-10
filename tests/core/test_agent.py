@@ -3,7 +3,7 @@
 import unittest
 
 from pycodeloop.abc.confirm import Confirm
-from pycodeloop.abc.provider import Provider, ProviderResponse, ToolCall
+from pycodeloop.abc.provider import Provider, ProviderResponse, ToolCall, Usage
 from pycodeloop.abc.tool import Tool, ToolResult
 from pycodeloop.core.agent import Agent
 from pycodeloop.core.session import Session
@@ -269,6 +269,63 @@ class TestAgent(unittest.TestCase):
 
         self.assertEqual(len(seen), 1)
         self.assertGreaterEqual(seen[0], 0)
+
+    def test_on_context_reports_tokens_against_known_window(self):
+        provider = FakeProvider(
+            [ProviderResponse(text="hi", usage=Usage(input_tokens=42))]
+        )
+        provider.model = "claude-sonnet-5"
+        seen = []
+        agent = Agent(provider=provider, on_context=lambda *args: seen.append(args))
+
+        agent.run("hi")
+
+        self.assertEqual(seen, [(42, 200_000)])
+
+    def test_compacts_when_context_usage_crosses_threshold(self):
+        provider = FakeProvider(
+            [
+                ProviderResponse(text="reply-1", usage=Usage(input_tokens=190_000)),
+                ProviderResponse(text="reply-2", usage=Usage(input_tokens=190_000)),
+                ProviderResponse(text="summary of earlier turns"),
+                ProviderResponse(text="reply-3", usage=Usage(input_tokens=1_000)),
+            ]
+        )
+        provider.model = "claude-sonnet-5"
+        events = []
+        agent = Agent(
+            provider=provider,
+            on_compact_start=lambda: events.append("start"),
+            on_compact_end=lambda before, after: events.append((before, after)),
+        )
+        session = Session(system_prompt="sys")
+
+        agent.run("first", session=session)
+        agent.run("second", session=session)
+        agent.run("third", session=session)
+
+        self.assertEqual(events, ["start", (5, 4)])
+        self.assertEqual(session.messages[0].role, "assistant")
+        self.assertIn("summary of earlier turns", session.messages[0].content)
+        self.assertEqual(len(session.messages), 5)
+
+    def test_auto_compact_false_never_compacts(self):
+        provider = FakeProvider(
+            [
+                ProviderResponse(text="reply-1", usage=Usage(input_tokens=190_000)),
+                ProviderResponse(text="reply-2", usage=Usage(input_tokens=190_000)),
+                ProviderResponse(text="reply-3", usage=Usage(input_tokens=190_000)),
+            ]
+        )
+        provider.model = "claude-sonnet-5"
+        agent = Agent(provider=provider, auto_compact=False)
+        session = Session(system_prompt="sys")
+
+        agent.run("first", session=session)
+        agent.run("second", session=session)
+        agent.run("third", session=session)
+
+        self.assertEqual(len(session.messages), 6)
 
 
 if __name__ == "__main__":

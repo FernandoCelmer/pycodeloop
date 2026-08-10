@@ -5,7 +5,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from pycodeloop.abc.provider import Provider, ProviderResponse
+from pycodeloop.abc.provider import Provider, ProviderResponse, ToolCall
+from pycodeloop.abc.tool import Tool, ToolResult
 from pycodeloop.core import codeloop as codeloop_module
 from pycodeloop.core.codeloop import CodeLoop
 from pycodeloop.core.config import Config
@@ -26,6 +27,15 @@ class FakeProvider(Provider):
         self, system_prompt, messages, tools, on_delta=None
     ) -> ProviderResponse:
         return self._scripted.pop(0)
+
+
+class EchoTool(Tool):
+    name = "echo"
+    description = "echoes"
+    parameters = {"type": "object", "properties": {"x": {"type": "string"}}}
+
+    def run(self, x: str = "") -> ToolResult:
+        return ToolResult(output=f"echoed {x}")
 
 
 class TestCodeLoopSessionStorage(unittest.TestCase):
@@ -93,6 +103,38 @@ class TestCodeLoopSessionStorage(unittest.TestCase):
         stored = self.storage.get("s1")
         # 2 messages from the first run + 2 from the second
         self.assertEqual(len(stored.messages), 4)
+
+    def test_run_persists_incrementally_not_only_at_the_end(self):
+        """A crash mid-turn (e.g. during a long tool-call sequence)
+        shouldn't lose everything the turn already did — each message
+        must hit storage as it's added, not only after run() returns."""
+        provider = FakeProvider(
+            [
+                ProviderResponse(
+                    text="",
+                    tool_calls=[ToolCall(id="1", name="echo", arguments={"x": "a"})],
+                ),
+                ProviderResponse(text="all done"),
+            ]
+        )
+        config = Config(provider=provider, storage=self.storage, tools=[EchoTool()])
+        flow = CodeLoop(config=config)
+
+        seen_counts = []
+        original_post = self.storage.post
+
+        def spy_post(key, session):
+            seen_counts.append(len(session.messages))
+            original_post(key, session)
+
+        with mock.patch.object(self.storage, "post", side_effect=spy_post):
+            flow.run("hello", session_key="s1")
+
+        # user, assistant(tool_calls), tool_result, assistant(final), plus
+        # CodeLoop's own end-of-run save (redundant but harmless) — each
+        # save sees one more message than the last, not a single jump
+        # straight to the final count.
+        self.assertEqual(seen_counts, [1, 2, 3, 4, 4])
 
 
 if __name__ == "__main__":

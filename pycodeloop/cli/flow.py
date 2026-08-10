@@ -171,6 +171,16 @@ def build_flow(
         )
         console.print(f"[dim]{Settings.ICON} {tokens} · {elapsed:.1f}s[/dim]")
 
+    def on_context(used_tokens: int, limit_tokens: int) -> None:
+        pct = round(100 * used_tokens / limit_tokens) if limit_tokens else 0
+        console.print(f"[dim]{pct}% context used[/dim]")
+
+    def on_compact_start() -> None:
+        console.print("[dim]🗜 compacting context…[/dim]")
+
+    def on_compact_end(before: int, after: int) -> None:
+        console.print(f"[dim]✓ compacted context — {before} → {after} messages[/dim]")
+
     answer_queue: queue.Queue = queue.Queue()
     reader_started = False
 
@@ -246,4 +256,7 @@ def build_flow(
     flow.agent.on_text_delta = on_text_delta
     flow.agent.confirm = confirm
     flow.agent.on_usage = on_usage
+    flow.agent.on_context = on_context
+    flow.agent.on_compact_start = on_compact_start
+    flow.agent.on_compact_end = on_compact_end
     return flow, provider_name, model
