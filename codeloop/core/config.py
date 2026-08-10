@@ -7,12 +7,12 @@ from codeloop.abc.sessions import Sessions
 from codeloop.abc.tool import Tool
 from codeloop.core.agent import DEFAULT_SYSTEM_PROMPT
 from codeloop.core.exception import NotProviderInstance
+from codeloop.core.persistence.sqlite_sessions import SqliteSessions
 from codeloop.core.skills import (
     ReadSkillTool,
     discover_skills,
     render_skills_index,
 )
-from codeloop.core.persistence.sqlite_sessions import SqliteSessions
 from codeloop.core.tools import DEFAULT_TOOLS
 from codeloop.providers import get_provider
 from codeloop.settings import Settings
