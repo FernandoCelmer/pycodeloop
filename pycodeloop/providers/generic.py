@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import urllib.error
 import urllib.request
 from collections.abc import Callable
 from pathlib import Path
@@ -345,7 +346,13 @@ class GenericProvider(Provider):
         request = urllib.request.Request(
             self.url, data=data, headers=self._headers(), method="POST"
         )
-        return urllib.request.urlopen(request, timeout=self.timeout)
+        try:
+            return urllib.request.urlopen(request, timeout=self.timeout)
+        except urllib.error.HTTPError as exc:
+            detail = exc.read().decode(errors="replace")
+            raise urllib.error.HTTPError(
+                exc.url, exc.code, f"{exc.reason}: {detail}", exc.headers, exc.fp
+            ) from None
 
     def complete(
         self,
