@@ -1,0 +1,39 @@
+{
+  "url": "https://api.example.com/v1/chat/completions",
+  "model": "my-model",
+  "api_key": null,
+  "api_key_env": "MY_API_KEY",
+  "auth_header": "Authorization",
+  "auth_prefix": "Bearer ",
+  "headers": {
+    "X-Org": "acme"
+  },
+  "timeout": 60,
+  "request": {
+    "message_shape": "openai",
+    "tool_schema": "openai",
+    "body_paths": {
+      "model": "model",
+      "messages": "messages",
+      "tools": "tools",
+      "message_role": "role",
+      "message_content": "content",
+      "system": null
+    },
+    "params": {
+      "temperature": 0.7,
+      "max_tokens": 4096
+    }
+  },
+  "response_shape": null,
+  "response_paths": {
+    "text": "choices.0.message.content",
+    "tool_calls": "choices.0.message.tool_calls",
+    "stop_reason": "choices.0.finish_reason",
+    "input_tokens": "usage.prompt_tokens",
+    "output_tokens": "usage.completion_tokens",
+    "tool_call_id": "id",
+    "tool_call_name": "function.name",
+    "tool_call_arguments": "function.arguments"
+  }
+}

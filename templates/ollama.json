@@ -1,0 +1,5 @@
+{
+  "url": "http://localhost:11434/v1/chat/completions",
+  "model": "llama3.1",
+  "timeout": 120
+}
