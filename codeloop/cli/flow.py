@@ -34,6 +34,7 @@ PROVIDER_HELP = (
 )
 
 _CONFIRM_TIMEOUT = 3.0
+_EOF = object()
 _SESSION_IDS_SECTION = "session_ids"
 
 
@@ -169,7 +170,10 @@ def build_flow(
                 try:
                     answer_queue.put(input())
                 except (EOFError, KeyboardInterrupt):
-                    answer_queue.put("")
+                    # Distinct from a bare Enter (which legitimately means
+                    # "yes") — stdin being closed/unavailable must default
+                    # to declining, not silently approving dangerous tools.
+                    answer_queue.put(_EOF)
                     return
 
         threading.Thread(target=read_loop, daemon=True).start()
@@ -194,6 +198,10 @@ def build_flow(
         except queue.Empty:
             console.print("\n  [dim]⏱ no response — running automatically[/dim]")
             return True
+
+        if answer is _EOF:
+            console.print("\n  [dim]⊘ stdin closed — declining[/dim]")
+            return False
 
         text = answer.strip()
         lowered = text.lower()
