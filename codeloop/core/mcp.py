@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import atexit
 import threading
 from contextlib import AsyncExitStack
 from dataclasses import dataclass, field
@@ -141,8 +142,13 @@ class MCPTool(Tool):
 
 
 def load_mcp_tools(server: MCPServer) -> list[Tool]:
-    """Connect to an MCP server, return its tools as codeloop Tools."""
+    """Connect to an MCP server, return its tools as codeloop Tools.
+
+    The client's subprocess/thread are registered for cleanup at
+    interpreter exit — nothing else in the app ever called `close()`,
+    which otherwise leaked a live MCP server subprocess per connection."""
     client = MCPClient(server)
+    atexit.register(client.close)
 
     return [MCPTool(client, schema) for schema in client.list_tools()]
 
