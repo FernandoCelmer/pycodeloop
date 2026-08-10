@@ -9,8 +9,8 @@ import typer
 
 from pycodeloop.cli.flow import _load_mcp_tools, build_flow
 from pycodeloop.core.mcp import MCPServer, MCPServerRegistry
-from pycodeloop.core.persistence.local_config import JsonFileStore
-from pycodeloop.core.persistence.sqlite_sessions import SqliteSessions
+from pycodeloop.core.store.json_store import JsonFileStore
+from pycodeloop.core.store.sqlite_sessions import SqliteSessions
 from pycodeloop.providers.generic import GenericProvider
 
 # build_flow() -> Config() defaults storage to a real SqliteSessions() at

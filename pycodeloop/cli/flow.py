@@ -23,7 +23,7 @@ from pycodeloop.cli.render import (
 from pycodeloop.core.codeloop import CodeLoop
 from pycodeloop.core.config import Config
 from pycodeloop.core.mcp import MCPServer, MCPServerRegistry, load_mcp_tools
-from pycodeloop.core.persistence.local_config import default_store
+from pycodeloop.core.store.json_store import default_store
 from pycodeloop.core.tools import DEFAULT_TOOLS
 from pycodeloop.providers import get_provider
 from pycodeloop.settings import Settings
@@ -51,6 +51,21 @@ def default_session_key() -> str:
         session_id = str(uuid.uuid4())
         mapping[cwd] = session_id
         default_store.set_section(_SESSION_IDS_SECTION, mapping)
+
+    return session_id
+
+
+def new_session_key() -> str:
+    """Mint a fresh UUID for the current working directory, replacing
+    whatever `default_session_key()` would otherwise resume — the old
+    session stays in storage under its old key, just no longer linked
+    to this cwd."""
+    cwd = str(Path.cwd())
+    mapping = default_store.get_section(_SESSION_IDS_SECTION)
+
+    session_id = str(uuid.uuid4())
+    mapping[cwd] = session_id
+    default_store.set_section(_SESSION_IDS_SECTION, mapping)
 
     return session_id
 
