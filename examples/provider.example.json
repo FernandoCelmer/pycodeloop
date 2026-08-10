@@ -1,0 +1,21 @@
+{
+  "url": "https://api.example.com/v1/chat/completions",
+  "model": "my-model",
+  "api_key_env": "MY_API_KEY",
+  "headers": {
+    "X-Org": "acme"
+  },
+  "timeout": 60,
+
+  "_comment": "response_paths is optional. Omit it entirely if the API already returns the OpenAI chat-completions shape (choices[0].message.content, usage.prompt_tokens, ...). Keep it only to remap a different shape, like the example below.",
+  "response_paths": {
+    "text": "choices.0.message.content",
+    "tool_calls": "choices.0.message.tool_calls",
+    "stop_reason": "choices.0.finish_reason",
+    "input_tokens": "usage.prompt_tokens",
+    "output_tokens": "usage.completion_tokens",
+    "tool_call_id": "id",
+    "tool_call_name": "function.name",
+    "tool_call_arguments": "function.arguments"
+  }
+}
