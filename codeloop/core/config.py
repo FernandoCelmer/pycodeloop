@@ -12,6 +12,7 @@ from codeloop.core.skills import (
     discover_skills,
     render_skills_index,
 )
+from codeloop.core.persistence.sqlite_sessions import SqliteSessions
 from codeloop.core.tools import DEFAULT_TOOLS
 from codeloop.providers import get_provider
 from codeloop.settings import Settings
@@ -21,6 +22,10 @@ def _default_provider() -> Provider:
     return get_provider(
         Settings.PROVIDER, model=Settings.MODEL, api_key=Settings.API_KEY
     )
+
+
+def _default_storage() -> Sessions:
+    return SqliteSessions()
 
 
 class Config:
@@ -75,8 +80,10 @@ class Config:
 
         storage (Optional[Sessions]): Persists the session so
             `CodeLoop.run(prompt, session_key=...)` can resume a
-            conversation across process restarts. Unset means sessions
-            stay in memory only, for the life of the `CodeLoop` instance.
+            conversation across process restarts. Defaults to
+            `SqliteSessions()` (`~/.codeloop/codeloop.db`). Pass `False`
+            to keep sessions in memory only, for the life of the
+            `CodeLoop` instance.
 
     Attributes:
         provider (Provider):
@@ -99,7 +106,7 @@ class Config:
         skills: bool = False,
         skill_sources: set[str] | None = None,
         skills_refresh: bool = False,
-        storage: Sessions | None = None,
+        storage: Sessions | bool | None = None,
     ) -> None:
         self.provider = provider if provider is not None else _default_provider()
         self.tools = list(tools) if tools is not None else list(DEFAULT_TOOLS)
@@ -107,7 +114,7 @@ class Config:
         self.max_turns = max_turns
         self.max_history_turns = max_history_turns
         self.skills = self._discover_skills(skills, skill_sources, skills_refresh)
-        self.storage = storage
+        self.storage = None if storage is False else storage or _default_storage()
 
         self._validate()
 

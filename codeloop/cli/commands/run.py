@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typer
 
-from codeloop.cli.flow import PROVIDER_HELP, build_flow
+from codeloop.cli.flow import PROVIDER_HELP, build_flow, default_session_key
 from codeloop.cli.render import console
 
 
@@ -50,5 +50,5 @@ def run(
         skills=skills,
         skills_refresh=skills_refresh,
     )
-    flow.run(prompt)
+    flow.run(prompt, session_key=default_session_key())
     console.print()

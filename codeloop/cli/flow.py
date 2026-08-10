@@ -5,6 +5,7 @@ from __future__ import annotations
 import queue
 import shlex
 import threading
+from pathlib import Path
 
 import typer
 from rich.panel import Panel
@@ -31,6 +32,12 @@ PROVIDER_HELP = (
 )
 
 _CONFIRM_TIMEOUT = 3.0
+
+
+def default_session_key() -> str:
+    """One saved session per working directory, so `codeloop` resumes
+    the same conversation when run again from the same project."""
+    return str(Path.cwd())
 
 
 def _load_mcp_tools(specs: list[str] | None) -> list:
