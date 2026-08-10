@@ -7,14 +7,15 @@ import queue
 import time
 
 from rich.markdown import Markdown
-from rich.markup import escape
 from rich.panel import Panel
+from rich.text import Text
 from textual.app import App, ComposeResult
 from textual.containers import VerticalScroll
 from textual.message import Message
 from textual.widgets import Header, Static, TextArea
 
 from codeloop.abc.provider import Usage
+from codeloop.cli.flow import default_session_key
 from codeloop.cli.render import (
     format_tokens,
     format_tool_call,
@@ -66,6 +67,10 @@ class CodeLoopApp(App):
     plain-terminal chat's live redraw doesn't apply here."""
 
     CSS = """
+    Screen {
+        min-width: 20;
+        min-height: 10;
+    }
     #log {
         border: round grey;
         padding: 0 1;
@@ -85,6 +90,7 @@ class CodeLoopApp(App):
         self.flow = flow
         self.provider_name = provider_name
         self.model_name = model_name
+        self.session_key = default_session_key()
         self._text_buffer = ""
         self._awaiting_confirm = False
         self._confirm_queue: queue.Queue = queue.Queue()
@@ -124,18 +130,33 @@ class CodeLoopApp(App):
         log.mount(Static(renderable))
         log.scroll_end(animate=False)
 
+    @staticmethod
+    def _styled(prefix_markup: str, plain: str, style: str = "") -> Text:
+        """A self-contained `prefix_markup` (its own tags balanced)
+        followed by `plain` appended as literal text, never parsed as
+        markup — an arbitrary `[` in tool output/file content/user text
+        can otherwise crash the whole app with a `MarkupError` deep
+        inside Textual's compositor."""
+        text = Text.from_markup(prefix_markup)
+        text.append(plain, style=style or None)
+        return text
+
     def _handle_command(self, text: str) -> bool:
         """Handle a `/model`/`/reload` slash command. Returns True if
         `text` was a command (caller should not send it to the agent)."""
         if text == "/model":
-            self._log(f"[dim]current model: {self.flow.agent.provider.model}[/dim]")
+            self._log(
+                self._styled(
+                    "[dim]current model: ", self.flow.agent.provider.model, "dim"
+                )
+            )
             return True
 
         if text.startswith("/model "):
             self.flow.agent.provider.model = text[len("/model ") :].strip()
             self.model_name = self.flow.agent.provider.model
             self.sub_title = f"{self.provider_name}/{self.model_name}"
-            self._log(f"[dim]switched to model: {self.model_name}[/dim]")
+            self._log(self._styled("[dim]switched to model: ", self.model_name, "dim"))
             return True
 
         if text == "/reload":
@@ -149,7 +170,7 @@ class CodeLoopApp(App):
             reload()
             self.model_name = self.flow.agent.provider.model
             self.sub_title = f"{self.provider_name}/{self.model_name}"
-            self._log(f"[dim]reloaded — model: {self.model_name}[/dim]")
+            self._log(self._styled("[dim]reloaded — model: ", self.model_name, "dim"))
             return True
 
         return False
@@ -173,7 +194,7 @@ class CodeLoopApp(App):
 
         self._log(
             Panel(
-                escape(text),
+                Text(text),
                 border_style="bold white",
                 subtitle="[bold black on white] You [/bold black on white]",
                 subtitle_align="right",
@@ -192,9 +213,11 @@ class CodeLoopApp(App):
 
     async def _run_turn(self, text: str) -> None:
         try:
-            self.flow.run(text)
+            self.flow.run(text, session_key=self.session_key)
         except Exception as exc:
-            self.call_from_thread(self._log, f"[bold white]✗ Error:[/bold white] {exc}")
+            self.call_from_thread(
+                self._log, self._styled("[bold white]✗ Error:[/bold white] ", str(exc))
+            )
         finally:
             self.call_from_thread(self._finish_turn)
 
@@ -220,15 +243,18 @@ class CodeLoopApp(App):
         elif result.startswith("User declined and said: "):
             said = result[len("User declined and said: ") :]
             self.call_from_thread(
-                self._log, f"  [bold white]↪ redirected:[/bold white] {said}"
+                self._log,
+                self._styled("  [bold white]↪ redirected:[/bold white] ", said),
             )
         elif is_error:
             self.call_from_thread(
-                self._log, f"  [bold white]✗[/bold white] [dim]{preview}[/dim]"
+                self._log,
+                self._styled("  [bold white]✗[/bold white] ", preview, "dim"),
             )
         else:
             self.call_from_thread(
-                self._log, f"  [bold white]✓[/bold white] [dim]{preview}[/dim]"
+                self._log,
+                self._styled("  [bold white]✓[/bold white] ", preview, "dim"),
             )
 
     def _on_text_delta(self, delta: str) -> None:
@@ -241,7 +267,9 @@ class CodeLoopApp(App):
                 Panel(
                     Markdown(self._text_buffer),
                     border_style="grey50",
-                    subtitle=("[bold white on grey30] CodeLoop [/bold white on grey30]"),
+                    subtitle=(
+                        "[bold white on grey30] CodeLoop [/bold white on grey30]"
+                    ),
                     subtitle_align="right",
                 ),
             )
