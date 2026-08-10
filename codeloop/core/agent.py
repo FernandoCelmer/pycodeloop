@@ -73,7 +73,17 @@ class Agent:
                     return f"User declined and said: {answer}", True
                 return "User declined to run this tool.", True
 
-        result = tool.run(**arguments)
+        try:
+            result = tool.run(**arguments)
+        except Exception as exc:
+            # A tool_calls message was already added to the session before
+            # `_execute` runs — an unhandled exception here would leave it
+            # without its matching tool_result, which every provider
+            # rejects on the next call (and `Session.trim()` can't safely
+            # split them either). Report the failure as this tool's
+            # result instead of crashing the whole conversation.
+            return f"Tool '{name}' raised {exc.__class__.__name__}: {exc}", True
+
         return result.output, result.is_error
 
     def run(self, prompt: str, session: Session | None = None) -> str:
