@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import os
 import queue
 import time
@@ -23,6 +24,7 @@ from pycodeloop.cli.render import (
     render_preview,
     tool_icon,
 )
+from pycodeloop.core.clipboard import read_clipboard_image_base64
 from pycodeloop.core.codeloop import CodeLoop
 from pycodeloop.core.session import Session
 
@@ -30,6 +32,7 @@ _COMMANDS = [
     ("/model", "show or switch the current model"),
     ("/reload", "reload the provider from its JSON config"),
     ("/new", "start a new session in this project"),
+    ("/paste", "attach the clipboard's image to your next message"),
 ]
 
 
@@ -42,7 +45,11 @@ class PromptArea(TextArea):
     backslash before Enter also inserts a newline (the backslash is
     consumed) — a universal fallback that needs no terminal support at
     all, for terminals (plain Terminal.app, tmux, VS Code's integrated
-    terminal) that report every modifier combination as plain Enter."""
+    terminal) that report every modifier combination as plain Enter.
+
+    ctrl+v/cmd+v check the clipboard for an image before falling
+    through to TextArea's own paste-as-text binding, which would
+    otherwise consume the key first and paste-as-text always wins."""
 
     class Submitted(Message):
         def __init__(self, value: str) -> None:
@@ -62,13 +69,20 @@ class PromptArea(TextArea):
                 event.prevent_default()
                 event.stop()
                 return
-            if event.key in ("enter", "tab") and menu.highlighted_option is not None:
+            if event.key == "tab" and menu.highlighted_option is not None:
                 self.text = f"{menu.highlighted_option.id} "
                 self.move_cursor(self.document.end)
                 self.app.hide_command_menu()
                 event.prevent_default()
                 event.stop()
                 return
+            if event.key == "enter" and menu.highlighted_option is not None:
+                if self.text.strip() != menu.highlighted_option.id:
+                    self.text = f"{menu.highlighted_option.id} "
+                    self.move_cursor(self.document.end)
+                    event.prevent_default()
+                    event.stop()
+                self.app.hide_command_menu()
             if event.key == "escape":
                 self.app.hide_command_menu()
                 event.prevent_default()
@@ -91,6 +105,13 @@ class PromptArea(TextArea):
             event.stop()
             self.insert("\n")
             return
+        if event.key in ("ctrl+v", "cmd+v"):
+            image = await asyncio.to_thread(read_clipboard_image_base64)
+            if image is not None:
+                event.prevent_default()
+                event.stop()
+                self.app.attach_image(image)
+                return
         await super()._on_key(event)
 
 
@@ -132,13 +153,15 @@ class CodeLoopApp(App):
         self.provider_name = provider_name
         self.model_name = model_name
         self.session_key = default_session_key()
+        self._context_pct: int | None = None
         self._text_buffer = ""
         self._awaiting_confirm = False
         self._confirm_queue: queue.Queue = queue.Queue()
         self._stale_confirm_answer = False
         self._stale_expires_at = 0.0
         self._busy = False
-        self._pending: list[str] = []
+        self._pending: list[tuple[str, list[str] | None]] = []
+        self._pending_images: list[str] = []
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -173,7 +196,7 @@ class CodeLoopApp(App):
 
     def on_mount(self) -> None:
         self.title = "CodeLoop"
-        self.sub_title = f"{self.provider_name}/{self.model_name}"
+        self._update_subtitle()
         self._log(
             Panel(
                 f"[bold white]CodeLoop[/bold white] ready\n"
@@ -191,6 +214,9 @@ class CodeLoopApp(App):
         self.flow.agent.on_tool_result = self._on_tool_result
         self.flow.agent.on_text_delta = self._on_text_delta
         self.flow.agent.on_usage = self._on_usage
+        self.flow.agent.on_context = self._on_context
+        self.flow.agent.on_compact_start = self._on_compact_start
+        self.flow.agent.on_compact_end = self._on_compact_end
         self.flow.agent.confirm = self._confirm
 
     def _restore_history(self) -> None:
@@ -257,7 +283,7 @@ class CodeLoopApp(App):
         if text.startswith("/model "):
             self.flow.agent.provider.model = text[len("/model ") :].strip()
             self.model_name = self.flow.agent.provider.model
-            self.sub_title = f"{self.provider_name}/{self.model_name}"
+            self._update_subtitle()
             self._log(self._styled("[dim]switched to model: ", self.model_name, "dim"))
             return True
 
@@ -273,6 +299,10 @@ class CodeLoopApp(App):
             )
             return True
 
+        if text == "/paste":
+            self.run_worker(self._paste_from_command(), thread=True)
+            return True
+
         if text == "/reload":
             reload = getattr(self.flow.agent.provider, "reload", None)
             if reload is None:
@@ -283,7 +313,7 @@ class CodeLoopApp(App):
                 return True
             reload()
             self.model_name = self.flow.agent.provider.model
-            self.sub_title = f"{self.provider_name}/{self.model_name}"
+            self._update_subtitle()
             self._log(self._styled("[dim]reloaded — model: ", self.model_name, "dim"))
             return True
 
@@ -306,28 +336,43 @@ class CodeLoopApp(App):
         if self._handle_command(text):
             return
 
+        images = self._pending_images or None
+        self._pending_images = []
+
+        label = "You" if not images else f"You ({len(images)} image(s))"
         self._log(
             Panel(
                 Text(text),
                 border_style="bold white",
-                subtitle="[bold black on white] You [/bold black on white]",
+                subtitle=f"[bold black on white] {label} [/bold black on white]",
                 subtitle_align="right",
             )
         )
 
         if self._busy:
-            self._pending.append(text)
+            self._pending.append((text, images))
             return
 
-        self._start_turn(text)
+        self._start_turn(text, images)
 
-    def _start_turn(self, text: str) -> None:
+    def attach_image(self, image: str) -> None:
+        self._pending_images.append(image)
+        self._log(f"[dim]📎 image attached ({len(self._pending_images)} pending)[/dim]")
+
+    async def _paste_from_command(self) -> None:
+        image = await asyncio.to_thread(read_clipboard_image_base64)
+        if image is None:
+            self.call_from_thread(self._log, "[dim]⊘ no image on the clipboard[/dim]")
+            return
+        self.call_from_thread(self.attach_image, image)
+
+    def _start_turn(self, text: str, images: list[str] | None = None) -> None:
         self._busy = True
-        self.run_worker(self._run_turn(text), thread=True)
+        self.run_worker(self._run_turn(text, images), thread=True)
 
-    async def _run_turn(self, text: str) -> None:
+    async def _run_turn(self, text: str, images: list[str] | None = None) -> None:
         try:
-            self.flow.run(text, session_key=self.session_key)
+            self.flow.run(text, session_key=self.session_key, images=images)
         except Exception as exc:
             self.call_from_thread(
                 self._log, self._styled("[bold white]✗ Error:[/bold white] ", str(exc))
@@ -338,13 +383,36 @@ class CodeLoopApp(App):
     def _finish_turn(self) -> None:
         self._busy = False
         if self._pending:
-            self._start_turn(self._pending.pop(0))
+            text, images = self._pending.pop(0)
+            self._start_turn(text, images)
 
     def _on_request(self, message_count: int, tool_count: int) -> None:
         self.call_from_thread(
             self._log,
             f"[dim]💭 {self.provider_name}/{self.model_name} — "
             f"{message_count} msg, {tool_count} tools…[/dim]",
+        )
+
+    def _on_context(self, used_tokens: int, limit_tokens: int) -> None:
+        self._context_pct = (
+            round(100 * used_tokens / limit_tokens) if limit_tokens else 0
+        )
+        self.call_from_thread(self._update_subtitle)
+
+    def _on_compact_start(self) -> None:
+        self.call_from_thread(self._log, "[dim]🗜 compacting context…[/dim]")
+
+    def _on_compact_end(self, before: int, after: int) -> None:
+        self.call_from_thread(
+            self._log, f"[dim]✓ compacted context — {before} → {after} messages[/dim]"
+        )
+
+    def _update_subtitle(self) -> None:
+        base = f"{self.provider_name}/{self.model_name}"
+        self.sub_title = (
+            f"{base} · {self._context_pct}% context"
+            if self._context_pct is not None
+            else base
         )
 
     def _on_tool_call(self, name: str, args: dict) -> None:
