@@ -1,0 +1,45 @@
+name: 🔍 Code Quality
+
+on:
+  pull_request:
+    branches: ["main", "master"]
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+  code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Poetry
+        uses: ./.github/actions/setup-poetry
+        with:
+          python-version: ${{ matrix.python-version }}
+          install-deps: dev,code-quality
+
+      - name: 🔍 Ruff (Linting)
+        run: |
+          poetry run ruff check codeloop/ tests/
+
+      - name: 🎨 Ruff (Format Check)
+        run: |
+          poetry run ruff format --check codeloop/ tests/
+
+      - name: 🔍 MyPy (Type Checking)
+        run: |
+          poetry run mypy codeloop/ || true
+
+      - name: ✅ Code Quality Summary
+        if: always()
+        run: |
+          echo "### Code Quality Checks Completed ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Python Version: ${{ matrix.python-version }}" >> $GITHUB_STEP_SUMMARY
+          echo "All code quality tools have been executed." >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,46 @@
+name: 📦 Package PyPI-Test
+
+on:
+  push:
+    branches: ["pypi"]
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  test:
+    name: Run Tests
+    uses: ./.github/workflows/test.yml
+    secrets: inherit
+
+  code-quality:
+    name: Code Quality Checks
+    uses: ./.github/workflows/code-quality.yml
+    secrets: inherit
+
+  deploy:
+    name: Deploy to TestPyPI
+    needs: [test, code-quality]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🔍 Verify version
+        uses: ./.github/actions/verify-version
+
+      - name: 📦 Build Package
+        uses: ./.github/actions/build-package
+        with:
+          python-version: "3.11"
+
+      - name: 📦 Publish Package to Test PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          skip-existing: true
+          verbose: true
