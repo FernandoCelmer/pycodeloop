@@ -1,5 +1,5 @@
 [project]
-name = "codeloop"
+name = "pycodeloop"
 version = "0.1.0"
 authors = [
   { name="Fernando Celmer", email="email@fernandocelmer.com" },
@@ -42,9 +42,9 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/FernandoCelmer/codeloop"
-Issues = "https://github.com/FernandoCelmer/codeloop/issues"
-Repository = "https://github.com/FernandoCelmer/codeloop"
+Homepage = "https://github.com/FernandoCelmer/pycodeloop"
+Issues = "https://github.com/FernandoCelmer/pycodeloop/issues"
+Repository = "https://github.com/FernandoCelmer/pycodeloop"
 
 [project.optional-dependencies]
 anthropic = ["anthropic"]
@@ -53,19 +53,19 @@ mcp = ["mcp"]
 all = ["anthropic", "openai", "mcp"]
 
 [tool.poetry]
-name = "codeloop"
+name = "pycodeloop"
 version = "0.1.0"
 description = "CodeLoop — an agentic coding assistant core and CLI, multi-provider (Anthropic, OpenAI)."
 authors = ["Fernando Celmer <email@fernandocelmer.com>"]
 readme = "README.md"
 license = "MIT"
 package-mode = true
-homepage = "https://github.com/FernandoCelmer/codeloop"
-repository = "https://github.com/FernandoCelmer/codeloop"
-packages = [{ include = "codeloop" }]
+homepage = "https://github.com/FernandoCelmer/pycodeloop"
+repository = "https://github.com/FernandoCelmer/pycodeloop"
+packages = [{ include = "pycodeloop" }]
 
 [tool.poetry.scripts]
-codeloop = "codeloop.cli.main:main"
+pycodeloop = "pycodeloop.cli.main:main"
 
 [tool.poetry.dependencies]
 python = ">=3.10.0,<4.0"

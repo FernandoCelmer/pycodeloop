@@ -1,19 +1,19 @@
 # Tools
 
-::: codeloop.core.tools.filesystem.ReadFileTool
+::: pycodeloop.core.tools.filesystem.ReadFileTool
 
-::: codeloop.core.tools.filesystem.WriteFileTool
+::: pycodeloop.core.tools.filesystem.WriteFileTool
 
-::: codeloop.core.tools.filesystem.EditFileTool
+::: pycodeloop.core.tools.filesystem.EditFileTool
 
-::: codeloop.core.tools.filesystem.DeleteFileTool
+::: pycodeloop.core.tools.filesystem.DeleteFileTool
 
-::: codeloop.core.tools.filesystem.ListDirTool
+::: pycodeloop.core.tools.filesystem.ListDirTool
 
-::: codeloop.core.tools.search.GlobTool
+::: pycodeloop.core.tools.search.GlobTool
 
-::: codeloop.core.tools.search.GrepTool
+::: pycodeloop.core.tools.search.GrepTool
 
-::: codeloop.core.tools.bash.BashTool
+::: pycodeloop.core.tools.bash.BashTool
 
-::: codeloop.core.tools.web.WebFetchTool
+::: pycodeloop.core.tools.web.WebFetchTool

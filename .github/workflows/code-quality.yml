@@ -26,15 +26,15 @@ jobs:
 
       - name: 🔍 Ruff (Linting)
         run: |
-          poetry run ruff check codeloop/ tests/
+          poetry run ruff check pycodeloop/ tests/
 
       - name: 🎨 Ruff (Format Check)
         run: |
-          poetry run ruff format --check codeloop/ tests/
+          poetry run ruff format --check pycodeloop/ tests/
 
       - name: 🔍 MyPy (Type Checking)
         run: |
-          poetry run mypy codeloop/ || true
+          poetry run mypy pycodeloop/ || true
 
       - name: ✅ Code Quality Summary
         if: always()

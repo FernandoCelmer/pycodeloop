@@ -1,15 +1,15 @@
 # Custom providers
 
-Any LLM backend can drive CodeLoop — implement the `Provider` ABC (`codeloop.abc.provider.Provider`):
+Any LLM backend can drive CodeLoop — implement the `Provider` ABC (`pycodeloop.abc.provider.Provider`):
 
 ```python
-from codeloop.abc.provider import Provider, ProviderResponse, ToolCall, Usage
+from pycodeloop.abc.provider import Provider, ProviderResponse, ToolCall, Usage
 
 class MyProvider(Provider):
     def complete(self, system_prompt, messages, tools, on_delta=None) -> ProviderResponse:
         response = my_api.chat(
             system=system_prompt,
-            messages=messages,   # list[codeloop.core.session.Message]
+            messages=messages,   # list[pycodeloop.core.session.Message]
             tools=tools,         # list[dict] JSON schema per tool
         )
 
@@ -35,7 +35,7 @@ Streaming and usage tracking are both optional — return `ProviderResponse(text
 Pass an instance directly:
 
 ```python
-from codeloop import Config
+from pycodeloop import Config
 
 config = Config(provider=MyProvider(model="my-model"))
 ```
@@ -43,10 +43,10 @@ config = Config(provider=MyProvider(model="my-model"))
 Or load it dynamically by dotted path — useful for the CLI, which only takes strings:
 
 ```bash
-codeloop run "..." --provider "my_package.my_module:MyProvider" --model my-model
+pycodeloop run "..." --provider "my_package.my_module:MyProvider" --model my-model
 ```
 
-`codeloop.providers.get_provider(name, **kwargs)` treats any name containing `:` as `module.path:ClassName`, imports the module, and instantiates the class with `**kwargs`. The CLI adds the current working directory to `sys.path` at startup, so a provider class in a plain `.py` file next to where you run `codeloop` is importable without installing anything.
+`pycodeloop.providers.get_provider(name, **kwargs)` treats any name containing `:` as `module.path:ClassName`, imports the module, and instantiates the class with `**kwargs`. The CLI adds the current working directory to `sys.path` at startup, so a provider class in a plain `.py` file next to where you run `pycodeloop` is importable without installing anything.
 
 ## Validation
 

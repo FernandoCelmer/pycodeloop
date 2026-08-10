@@ -7,10 +7,29 @@ from unittest import mock
 
 import typer
 
-from codeloop.cli.flow import _load_mcp_tools, build_flow
-from codeloop.core.mcp import MCPServer, MCPServerRegistry
-from codeloop.core.persistence.local_config import JsonFileStore
-from codeloop.providers.generic import GenericProvider
+from pycodeloop.cli.flow import _load_mcp_tools, build_flow
+from pycodeloop.core.mcp import MCPServer, MCPServerRegistry
+from pycodeloop.core.persistence.local_config import JsonFileStore
+from pycodeloop.core.persistence.sqlite_sessions import SqliteSessions
+from pycodeloop.providers.generic import GenericProvider
+
+# build_flow() -> Config() defaults storage to a real SqliteSessions() at
+# ~/.pycodeloop/pycodeloop.db when not given one explicitly — every test
+# in this module would otherwise write to the real user's database.
+_tmpdir = tempfile.TemporaryDirectory()
+_default_storage_patcher = mock.patch(
+    "pycodeloop.core.config._default_storage",
+    lambda: SqliteSessions(path=Path(_tmpdir.name) / "pycodeloop.db"),
+)
+
+
+def setUpModule():
+    _default_storage_patcher.start()
+
+
+def tearDownModule():
+    _default_storage_patcher.stop()
+    _tmpdir.cleanup()
 
 
 class TestBuildFlowGenericProvider(unittest.TestCase):
@@ -75,7 +94,7 @@ class TestBuildFlowCallbackWiring(unittest.TestCase):
             url="http://fake/v1/chat/completions",
         )
 
-        with mock.patch("codeloop.cli.flow._CONFIRM_TIMEOUT", 0.05):
+        with mock.patch("pycodeloop.cli.flow._CONFIRM_TIMEOUT", 0.05):
             # No stdin input is available in a test process, so the
             # background reader thread just blocks on input() forever
             # and this must time out and auto-confirm rather than hang.
@@ -90,7 +109,7 @@ class TestLoadMcpToolsSavedServers(unittest.TestCase):
         self.addCleanup(self._tmpdir.cleanup)
 
         store = JsonFileStore(Path(self._tmpdir.name) / "config.json")
-        patcher = mock.patch("codeloop.core.mcp.default_store", store)
+        patcher = mock.patch("pycodeloop.core.mcp.default_store", store)
         patcher.start()
         self.addCleanup(patcher.stop)
 
@@ -100,7 +119,7 @@ class TestLoadMcpToolsSavedServers(unittest.TestCase):
         )
 
         with mock.patch(
-            "codeloop.cli.flow.load_mcp_tools", return_value=[]
+            "pycodeloop.cli.flow.load_mcp_tools", return_value=[]
         ) as load_tools:
             _load_mcp_tools(["saved:fs"])
 

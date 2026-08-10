@@ -2,7 +2,7 @@
 
 import unittest
 
-from codeloop.core.session import Session
+from pycodeloop.core.session import Session
 
 
 def _add_turn(session: Session, user_text: str, assistant_text: str) -> None:

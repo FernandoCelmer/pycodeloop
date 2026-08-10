@@ -5,14 +5,14 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from codeloop.abc.provider import Provider, ProviderResponse
-from codeloop.core import codeloop as codeloop_module
-from codeloop.core.codeloop import CodeLoop
-from codeloop.core.config import Config
-from codeloop.core.persistence import sessions as sessions_module
-from codeloop.core.persistence.local_config import JsonFileStore
-from codeloop.core.persistence.sessions import FileSessions
-from codeloop.core.persistence.usage import UsageTracker
+from pycodeloop.abc.provider import Provider, ProviderResponse
+from pycodeloop.core import codeloop as codeloop_module
+from pycodeloop.core.codeloop import CodeLoop
+from pycodeloop.core.config import Config
+from pycodeloop.core.persistence import sessions as sessions_module
+from pycodeloop.core.persistence.local_config import JsonFileStore
+from pycodeloop.core.persistence.sessions import FileSessions
+from pycodeloop.core.persistence.usage import UsageTracker
 
 
 class FakeProvider(Provider):
@@ -35,7 +35,7 @@ class TestCodeLoopSessionStorage(unittest.TestCase):
         self.storage = FileSessions(directory=Path(self._tmpdir.name))
 
         # FileSessions' session index and usage tracking both write to
-        # ~/.codeloop/config.json — redirect that to a scratch file so
+        # ~/.pycodeloop/config.json — redirect that to a scratch file so
         # tests never touch the real user config.
         store = JsonFileStore(Path(self._tmpdir.name) / "config.json")
 

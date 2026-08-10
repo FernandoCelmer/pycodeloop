@@ -1,9 +1,9 @@
-# codeloop run
+# pycodeloop run
 
 Run a single prompt to completion, non-interactively.
 
 ```bash
-codeloop run "add a docstring to codeloop/core/agent.py"
+pycodeloop run "add a docstring to pycodeloop/core/agent.py"
 ```
 
 ## Options
@@ -23,16 +23,16 @@ codeloop run "add a docstring to codeloop/core/agent.py"
 
 ```bash
 # Different provider and model
-codeloop run "..." --provider openai --model gpt-5
+pycodeloop run "..." --provider openai --model gpt-5
 
 # Local model via Ollama
-codeloop run "..." --provider ollama --model llama3.1
+pycodeloop run "..." --provider ollama --model llama3.1
 
 # JSON-configured provider, no Python required
-codeloop run "..." --provider ./provider.example.json
+pycodeloop run "..." --provider ./provider.example.json
 
 # With an MCP server, no confirmation prompts
-codeloop run "..." --mcp "npx -y @modelcontextprotocol/server-filesystem ." --yes
+pycodeloop run "..." --mcp "npx -y @modelcontextprotocol/server-filesystem ." --yes
 ```
 
-See also: [`codeloop tui`](tui.md) for the full-screen interactive interface (the default with no subcommand).
+See also: [`pycodeloop tui`](tui.md) for the full-screen interactive interface (the default with no subcommand).

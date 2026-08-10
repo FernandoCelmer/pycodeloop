@@ -5,9 +5,9 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-import codeloop.core.skills as skills_module
-from codeloop.core.persistence.local_config import JsonFileStore
-from codeloop.core.skills import (
+import pycodeloop.core.skills as skills_module
+from pycodeloop.core.persistence.local_config import JsonFileStore
+from pycodeloop.core.skills import (
     ReadSkillTool,
     discover_skills,
     render_skills_index,

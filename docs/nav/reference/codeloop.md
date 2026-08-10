@@ -1,3 +1,3 @@
 # CodeLoop
 
-::: codeloop.core.codeloop.CodeLoop
+::: pycodeloop.core.codeloop.CodeLoop

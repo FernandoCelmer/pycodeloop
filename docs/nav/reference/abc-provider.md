@@ -1,9 +1,9 @@
 # Provider ABC
 
-::: codeloop.abc.provider.Provider
+::: pycodeloop.abc.provider.Provider
 
-::: codeloop.abc.provider.ProviderResponse
+::: pycodeloop.abc.provider.ProviderResponse
 
-::: codeloop.abc.provider.ToolCall
+::: pycodeloop.abc.provider.ToolCall
 
-::: codeloop.abc.provider.Usage
+::: pycodeloop.abc.provider.Usage

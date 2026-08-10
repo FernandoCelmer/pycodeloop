@@ -5,7 +5,7 @@ import unittest
 
 from rich.console import Console
 
-from codeloop.cli.render import (
+from pycodeloop.cli.render import (
     TurnBuffer,
     format_args,
     format_tokens,

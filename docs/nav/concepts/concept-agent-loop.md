@@ -1,6 +1,6 @@
 # Agent loop
 
-`Agent` (`codeloop.core.agent.Agent`) drives a `Provider` through a tool-use loop until the model stops calling tools or `max_turns` is reached:
+`Agent` (`pycodeloop.core.agent.Agent`) drives a `Provider` through a tool-use loop until the model stops calling tools or `max_turns` is reached:
 
 ```
 loop until max_turns:

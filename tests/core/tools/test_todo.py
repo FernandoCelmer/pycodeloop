@@ -2,7 +2,7 @@
 
 import unittest
 
-from codeloop.core.tools.todo import TodoTool
+from pycodeloop.core.tools.todo import TodoTool
 
 
 class TestTodoTool(unittest.TestCase):

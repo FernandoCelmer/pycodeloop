@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from codeloop.core.persistence.local_config import JsonFileStore
+from pycodeloop.core.persistence.local_config import JsonFileStore
 
 
 class TestJsonFileStore(unittest.TestCase):

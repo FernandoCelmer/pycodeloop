@@ -1,3 +1,3 @@
 # Config
 
-::: codeloop.core.config.Config
+::: pycodeloop.core.config.Config

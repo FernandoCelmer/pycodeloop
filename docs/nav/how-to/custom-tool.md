@@ -1,9 +1,9 @@
 # Custom tools
 
-Subclass `Tool` (`codeloop.abc.tool.Tool`):
+Subclass `Tool` (`pycodeloop.abc.tool.Tool`):
 
 ```python
-from codeloop.abc.tool import Tool, ToolResult
+from pycodeloop.abc.tool import Tool, ToolResult
 
 class MyTool(Tool):
     name = "my_tool"
@@ -43,8 +43,8 @@ See [Permission prompts](permission-prompts.md) for how `preview()` and the `con
 ## Wiring it in
 
 ```python
-from codeloop import Config
-from codeloop.core.tools import DEFAULT_TOOLS
+from pycodeloop import Config
+from pycodeloop.core.tools import DEFAULT_TOOLS
 
 config = Config(tools=DEFAULT_TOOLS + [MyTool()])
 ```

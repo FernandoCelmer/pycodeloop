@@ -5,14 +5,14 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from codeloop.core.tools.filesystem import (
+from pycodeloop.core.tools.filesystem import (
     DeleteFileTool,
     EditFileTool,
     ListDirTool,
     ReadFileTool,
     WriteFileTool,
 )
-from codeloop.core.tools.search import GlobTool, GrepTool
+from pycodeloop.core.tools.search import GlobTool, GrepTool
 
 
 class ToolTestCase(unittest.TestCase):
@@ -54,7 +54,9 @@ class TestReadFileTool(ToolTestCase):
 
 class TestWriteFileTool(ToolTestCase):
     def test_rejects_path_outside_cwd(self):
-        result = WriteFileTool().run(path="/tmp/outside-codeloop-test.txt", content="x")
+        result = WriteFileTool().run(
+            path="/tmp/outside-pycodeloop-test.txt", content="x"
+        )
 
         self.assertTrue(result.is_error)
         self.assertIn("outside the project directory", result.output)
@@ -66,11 +68,11 @@ class TestEditFileTool(ToolTestCase):
         target.write_text("hello world")
 
         result = EditFileTool().run(
-            path=str(target), old_string="world", new_string="codeloop"
+            path=str(target), old_string="world", new_string="pycodeloop"
         )
 
         self.assertFalse(result.is_error)
-        self.assertEqual(target.read_text(), "hello codeloop")
+        self.assertEqual(target.read_text(), "hello pycodeloop")
 
     def test_rejects_ambiguous_match(self):
         target = self.tmp_path / "note.txt"

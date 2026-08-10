@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from codeloop.core.tools.git import (
+from pycodeloop.core.tools.git import (
     GitCommitTool,
     GitDiffTool,
     GitLogTool,

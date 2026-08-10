@@ -7,8 +7,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from codeloop.providers import get_provider
-from codeloop.providers.generic import GenericProvider
+from pycodeloop.providers import get_provider
+from pycodeloop.providers.generic import GenericProvider
 
 
 class _FakeResponse(io.BytesIO):
@@ -79,7 +79,7 @@ class TestLoadProviderFromJson(GenericProviderTestCase):
         ).encode()
 
         with mock.patch(
-            "codeloop.providers.generic.urllib.request.urlopen",
+            "pycodeloop.providers.generic.urllib.request.urlopen",
             return_value=_FakeResponse(response_body),
         ):
             result = provider.complete("sys", [], [])
@@ -108,7 +108,7 @@ class TestLoadProviderFromJson(GenericProviderTestCase):
         ).encode()
 
         with mock.patch(
-            "codeloop.providers.generic.urllib.request.urlopen",
+            "pycodeloop.providers.generic.urllib.request.urlopen",
             return_value=_FakeResponse(response_body),
         ):
             result = provider.complete("sys", [], [])
@@ -147,7 +147,7 @@ class TestLoadProviderFromJson(GenericProviderTestCase):
         ).encode()
 
         with mock.patch(
-            "codeloop.providers.generic.urllib.request.urlopen",
+            "pycodeloop.providers.generic.urllib.request.urlopen",
             return_value=_FakeResponse(response_body),
         ):
             result = provider.complete("sys", [], [])

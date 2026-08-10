@@ -3,7 +3,7 @@
 Tools that change state — `write_file`, `edit_file`, `delete_file`, `bash`, `git_commit`, `http_request`, and every MCP tool — are marked `dangerous = True`. Give `Agent` a `confirm` callback and it gates every dangerous call behind it:
 
 ```python
-from codeloop.core.agent import Agent
+from pycodeloop.core.agent import Agent
 
 def confirm(name: str, preview: str) -> bool:
     print(preview)
@@ -22,14 +22,14 @@ No `confirm` callback set (the default) means dangerous tools just run — that'
 
 ## In the CLI
 
-`codeloop run` and the TUI show a panel with the diff (or `$ command`) and ask a yes/no question before running anything dangerous, auto-confirming after 3 seconds of no response:
+`pycodeloop run` and the TUI show a panel with the diff (or `$ command`) and ask a yes/no question before running anything dangerous, auto-confirming after 3 seconds of no response:
 
 ```bash
-codeloop run "delete the old config file and rewrite main.py"
+pycodeloop run "delete the old config file and rewrite main.py"
 ```
 
 Pass `--yes` / `-y` to skip every confirmation — equivalent to not setting `confirm` at all:
 
 ```bash
-codeloop run "..." --yes
+pycodeloop run "..." --yes
 ```

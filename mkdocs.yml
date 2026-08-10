@@ -1,10 +1,10 @@
 site_name: CodeLoop
-site_url: https://fernandocelmer.github.io/codeloop/
+site_url: https://fernandocelmer.github.io/pycodeloop/
 site_author: Fernando Celmer
 
 copyright: Fernando Celmer
-repo_name: FernandoCelmer/codeloop
-repo_url: https://github.com/FernandoCelmer/codeloop
+repo_name: FernandoCelmer/pycodeloop
+repo_url: https://github.com/FernandoCelmer/pycodeloop
 
 theme:
   name: material

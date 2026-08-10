@@ -1,6 +1,6 @@
 # Tools
 
-`Tool` (`codeloop.abc.tool.Tool`) is the interface for any action the agent can take:
+`Tool` (`pycodeloop.abc.tool.Tool`) is the interface for any action the agent can take:
 
 ```python
 class Tool(ABC):
@@ -28,7 +28,7 @@ class Tool(ABC):
 | `bash` | Run a shell command with a timeout | Yes |
 | `web_fetch` | Fetch a URL and extract its text | No |
 
-`DEFAULT_TOOLS` (`codeloop.core.tools.DEFAULT_TOOLS`) is that list, ready to pass into `Config`.
+`DEFAULT_TOOLS` (`pycodeloop.core.tools.DEFAULT_TOOLS`) is that list, ready to pass into `Config`.
 
 ## Dangerous tools and preview
 
@@ -44,7 +44,7 @@ See [Permission prompts](../how-to/permission-prompts.md) for how the CLI render
 
 ## MCP tools
 
-Tools don't have to be local Python code. `codeloop.core.mcp.load_mcp_tools(server)` connects to a [Model Context Protocol](https://modelcontextprotocol.io/) server and returns its remote tools already wrapped as `Tool` instances — the agent can't tell an MCP tool from a local one. See [MCP servers](../how-to/mcp-servers.md).
+Tools don't have to be local Python code. `pycodeloop.core.mcp.load_mcp_tools(server)` connects to a [Model Context Protocol](https://modelcontextprotocol.io/) server and returns its remote tools already wrapped as `Tool` instances — the agent can't tell an MCP tool from a local one. See [MCP servers](../how-to/mcp-servers.md).
 
 ## Skills
 

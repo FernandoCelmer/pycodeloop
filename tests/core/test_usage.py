@@ -4,8 +4,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from codeloop.core.persistence.local_config import JsonFileStore
-from codeloop.core.persistence.usage import UsageTracker
+from pycodeloop.core.persistence.local_config import JsonFileStore
+from pycodeloop.core.persistence.usage import UsageTracker
 
 
 class TestUsage(unittest.TestCase):

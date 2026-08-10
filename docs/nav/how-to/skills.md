@@ -11,13 +11,13 @@ CodeLoop can discover skills already sitting on disk from other tools and expose
 | `cursor-rule` | `./.cursor/rules/*.mdc`, `./.cursorrules` |
 | `agents-md` | `./AGENTS.md` |
 
-Each match becomes a `Skill` (`codeloop.core.skills.Skill`): a name, a short description, its source, and the full content, read lazily.
+Each match becomes a `Skill` (`pycodeloop.core.skills.Skill`): a name, a short description, its source, and the full content, read lazily.
 
 ## As a library
 
 ```python
-from codeloop import Config
-from codeloop.providers import AnthropicProvider
+from pycodeloop import Config
+from pycodeloop.providers import AnthropicProvider
 
 config = Config(
     provider=AnthropicProvider(model="claude-sonnet-5"),
@@ -39,10 +39,10 @@ config = Config(provider=..., skills=True, skill_sources={"agents-md"})
 On by default for `run`, `chat`, and `tui`:
 
 ```bash
-codeloop run "..."              # skills discovered automatically
-codeloop run "..." --no-skills  # turn it off
+pycodeloop run "..."              # skills discovered automatically
+pycodeloop run "..." --no-skills  # turn it off
 ```
 
 ## Caching
 
-Discovery results are cached in `~/.codeloop/config.json`, keyed by each file's path and mtime — unchanged skills aren't re-read on the next run. `--skills-refresh` (or `discover_skills(..., use_cache=False)` as a library) bypasses the cache and forces a full rescan.
+Discovery results are cached in `~/.pycodeloop/config.json`, keyed by each file's path and mtime — unchanged skills aren't re-read on the next run. `--skills-refresh` (or `discover_skills(..., use_cache=False)` as a library) bypasses the cache and forces a full rescan.

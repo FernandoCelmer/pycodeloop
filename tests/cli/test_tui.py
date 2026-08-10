@@ -6,7 +6,7 @@ import unittest
 from types import SimpleNamespace
 from unittest import mock
 
-from codeloop.cli.tui import CodeLoopApp
+from pycodeloop.cli.tui import CodeLoopApp
 
 
 def _fake_app(model="claude-sonnet-5", reloadable=False):

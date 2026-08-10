@@ -1,5 +1,5 @@
 # Tool ABC
 
-::: codeloop.abc.tool.Tool
+::: pycodeloop.abc.tool.Tool
 
-::: codeloop.abc.tool.ToolResult
+::: pycodeloop.abc.tool.ToolResult

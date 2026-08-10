@@ -2,11 +2,11 @@
 
 import unittest
 
-from codeloop.abc.confirm import Confirm
-from codeloop.abc.provider import Provider, ProviderResponse, ToolCall
-from codeloop.abc.tool import Tool, ToolResult
-from codeloop.core.agent import Agent
-from codeloop.core.session import Session
+from pycodeloop.abc.confirm import Confirm
+from pycodeloop.abc.provider import Provider, ProviderResponse, ToolCall
+from pycodeloop.abc.tool import Tool, ToolResult
+from pycodeloop.core.agent import Agent
+from pycodeloop.core.session import Session
 
 
 class FakeProvider(Provider):

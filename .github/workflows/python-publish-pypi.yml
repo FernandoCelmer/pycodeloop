@@ -59,7 +59,7 @@ jobs:
         uses: ./.github/actions/commit-push
         with:
           message: "📦 PyPI: Update version to ${{ steps.extract_version.outputs.version }}"
-          files: "LAST_VERSION pyproject.toml codeloop/__init__.py"
+          files: "LAST_VERSION pyproject.toml pycodeloop/__init__.py"
           branch: ${{ steps.get_branch.outputs.branch }}
 
   test:

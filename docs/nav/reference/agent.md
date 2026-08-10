@@ -1,3 +1,3 @@
 # Agent
 
-::: codeloop.core.agent.Agent
+::: pycodeloop.core.agent.Agent

@@ -4,8 +4,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from codeloop.core.mcp import MCPServer, MCPServerRegistry, MCPTool
-from codeloop.core.persistence.local_config import JsonFileStore
+from pycodeloop.core.mcp import MCPServer, MCPServerRegistry, MCPTool
+from pycodeloop.core.persistence.local_config import JsonFileStore
 
 
 class FakeMCPClient:

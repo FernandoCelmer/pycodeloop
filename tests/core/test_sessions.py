@@ -5,10 +5,10 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from codeloop.core.persistence import sessions as sessions_module
-from codeloop.core.persistence.local_config import JsonFileStore
-from codeloop.core.persistence.sessions import FileSessions
-from codeloop.core.session import Message, Session
+from pycodeloop.core.persistence import sessions as sessions_module
+from pycodeloop.core.persistence.local_config import JsonFileStore
+from pycodeloop.core.persistence.sessions import FileSessions
+from pycodeloop.core.session import Message, Session
 
 
 class TestFileSessions(unittest.TestCase):
@@ -18,7 +18,7 @@ class TestFileSessions(unittest.TestCase):
         self.sessions = FileSessions(directory=Path(self._tmpdir.name))
 
         # post()/delete() also write a session index entry to
-        # ~/.codeloop/config.json — redirect that to a scratch file.
+        # ~/.pycodeloop/config.json — redirect that to a scratch file.
         store = JsonFileStore(Path(self._tmpdir.name) / "config.json")
         patcher = mock.patch.object(sessions_module, "default_store", store)
         patcher.start()

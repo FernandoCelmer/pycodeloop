@@ -1,3 +1,3 @@
 # Confirm ABC
 
-::: codeloop.abc.confirm.Confirm
+::: pycodeloop.abc.confirm.Confirm

@@ -1,5 +1,5 @@
 # Session
 
-::: codeloop.core.session.Session
+::: pycodeloop.core.session.Session
 
-::: codeloop.core.session.Message
+::: pycodeloop.core.session.Message

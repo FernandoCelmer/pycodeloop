@@ -1,11 +1,11 @@
 # Providers
 
-::: codeloop.providers.AnthropicProvider
+::: pycodeloop.providers.AnthropicProvider
 
-::: codeloop.providers.OpenAIProvider
+::: pycodeloop.providers.OpenAIProvider
 
-::: codeloop.providers.OllamaProvider
+::: pycodeloop.providers.OllamaProvider
 
-::: codeloop.providers.GenericProvider
+::: pycodeloop.providers.GenericProvider
 
-::: codeloop.providers.get_provider
+::: pycodeloop.providers.get_provider

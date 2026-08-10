@@ -1,7 +1,7 @@
 # MCP servers
 
 ```bash
-pip install codeloop[mcp]
+pip install pypycodeloop[mcp]
 ```
 
 Connect to any [Model Context Protocol](https://modelcontextprotocol.io/) server over stdio and expose its tools to the agent alongside the built-in ones.
@@ -9,10 +9,10 @@ Connect to any [Model Context Protocol](https://modelcontextprotocol.io/) server
 ## As a library
 
 ```python
-from codeloop import CodeLoop, Config
-from codeloop.core.mcp import MCPServer, load_mcp_tools
-from codeloop.core.tools import DEFAULT_TOOLS
-from codeloop.providers import AnthropicProvider
+from pycodeloop import CodeLoop, Config
+from pycodeloop.core.mcp import MCPServer, load_mcp_tools
+from pycodeloop.core.tools import DEFAULT_TOOLS
+from pycodeloop.providers import AnthropicProvider
 
 server = MCPServer(command="npx", args=["-y", "@modelcontextprotocol/server-filesystem", "."])
 tools = DEFAULT_TOOLS + load_mcp_tools(server)
@@ -28,12 +28,12 @@ flow = CodeLoop(config=config)
 One `--mcp` flag per server, `command arg1 arg2` shell-quoted:
 
 ```bash
-codeloop run "list every allowed directory" \
+pycodeloop run "list every allowed directory" \
   --mcp "npx -y @modelcontextprotocol/server-filesystem ."
 ```
 
 ## Lifecycle
 
-`MCPClient` (`codeloop.core.mcp.MCPClient`) owns the server subprocess on a dedicated background event loop for the life of the process — MCP sessions are async and expect to live inside one `async with` block for their whole lifetime, so a background loop lets a synchronous `Tool.run()` call into a long-lived subprocess without blocking `Agent`.
+`MCPClient` (`pycodeloop.core.mcp.MCPClient`) owns the server subprocess on a dedicated background event loop for the life of the process — MCP sessions are async and expect to live inside one `async with` block for their whole lifetime, so a background loop lets a synchronous `Tool.run()` call into a long-lived subprocess without blocking `Agent`.
 
 Every MCP tool is `dangerous = True` by default (see [Permission prompts](permission-prompts.md)) since a remote server's tools are opaque — its `preview()` renders the call as `tool_name(arg=value, ...)`.

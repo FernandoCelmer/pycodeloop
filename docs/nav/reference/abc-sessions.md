@@ -1,7 +1,7 @@
 # Sessions ABC
 
-::: codeloop.abc.sessions.Sessions
+::: pycodeloop.abc.sessions.Sessions
 
-::: codeloop.core.persistence.sessions.FileSessions
+::: pycodeloop.core.persistence.sessions.FileSessions
 
-::: codeloop.core.persistence.sqlite_sessions.SqliteSessions
+::: pycodeloop.core.persistence.sqlite_sessions.SqliteSessions
