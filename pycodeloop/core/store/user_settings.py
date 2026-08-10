@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pycodeloop.abc.settings import Settings
-from pycodeloop.core.persistence.local_config import default_store
+from pycodeloop.core.store.json_store import default_store
 
 _SECTION = "settings"
 

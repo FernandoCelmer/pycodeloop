@@ -1,11 +1,11 @@
-"""Test usage.py"""
+"""Test usage_tracker.py"""
 
 import tempfile
 import unittest
 from pathlib import Path
 
-from pycodeloop.core.persistence.local_config import JsonFileStore
-from pycodeloop.core.persistence.usage import UsageTracker
+from pycodeloop.core.store.json_store import JsonFileStore
+from pycodeloop.core.store.usage_tracker import UsageTracker
 
 
 class TestUsage(unittest.TestCase):

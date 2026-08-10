@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from pycodeloop.abc.tool import Tool, ToolResult
-from pycodeloop.core.persistence.local_config import default_store
+from pycodeloop.core.store.json_store import default_store
 
 _MAX_DESCRIPTION = 100
 _CACHE_SECTION = "skills"

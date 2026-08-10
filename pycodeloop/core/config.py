@@ -7,7 +7,7 @@ from pycodeloop.abc.sessions import Sessions
 from pycodeloop.abc.tool import Tool
 from pycodeloop.core.agent import DEFAULT_SYSTEM_PROMPT
 from pycodeloop.core.exception import NotProviderInstance
-from pycodeloop.core.persistence.sqlite_sessions import SqliteSessions
+from pycodeloop.core.store.sqlite_sessions import SqliteSessions
 from pycodeloop.core.skills import (
     ReadSkillTool,
     discover_skills,

@@ -6,7 +6,7 @@ from pathlib import Path
 from unittest import mock
 
 import pycodeloop.core.skills as skills_module
-from pycodeloop.core.persistence.local_config import JsonFileStore
+from pycodeloop.core.store.json_store import JsonFileStore
 from pycodeloop.core.skills import (
     ReadSkillTool,
     discover_skills,

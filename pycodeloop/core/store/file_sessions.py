@@ -8,7 +8,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 from pycodeloop.abc.sessions import Sessions
-from pycodeloop.core.persistence.local_config import default_store
+from pycodeloop.core.store.json_store import default_store
 from pycodeloop.core.session import Message, Session
 
 _SESSIONS_SECTION = "sessions"
@@ -19,7 +19,7 @@ class FileSessions(Sessions):
     Import:
         You can import the **FileSessions** class with:
 
-            from pycodeloop.core.persistence.sessions import FileSessions
+            from pycodeloop.core.store.file_sessions import FileSessions
 
     Persists each `Session` as a JSON file under `directory`, one file
     per key — the simplest way to resume a conversation across process

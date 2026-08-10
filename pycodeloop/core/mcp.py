@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 
 from pycodeloop.abc.settings import Settings
 from pycodeloop.abc.tool import Tool, ToolResult
-from pycodeloop.core.persistence.local_config import default_store
+from pycodeloop.core.store.json_store import default_store
 
 _MCP_SECTION = "mcp_servers"
 

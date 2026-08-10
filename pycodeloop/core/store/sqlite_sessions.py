@@ -6,47 +6,15 @@ import json
 import time
 from pathlib import Path
 
-from sqlalchemy import (
-    Column,
-    Float,
-    ForeignKey,
-    Integer,
-    String,
-    create_engine,
-    text,
-)
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session as OrmSession
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.orm import sessionmaker
 
 from pycodeloop.abc.sessions import Sessions
+from pycodeloop.core.models.base import Base
+from pycodeloop.core.models.message_record import MessageRecord
+from pycodeloop.core.models.session_record import SessionRecord
 from pycodeloop.core.session import Message, Session
-
-Base = declarative_base()
-
-
-class SessionRecord(Base):
-    __tablename__ = "sessions"
-
-    key = Column(String, primary_key=True)
-    system_prompt = Column(String, nullable=False)
-    cwd = Column(String, nullable=False)
-    updated_at = Column(Float, nullable=False)
-    message_count = Column(Integer, nullable=False)
-
-
-class MessageRecord(Base):
-    """One row per message — kept out of a JSON blob so the conversation
-    is actually readable/queryable from a plain SQL client."""
-
-    __tablename__ = "messages"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    session_key = Column(String, ForeignKey("sessions.key"), nullable=False, index=True)
-    position = Column(Integer, nullable=False)
-    role = Column(String, nullable=False)
-    content = Column(String, nullable=False)
-    tool_call_id = Column(String, nullable=True)
-    tool_calls = Column(String, nullable=True)
 
 
 class SqliteSessions(Sessions):

@@ -4,7 +4,7 @@ import os
 
 from dotenv import load_dotenv
 
-from pycodeloop.core.persistence.user_settings import UserSettings
+from pycodeloop.core.store.user_settings import UserSettings
 
 load_dotenv()
 

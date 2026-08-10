@@ -2,6 +2,6 @@
 
 ::: pycodeloop.abc.sessions.Sessions
 
-::: pycodeloop.core.persistence.sessions.FileSessions
+::: pycodeloop.core.store.file_sessions.FileSessions
 
-::: pycodeloop.core.persistence.sqlite_sessions.SqliteSessions
+::: pycodeloop.core.store.sqlite_sessions.SqliteSessions

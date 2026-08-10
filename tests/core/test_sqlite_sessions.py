@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from pycodeloop.core.persistence.sqlite_sessions import SqliteSessions
+from pycodeloop.core.store.sqlite_sessions import SqliteSessions
 from pycodeloop.core.session import Message, Session
 
 

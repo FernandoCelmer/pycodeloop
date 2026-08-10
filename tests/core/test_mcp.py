@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 
 from pycodeloop.core.mcp import MCPServer, MCPServerRegistry, MCPTool
-from pycodeloop.core.persistence.local_config import JsonFileStore
+from pycodeloop.core.store.json_store import JsonFileStore
 
 
 class FakeMCPClient:

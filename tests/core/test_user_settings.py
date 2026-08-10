@@ -4,8 +4,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from pycodeloop.core.persistence.local_config import JsonFileStore
-from pycodeloop.core.persistence.user_settings import UserSettings
+from pycodeloop.core.store.json_store import JsonFileStore
+from pycodeloop.core.store.user_settings import UserSettings
 
 
 class TestUserSettings(unittest.TestCase):

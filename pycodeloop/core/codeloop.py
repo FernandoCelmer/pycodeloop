@@ -6,7 +6,7 @@ import os
 
 from pycodeloop.core.agent import Agent
 from pycodeloop.core.config import Config
-from pycodeloop.core.persistence.usage import UsageTracker
+from pycodeloop.core.store.usage_tracker import UsageTracker
 from pycodeloop.core.session import Session
 
 _usage_tracker = UsageTracker()

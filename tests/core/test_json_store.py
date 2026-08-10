@@ -1,10 +1,10 @@
-"""Test local_config module"""
+"""Test json_store module"""
 
 import tempfile
 import unittest
 from pathlib import Path
 
-from pycodeloop.core.persistence.local_config import JsonFileStore
+from pycodeloop.core.store.json_store import JsonFileStore
 
 
 class TestJsonFileStore(unittest.TestCase):

@@ -5,9 +5,9 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from pycodeloop.core.persistence import sessions as sessions_module
-from pycodeloop.core.persistence.local_config import JsonFileStore
-from pycodeloop.core.persistence.sessions import FileSessions
+from pycodeloop.core.store import file_sessions as sessions_module
+from pycodeloop.core.store.json_store import JsonFileStore
+from pycodeloop.core.store.file_sessions import FileSessions
 from pycodeloop.core.session import Message, Session
 
 
