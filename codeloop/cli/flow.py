@@ -5,6 +5,7 @@ from __future__ import annotations
 import queue
 import shlex
 import threading
+import uuid
 from pathlib import Path
 
 import typer
@@ -22,6 +23,7 @@ from codeloop.cli.render import (
 from codeloop.core.codeloop import CodeLoop
 from codeloop.core.config import Config
 from codeloop.core.mcp import MCPServer, MCPServerRegistry, load_mcp_tools
+from codeloop.core.persistence.local_config import default_store
 from codeloop.core.tools import DEFAULT_TOOLS
 from codeloop.providers import get_provider
 from codeloop.settings import Settings
@@ -32,12 +34,24 @@ PROVIDER_HELP = (
 )
 
 _CONFIRM_TIMEOUT = 3.0
+_SESSION_IDS_SECTION = "session_ids"
 
 
 def default_session_key() -> str:
-    """One saved session per working directory, so `codeloop` resumes
-    the same conversation when run again from the same project."""
-    return str(Path.cwd())
+    """A stable UUID per working directory, so `codeloop` resumes the
+    same saved session when run again from the same project — the
+    mapping (cwd -> id) lives in `~/.codeloop/config.json`, and the
+    session's own `cwd` column is what stays human-readable."""
+    cwd = str(Path.cwd())
+    mapping = default_store.get_section(_SESSION_IDS_SECTION)
+
+    session_id = mapping.get(cwd)
+    if session_id is None:
+        session_id = str(uuid.uuid4())
+        mapping[cwd] = session_id
+        default_store.set_section(_SESSION_IDS_SECTION, mapping)
+
+    return session_id
 
 
 def _load_mcp_tools(specs: list[str] | None) -> list:

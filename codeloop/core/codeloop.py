@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+
 from codeloop.core.agent import Agent
 from codeloop.core.config import Config
 from codeloop.core.persistence.usage import UsageTracker
@@ -55,7 +57,7 @@ class CodeLoop:
             **agent_kwargs,
         )
 
-        self.session = Session(system_prompt=self.agent.system_prompt)
+        self.session = Session(system_prompt=self.agent.system_prompt, cwd=os.getcwd())
 
     def run(self, prompt: str, session_key: str | None = None) -> str:
         """Run prompt to completion, keeping history across calls.
