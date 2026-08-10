@@ -5,6 +5,7 @@ from __future__ import annotations
 import subprocess
 
 from codeloop.abc.tool import Tool, ToolResult
+from codeloop.core.tools._limits import truncate
 
 
 class BashTool(Tool):
@@ -37,6 +38,6 @@ class BashTool(Tool):
                 output=f"Command timed out after {timeout}s", is_error=True
             )
 
-        output = proc.stdout + proc.stderr
+        output = truncate(proc.stdout + proc.stderr)
 
         return ToolResult(output=output, is_error=proc.returncode != 0)

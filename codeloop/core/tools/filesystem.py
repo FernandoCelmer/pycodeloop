@@ -6,6 +6,8 @@ import difflib
 from pathlib import Path
 
 from codeloop.abc.tool import Tool, ToolResult
+from codeloop.core.tools._limits import truncate
+from codeloop.core.tools._sandbox import PathEscapesSandbox, resolve_in_sandbox
 
 
 def _diff(path: str, before: str, after: str) -> str:
@@ -36,7 +38,12 @@ class ReadFileTool(Tool):
 
     def run(self, path: str, offset: int = 1, limit: int | None = None) -> ToolResult:
         try:
-            lines = Path(path).read_text().splitlines()
+            target = resolve_in_sandbox(path)
+        except PathEscapesSandbox as exc:
+            return ToolResult(output=str(exc), is_error=True)
+
+        try:
+            lines = target.read_text().splitlines()
         except OSError as exc:
             return ToolResult(output=f"Error reading {path}: {exc}", is_error=True)
 
@@ -46,7 +53,7 @@ class ReadFileTool(Tool):
             f"{i + start + 1}\t{line}" for i, line in enumerate(lines[start:end])
         ]
 
-        return ToolResult(output="\n".join(numbered))
+        return ToolResult(output=truncate("\n".join(numbered)))
 
 
 class WriteFileTool(Tool):
@@ -64,14 +71,23 @@ class WriteFileTool(Tool):
 
     def preview(self, path: str, content: str, **_) -> str:
         try:
-            before = Path(path).read_text()
+            target = resolve_in_sandbox(path)
+        except PathEscapesSandbox as exc:
+            return str(exc)
+
+        try:
+            before = target.read_text()
         except OSError:
             before = ""
         return _diff(path, before, content)
 
     def run(self, path: str, content: str) -> ToolResult:
         try:
-            target = Path(path)
+            target = resolve_in_sandbox(path)
+        except PathEscapesSandbox as exc:
+            return ToolResult(output=str(exc), is_error=True)
+
+        try:
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(content)
         except OSError as exc:
@@ -97,9 +113,14 @@ class EditFileTool(Tool):
 
     def _apply(
         self, path: str, old_string: str, new_string: str, replace_all: bool
-    ) -> tuple[str, str] | ToolResult:
+    ) -> tuple[Path, str, str] | ToolResult:
         try:
-            text = Path(path).read_text()
+            target = resolve_in_sandbox(path)
+        except PathEscapesSandbox as exc:
+            return ToolResult(output=str(exc), is_error=True)
+
+        try:
+            text = target.read_text()
         except OSError as exc:
             return ToolResult(output=f"Error reading {path}: {exc}", is_error=True)
 
@@ -124,7 +145,7 @@ class EditFileTool(Tool):
             else text.replace(old_string, new_string, 1)
         )
 
-        return text, new_text
+        return target, text, new_text
 
     def preview(
         self,
@@ -139,7 +160,7 @@ class EditFileTool(Tool):
         if isinstance(result, ToolResult):
             return result.output
 
-        before, after = result
+        _target, before, after = result
 
         return _diff(path, before, after)
 
@@ -155,8 +176,8 @@ class EditFileTool(Tool):
         if isinstance(result, ToolResult):
             return result
 
-        _before, after = result
-        Path(path).write_text(after)
+        target, _before, after = result
+        target.write_text(after)
 
         return ToolResult(output=f"Edited {path}")
 
@@ -173,14 +194,24 @@ class DeleteFileTool(Tool):
 
     def preview(self, path: str, **_) -> str:
         try:
-            before = Path(path).read_text()
+            target = resolve_in_sandbox(path)
+        except PathEscapesSandbox as exc:
+            return str(exc)
+
+        try:
+            before = target.read_text()
         except OSError as exc:
             return f"Error reading {path}: {exc}"
         return _diff(path, before, "")
 
     def run(self, path: str) -> ToolResult:
         try:
-            Path(path).unlink()
+            target = resolve_in_sandbox(path)
+        except PathEscapesSandbox as exc:
+            return ToolResult(output=str(exc), is_error=True)
+
+        try:
+            target.unlink()
         except OSError as exc:
             return ToolResult(output=f"Error deleting {path}: {exc}", is_error=True)
 
@@ -197,7 +228,12 @@ class ListDirTool(Tool):
 
     def run(self, path: str = ".") -> ToolResult:
         try:
-            entries = sorted(Path(path).iterdir())
+            target = resolve_in_sandbox(path)
+        except PathEscapesSandbox as exc:
+            return ToolResult(output=str(exc), is_error=True)
+
+        try:
+            entries = sorted(target.iterdir())
         except OSError as exc:
             return ToolResult(output=f"Error listing {path}: {exc}", is_error=True)
 

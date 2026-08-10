@@ -6,6 +6,7 @@ import re
 from pathlib import Path
 
 from codeloop.abc.tool import Tool, ToolResult
+from codeloop.core.tools._limits import truncate
 
 _SKIP_DIRS = {
     ".git",
@@ -49,9 +50,11 @@ class GrepTool(Tool):
                 if regex.search(line):
                     matches.append(f"{file_path}:{lineno}: {line.strip()}")
                     if len(matches) >= max_results:
-                        return ToolResult(output="\n".join(matches))
+                        return ToolResult(output=truncate("\n".join(matches)))
 
-        return ToolResult(output="\n".join(matches) if matches else "No matches.")
+        return ToolResult(
+            output=truncate("\n".join(matches)) if matches else "No matches."
+        )
 
 
 class GlobTool(Tool):

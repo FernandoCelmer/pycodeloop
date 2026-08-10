@@ -1,5 +1,6 @@
 """Test filesystem, search and web Tool classes"""
 
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -18,7 +19,14 @@ class ToolTestCase(unittest.TestCase):
     def setUp(self):
         self._tmpdir = tempfile.TemporaryDirectory()
         self.addCleanup(self._tmpdir.cleanup)
-        self.tmp_path = Path(self._tmpdir.name)
+        # Real path (not a /tmp symlink like macOS's /var -> private/var) —
+        # filesystem tools sandbox to the resolved cwd, and Path(x).resolve()
+        # would otherwise stop matching str(self.tmp_path).
+        self.tmp_path = Path(self._tmpdir.name).resolve()
+
+        previous_cwd = os.getcwd()
+        os.chdir(self.tmp_path)
+        self.addCleanup(os.chdir, previous_cwd)
 
 
 class TestReadFileTool(ToolTestCase):
@@ -30,6 +38,26 @@ class TestReadFileTool(ToolTestCase):
 
         self.assertIn("1\tline1", result.output)
         self.assertIn("2\tline2", result.output)
+
+    def test_rejects_path_outside_cwd(self):
+        result = ReadFileTool().run(path="../outside.txt")
+
+        self.assertTrue(result.is_error)
+        self.assertIn("outside the project directory", result.output)
+
+    def test_rejects_absolute_path_outside_cwd(self):
+        result = ReadFileTool().run(path="/etc/hosts")
+
+        self.assertTrue(result.is_error)
+        self.assertIn("outside the project directory", result.output)
+
+
+class TestWriteFileTool(ToolTestCase):
+    def test_rejects_path_outside_cwd(self):
+        result = WriteFileTool().run(path="/tmp/outside-codeloop-test.txt", content="x")
+
+        self.assertTrue(result.is_error)
+        self.assertIn("outside the project directory", result.output)
 
 
 class TestEditFileTool(ToolTestCase):
@@ -54,6 +82,14 @@ class TestEditFileTool(ToolTestCase):
 
         self.assertTrue(result.is_error)
 
+    def test_rejects_path_outside_cwd(self):
+        result = EditFileTool().run(
+            path="../outside.txt", old_string="a", new_string="b"
+        )
+
+        self.assertTrue(result.is_error)
+        self.assertIn("outside the project directory", result.output)
+
 
 class TestDeleteFileTool(ToolTestCase):
     def test_deletes_file(self):
@@ -77,6 +113,12 @@ class TestDeleteFileTool(ToolTestCase):
         preview = DeleteFileTool().preview(path=str(target))
 
         self.assertIn("-bye", preview)
+
+    def test_rejects_path_outside_cwd(self):
+        result = DeleteFileTool().run(path="/etc/hosts")
+
+        self.assertTrue(result.is_error)
+        self.assertIn("outside the project directory", result.output)
 
 
 class TestListDirTool(ToolTestCase):
