@@ -116,6 +116,7 @@ class CodeLoopApp(App):
                 border_style="grey50",
             )
         )
+        self._restore_history()
         self.query_one("#prompt", PromptArea).focus()
 
         self.flow.agent.on_request = self._on_request
@@ -124,6 +125,40 @@ class CodeLoopApp(App):
         self.flow.agent.on_text_delta = self._on_text_delta
         self.flow.agent.on_usage = self._on_usage
         self.flow.agent.confirm = self._confirm
+
+    def _restore_history(self) -> None:
+        """Render a previously saved session's user/assistant turns into
+        the log on startup — the session itself is already resumed by
+        `flow.run()`; this only makes that resume visible on screen."""
+        storage = self.flow.config.storage
+        if storage is None:
+            return
+
+        stored = storage.get(self.session_key)
+        if stored is None or not stored.messages:
+            return
+
+        for message in stored.messages:
+            if message.role == "user":
+                self._log(
+                    Panel(
+                        Text(message.content),
+                        border_style="bold white",
+                        subtitle="[bold black on white] You [/bold black on white]",
+                        subtitle_align="right",
+                    )
+                )
+            elif message.role == "assistant" and message.content:
+                self._log(
+                    Panel(
+                        Markdown(message.content),
+                        border_style="grey50",
+                        subtitle=(
+                            "[bold white on grey30] CodeLoop [/bold white on grey30]"
+                        ),
+                        subtitle_align="right",
+                    )
+                )
 
     def _log(self, renderable) -> None:
         log = self.query_one("#log", VerticalScroll)
