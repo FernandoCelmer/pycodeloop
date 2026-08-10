@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import contextlib
 import json
+import os
+import tempfile
 from pathlib import Path
 
 from codeloop.abc.settings import Settings
@@ -25,9 +27,22 @@ class JsonFileStore(Settings):
             return {}
 
     def write(self, data: dict) -> None:
+        """Write via a temp file + atomic rename — a crash or concurrent
+        writer mid-write can otherwise leave `config.json` truncated or
+        corrupt, and the next `read()` would silently discard every
+        previously saved section instead of just this write."""
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with contextlib.suppress(OSError):
-            self.path.write_text(json.dumps(data, indent=2))
+            fd, tmp_path = tempfile.mkstemp(
+                dir=self.path.parent, prefix=f".{self.path.name}."
+            )
+            try:
+                with os.fdopen(fd, "w") as f:
+                    f.write(json.dumps(data, indent=2))
+                os.replace(tmp_path, self.path)
+            except OSError:
+                os.unlink(tmp_path)
+                raise
 
     def get_section(self, name: str) -> dict:
         return self.read().get(name, {})
