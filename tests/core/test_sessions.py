@@ -5,10 +5,10 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from codeloop.core.persistence.sessions import FileSessions
-from codeloop.core.session import Message, Session
 from codeloop.core.persistence import sessions as sessions_module
 from codeloop.core.persistence.local_config import JsonFileStore
+from codeloop.core.persistence.sessions import FileSessions
+from codeloop.core.session import Message, Session
 
 
 class TestFileSessions(unittest.TestCase):

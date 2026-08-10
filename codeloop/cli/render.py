@@ -79,7 +79,9 @@ class TurnBuffer:
                 Panel(
                     Markdown(self._text),
                     border_style="grey50",
-                    subtitle=("[bold white on grey30] CodeLoop [/bold white on grey30]"),
+                    subtitle=(
+                        "[bold white on grey30] CodeLoop [/bold white on grey30]"
+                    ),
                     subtitle_align="right",
                 )
             )

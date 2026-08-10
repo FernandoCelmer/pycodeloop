@@ -4,8 +4,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from codeloop.core.session import Message, Session
 from codeloop.core.persistence.sqlite_sessions import SqliteSessions
+from codeloop.core.session import Message, Session
 
 
 class TestSqliteSessions(unittest.TestCase):

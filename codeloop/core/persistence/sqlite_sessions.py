@@ -6,7 +6,15 @@ import json
 import time
 from pathlib import Path
 
-from sqlalchemy import Column, Float, ForeignKey, Integer, String, create_engine, text
+from sqlalchemy import (
+    Column,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    create_engine,
+    text,
+)
 from sqlalchemy.orm import Session as OrmSession
 from sqlalchemy.orm import declarative_base, sessionmaker
 
