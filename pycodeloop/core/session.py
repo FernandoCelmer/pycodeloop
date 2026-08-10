@@ -12,6 +12,8 @@ class Message:
     content: Any
     tool_call_id: str | None = None
     tool_calls: list[dict] | None = None
+    images: list[str] | None = None
+    """Base64-encoded PNG data, one entry per attached image."""
 
 
 @dataclass
@@ -20,8 +22,8 @@ class Session:
     messages: list[Message] = field(default_factory=list)
     cwd: str = "."
 
-    def add_user(self, text: str) -> None:
-        self.messages.append(Message(role="user", content=text))
+    def add_user(self, text: str, images: list[str] | None = None) -> None:
+        self.messages.append(Message(role="user", content=text, images=images))
 
     def add_assistant(self, text: str, tool_calls: list[dict] | None = None) -> None:
         self.messages.append(

@@ -20,3 +20,4 @@ class MessageRecord(Base):
     content = Column(String, nullable=False)
     tool_call_id = Column(String, nullable=True)
     tool_calls = Column(String, nullable=True)
+    images = Column(String, nullable=True)

@@ -2,7 +2,7 @@
 
 import unittest
 
-from pycodeloop.core.session import Session
+from pycodeloop.core.session import Message, Session
 
 
 def _add_turn(session: Session, user_text: str, assistant_text: str) -> None:
@@ -48,6 +48,27 @@ class TestSessionTrim(unittest.TestCase):
         self.assertEqual(session.messages[0].content, "user-1")
         roles = [m.role for m in session.messages]
         self.assertEqual(roles, ["user", "assistant", "tool", "assistant"])
+
+
+class TestSessionImages(unittest.TestCase):
+    def test_add_user_without_images_leaves_images_none(self):
+        session = Session(system_prompt="sys")
+        session.add_user("hi")
+
+        self.assertIsNone(session.messages[0].images)
+
+    def test_add_user_with_images_stores_them_on_the_message(self):
+        session = Session(system_prompt="sys")
+        session.add_user("what is this?", images=["base64-a", "base64-b"])
+
+        message = session.messages[0]
+        self.assertEqual(message.role, "user")
+        self.assertEqual(message.images, ["base64-a", "base64-b"])
+
+    def test_message_images_defaults_to_none(self):
+        message = Message(role="user", content="hi")
+
+        self.assertIsNone(message.images)
 
 
 if __name__ == "__main__":

@@ -56,7 +56,19 @@ class OpenAIProvider(Provider):
         out: list[dict] = [{"role": "system", "content": system_prompt}]
         for msg in messages:
             if msg.role == "user":
-                out.append({"role": "user", "content": msg.content})
+                if msg.images:
+                    content = [
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": f"data:image/png;base64,{image}"},
+                        }
+                        for image in msg.images
+                    ]
+                    if msg.content:
+                        content.append({"type": "text", "text": msg.content})
+                    out.append({"role": "user", "content": content})
+                else:
+                    out.append({"role": "user", "content": msg.content})
             elif msg.role == "assistant":
                 entry: dict = {
                     "role": "assistant",

@@ -31,9 +31,24 @@ class SqliteSessions(Sessions):
         Base.metadata.create_all(self._engine)
         self._session_factory = sessionmaker(bind=self._engine)
         self._migrate_legacy_messages()
+        self._migrate_images_column()
 
     def _db(self) -> OrmSession:
         return self._session_factory()
+
+    def _migrate_images_column(self) -> None:
+        """`create_all()` only creates missing tables, not missing
+        columns on an existing one — add `images` for databases created
+        before message attachments existed."""
+        with self._engine.connect() as conn:
+            columns = {
+                row[1] for row in conn.execute(text("PRAGMA table_info(messages)"))
+            }
+        if "images" in columns:
+            return
+
+        with self._engine.begin() as conn:
+            conn.execute(text("ALTER TABLE messages ADD COLUMN images VARCHAR"))
 
     def _migrate_legacy_messages(self) -> None:
         """One-time backfill from the old single-blob `sessions.messages`
@@ -116,6 +131,7 @@ class SqliteSessions(Sessions):
                             if message.tool_calls
                             else None
                         ),
+                        images=(json.dumps(message.images) if message.images else None),
                     )
                 )
 
@@ -143,9 +159,10 @@ class SqliteSessions(Sessions):
                         role=row.role,
                         content=row.content,
                         tool_call_id=row.tool_call_id,
-                        tool_calls=json.loads(row.tool_calls)
-                        if row.tool_calls
-                        else None,
+                        tool_calls=(
+                            json.loads(row.tool_calls) if row.tool_calls else None
+                        ),
+                        images=json.loads(row.images) if row.images else None,
                     )
                     for row in rows
                 ],
