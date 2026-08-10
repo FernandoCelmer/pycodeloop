@@ -35,4 +35,4 @@ pycodeloop run "..." --provider ./provider.example.json
 pycodeloop run "..." --mcp "npx -y @modelcontextprotocol/server-filesystem ." --yes
 ```
 
-See also: [`pycodeloop tui`](tui.md) for the full-screen interactive interface (the default with no subcommand).
+See also: [`pycodeloop chat`](chat.md) for the full-screen interactive interface (the default with no subcommand).

@@ -7,7 +7,7 @@ from pathlib import Path
 
 import typer
 
-from pycodeloop.cli.commands import run, tui
+from pycodeloop.cli.commands import chat, run
 from pycodeloop.cli.flow import PROVIDER_HELP
 
 sys.stdout.reconfigure(line_buffering=True)
@@ -18,7 +18,7 @@ if _cwd not in sys.path:
 
 app = typer.Typer(add_completion=False, help="CodeLoop — an agentic coding assistant.")
 app.command()(run)
-app.command(name="tui")(tui)
+app.command(name="chat")(chat)
 
 
 @app.callback(invoke_without_command=True)
@@ -53,9 +53,9 @@ def default(
         help="Skip confirmation prompts for dangerous tools.",
     ),
 ) -> None:
-    """Bare `pycodeloop` starts the TUI; use `run`/`tui` for control."""
+    """Bare `pycodeloop` starts the chat; use `run`/`chat` for control."""
     if ctx.invoked_subcommand is None:
-        tui(
+        chat(
             provider=provider,
             model=model,
             base_url=base_url,

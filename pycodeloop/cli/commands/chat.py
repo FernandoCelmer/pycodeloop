@@ -1,14 +1,14 @@
-"""Command tui module"""
+"""Command chat module"""
 
 from __future__ import annotations
 
 import typer
 
+from pycodeloop.cli.chat import CodeLoopApp
 from pycodeloop.cli.flow import PROVIDER_HELP, build_flow
-from pycodeloop.cli.tui import CodeLoopApp
 
 
-def tui(
+def chat(
     provider: str = typer.Option(None, help=PROVIDER_HELP),
     model: str = typer.Option(None, help="Model name override."),
     base_url: str = typer.Option(
@@ -38,8 +38,8 @@ def tui(
         help="Skip confirmation prompts for dangerous tools.",
     ),
 ) -> None:
-    """Start the full-screen Textual UI — real live redraw, no readline
-    quirks, since Textual owns the whole terminal."""
+    """Start the full-screen interactive chat — real live redraw, no
+    readline quirks, since Textual owns the whole terminal."""
     flow, provider_name, model_name = build_flow(
         provider,
         model,
