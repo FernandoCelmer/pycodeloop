@@ -2,6 +2,7 @@
 
 import threading
 import unittest
+from unittest import mock
 
 from pycodeloop.abc.confirm import Confirm
 from pycodeloop.abc.provider import Provider, ProviderResponse, ToolCall, Usage
@@ -365,6 +366,179 @@ class TestAgent(unittest.TestCase):
 
         self.assertEqual(result, "Cancelled by user.")
         self.assertEqual(len(provider._scripted), 1)
+
+
+class FlakyProvider(Provider):
+    """Raises a retryable error `fail_times` times, then succeeds."""
+
+    name = "flaky"
+
+    def __init__(self, fail_times: int, status_code: int = 429) -> None:
+        super().__init__(model="fake-model")
+        self.fail_times = fail_times
+        self.status_code = status_code
+        self.calls = 0
+
+    def complete(
+        self, system_prompt, messages, tools, on_delta=None
+    ) -> ProviderResponse:
+        self.calls += 1
+        if self.calls <= self.fail_times:
+            exc = Exception(f"failed attempt {self.calls}")
+            exc.status_code = self.status_code
+            raise exc
+        return ProviderResponse(text="ok")
+
+
+class TestAgentRetry(unittest.TestCase):
+    def setUp(self):
+        import pycodeloop.core.agent as agent_module
+
+        patcher = mock.patch.object(agent_module.time, "sleep")
+        self.mock_sleep = patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_retries_retryable_errors_and_eventually_succeeds(self):
+        provider = FlakyProvider(fail_times=2)
+        events = []
+        agent = Agent(
+            provider=provider,
+            tools=[],
+            on_retry=lambda attempt, delay, exc: events.append((attempt, delay)),
+        )
+
+        result = agent.run("hi")
+
+        self.assertEqual(result, "ok")
+        self.assertEqual(provider.calls, 3)
+        self.assertEqual(events, [(1, 1.0), (2, 2.0)])
+
+    def test_gives_up_after_max_retries(self):
+        provider = FlakyProvider(fail_times=10)
+        agent = Agent(provider=provider, tools=[])
+
+        with self.assertRaises(Exception):
+            agent.run("hi")
+
+        self.assertEqual(provider.calls, 4)  # 1 initial + 3 retries
+
+    def test_non_retryable_error_raises_immediately(self):
+        provider = FlakyProvider(fail_times=1, status_code=400)
+        agent = Agent(provider=provider, tools=[])
+
+        with self.assertRaises(Exception):
+            agent.run("hi")
+
+        self.assertEqual(provider.calls, 1)
+
+
+class TestAgentParallelTools(unittest.TestCase):
+    def test_independent_safe_tools_run_concurrently(self):
+        barrier = threading.Barrier(2, timeout=2)
+
+        class BarrierTool(Tool):
+            name = "barrier"
+            description = "waits at a barrier to prove concurrency"
+            parameters = {
+                "type": "object",
+                "properties": {"id": {"type": "string"}},
+            }
+
+            def run(self, id: str) -> ToolResult:
+                barrier.wait()
+                return ToolResult(output=f"done {id}")
+
+        class BarrierTool2(BarrierTool):
+            name = "barrier2"
+
+        provider = FakeProvider(
+            [
+                ProviderResponse(
+                    text="",
+                    tool_calls=[
+                        ToolCall(id="1", name="barrier", arguments={"id": "a"}),
+                        ToolCall(id="2", name="barrier2", arguments={"id": "b"}),
+                    ],
+                ),
+                ProviderResponse(text="done"),
+            ]
+        )
+        agent = Agent(provider=provider, tools=[BarrierTool(), BarrierTool2()])
+
+        result = agent.run("go")
+
+        self.assertEqual(result, "done")
+
+    def test_dangerous_tool_in_batch_forces_sequential_and_confirms(self):
+        class SafeTool(Tool):
+            name = "safe"
+            description = "safe"
+            parameters = {"type": "object", "properties": {}}
+
+            def run(self) -> ToolResult:
+                return ToolResult(output="safe done")
+
+        class DangerTool(Tool):
+            name = "danger"
+            description = "danger"
+            parameters = {"type": "object", "properties": {}}
+            dangerous = True
+
+            def run(self) -> ToolResult:
+                return ToolResult(output="danger done")
+
+        provider = FakeProvider(
+            [
+                ProviderResponse(
+                    text="",
+                    tool_calls=[
+                        ToolCall(id="1", name="safe", arguments={}),
+                        ToolCall(id="2", name="danger", arguments={}),
+                    ],
+                ),
+                ProviderResponse(text="done"),
+            ]
+        )
+        confirmed = []
+        agent = Agent(
+            provider=provider,
+            tools=[SafeTool(), DangerTool()],
+            confirm=lambda name, preview: confirmed.append(name) or True,
+        )
+
+        agent.run("go")
+
+        self.assertEqual(confirmed, ["danger"])
+
+    def test_repeated_tool_name_in_batch_runs_sequential(self):
+        calls_seen = []
+
+        class RecordingTool(Tool):
+            name = "rec"
+            description = "records call order, not thread-safe"
+            parameters = {"type": "object", "properties": {"n": {"type": "string"}}}
+
+            def run(self, n: str) -> ToolResult:
+                calls_seen.append(n)
+                return ToolResult(output=f"ok {n}")
+
+        provider = FakeProvider(
+            [
+                ProviderResponse(
+                    text="",
+                    tool_calls=[
+                        ToolCall(id="1", name="rec", arguments={"n": "1"}),
+                        ToolCall(id="2", name="rec", arguments={"n": "2"}),
+                    ],
+                ),
+                ProviderResponse(text="done"),
+            ]
+        )
+        agent = Agent(provider=provider, tools=[RecordingTool()])
+
+        agent.run("go")
+
+        self.assertEqual(calls_seen, ["1", "2"])
 
 
 if __name__ == "__main__":

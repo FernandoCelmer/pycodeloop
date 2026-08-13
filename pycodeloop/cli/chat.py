@@ -224,6 +224,7 @@ class CodeLoopApp(App):
         self.flow.agent.on_context = self._on_context
         self.flow.agent.on_compact_start = self._on_compact_start
         self.flow.agent.on_compact_end = self._on_compact_end
+        self.flow.agent.on_retry = self._on_retry
         self.flow.agent.confirm = self._confirm
 
     def _restore_history(self) -> None:
@@ -424,6 +425,14 @@ class CodeLoopApp(App):
     def _on_compact_end(self, before: int, after: int) -> None:
         self.call_from_thread(
             self._log, f"[dim]✓ compacted context — {before} → {after} messages[/dim]"
+        )
+
+    def _on_retry(self, attempt: int, delay: float, exc: Exception) -> None:
+        self.call_from_thread(
+            self._log,
+            self._styled(
+                f"[dim]⚠ retrying ({attempt}/3) in {delay:.0f}s — ", str(exc), "dim"
+            ),
         )
 
     def _update_subtitle(self) -> None:

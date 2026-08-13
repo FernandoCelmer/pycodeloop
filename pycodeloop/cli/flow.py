@@ -181,6 +181,13 @@ def build_flow(
     def on_compact_end(before: int, after: int) -> None:
         console.print(f"[dim]✓ compacted context — {before} → {after} messages[/dim]")
 
+    def on_retry(attempt: int, delay: float, exc: Exception) -> None:
+        console.print(
+            styled_text(
+                f"[dim]⚠ retrying ({attempt}/3) in {delay:.0f}s — ", str(exc), "dim"
+            )
+        )
+
     answer_queue: queue.Queue = queue.Queue()
     reader_started = False
 
@@ -259,4 +266,5 @@ def build_flow(
     flow.agent.on_context = on_context
     flow.agent.on_compact_start = on_compact_start
     flow.agent.on_compact_end = on_compact_end
+    flow.agent.on_retry = on_retry
     return flow, provider_name, model

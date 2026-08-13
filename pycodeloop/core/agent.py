@@ -5,9 +5,10 @@ from __future__ import annotations
 import threading
 import time
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 
 from pycodeloop.abc.confirm import Confirm
-from pycodeloop.abc.provider import Provider, Usage
+from pycodeloop.abc.provider import Provider, ProviderResponse, ToolCall, Usage
 from pycodeloop.abc.tool import Tool
 from pycodeloop.core.context_window import context_window_for
 from pycodeloop.core.session import Message, Session
@@ -20,6 +21,18 @@ _COMPACT_SUMMARY_PROMPT = (
     "summary replaces the full history, so don't drop anything needed to "
     "continue the task."
 )
+
+_RETRYABLE_STATUS_CODES = {408, 429, 500, 502, 503, 504}
+_MAX_RETRIES = 3
+_RETRY_BASE_DELAY = 1.0
+
+
+def _is_retryable(exc: Exception) -> bool:
+    status = getattr(exc, "status_code", None) or getattr(exc, "code", None)
+    if isinstance(status, int) and status in _RETRYABLE_STATUS_CODES:
+        return True
+    return isinstance(exc, (TimeoutError, ConnectionError))
+
 
 DEFAULT_SYSTEM_PROMPT = (
     "You are CodeLoop, an autonomous coding agent. You have tools to read, "
@@ -55,6 +68,7 @@ class Agent:
         on_compact_start: Callable[[], None] | None = None,
         on_compact_end: Callable[[int, int], None] | None = None,
         on_message: Callable[[], None] | None = None,
+        on_retry: Callable[[int, float, Exception], None] | None = None,
     ) -> None:
         self.provider = provider
         self.tools = {tool.name: tool for tool in (tools or DEFAULT_TOOLS)}
@@ -73,8 +87,26 @@ class Agent:
         self.on_compact_start = on_compact_start
         self.on_compact_end = on_compact_end
         self.on_message = on_message
+        self.on_retry = on_retry
         self.usage = Usage()
         self._last_context_tokens = 0
+
+    def _complete(self, **kwargs) -> ProviderResponse:
+        """`provider.complete()` with retry + exponential backoff on
+        transient failures (rate limits, 5xx, network blips) — a real
+        error (bad request, auth) still raises immediately."""
+        delay = _RETRY_BASE_DELAY
+        for attempt in range(_MAX_RETRIES + 1):
+            try:
+                return self.provider.complete(**kwargs)
+            except Exception as exc:
+                if attempt >= _MAX_RETRIES or not _is_retryable(exc):
+                    raise
+                if self.on_retry:
+                    self.on_retry(attempt + 1, delay, exc)
+                time.sleep(delay)
+                delay *= 2
+        raise AssertionError("unreachable")
 
     def _notify_message(self) -> None:
         """Fired after every message is appended to the session — lets a
@@ -117,6 +149,53 @@ class Agent:
 
         return result.output, result.is_error
 
+    def _can_parallelize(self, calls: list[ToolCall]) -> bool:
+        if len(calls) <= 1:
+            return False
+
+        names = [call.name for call in calls]
+        if len(set(names)) != len(names):
+            return False  # same tool twice — don't risk shared instance state
+
+        return not any(
+            (tool := self.tools.get(call.name)) is not None and tool.dangerous
+            for call in calls
+        )
+
+    def _run_tool_calls(
+        self,
+        calls: list[ToolCall],
+        session: Session,
+        cancel_event: threading.Event | None,
+    ) -> None:
+        for call in calls:
+            if self.on_tool_call:
+                self.on_tool_call(call.name, call.arguments)
+
+        if cancel_event and cancel_event.is_set():
+            results = {call.id: ("Cancelled by user.", True) for call in calls}
+        elif self._can_parallelize(calls):
+            with ThreadPoolExecutor(max_workers=len(calls)) as executor:
+                futures = {
+                    call.id: executor.submit(self._execute, call.name, call.arguments)
+                    for call in calls
+                }
+            results = {call_id: future.result() for call_id, future in futures.items()}
+        else:
+            results = {}
+            for call in calls:
+                if cancel_event and cancel_event.is_set():
+                    results[call.id] = ("Cancelled by user.", True)
+                else:
+                    results[call.id] = self._execute(call.name, call.arguments)
+
+        for call in calls:
+            result_text, is_error = results[call.id]
+            if self.on_tool_result:
+                self.on_tool_result(call.name, result_text, is_error)
+            session.add_tool_result(call.id, result_text)
+            self._notify_message()
+
     def _compact(self, session: Session) -> None:
         """Summarize everything but the most recent turns via the
         provider itself, replacing the older history with one condensed
@@ -134,7 +213,7 @@ class Agent:
         cutoff = turn_starts[-_COMPACT_KEEP_RECENT_TURNS]
         older, recent = session.messages[:cutoff], session.messages[cutoff:]
 
-        summary = self.provider.complete(
+        summary = self._complete(
             system_prompt="Summarize conversations concisely for context compaction.",
             messages=[*older, Message(role="user", content=_COMPACT_SUMMARY_PROMPT)],
             tools=[],
@@ -187,7 +266,7 @@ class Agent:
                 self.on_request(len(session.history()), len(tools))
 
             started_at = time.perf_counter()
-            response = self.provider.complete(
+            response = self._complete(
                 system_prompt=self.system_prompt,
                 messages=session.history(),
                 tools=tools,
@@ -213,20 +292,7 @@ class Agent:
             if not response.tool_calls:
                 return response.text
 
-            for call in response.tool_calls:
-                if self.on_tool_call:
-                    self.on_tool_call(call.name, call.arguments)
-
-                if cancel_event and cancel_event.is_set():
-                    result_text, is_error = "Cancelled by user.", True
-                else:
-                    result_text, is_error = self._execute(call.name, call.arguments)
-
-                if self.on_tool_result:
-                    self.on_tool_result(call.name, result_text, is_error)
-
-                session.add_tool_result(call.id, result_text)
-                self._notify_message()
+            self._run_tool_calls(response.tool_calls, session, cancel_event)
 
             if cancel_event and cancel_event.is_set():
                 return "Cancelled by user."
