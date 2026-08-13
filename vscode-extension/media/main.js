@@ -29,6 +29,9 @@
   const menuModel = document.getElementById("menu-model");
   const menuAutoApprove = document.getElementById("menu-auto-approve");
   const menuAutoApproveCheck = document.getElementById("menu-auto-approve-check");
+  const menuSkills = document.getElementById("menu-skills");
+  const menuSkillsCheck = document.getElementById("menu-skills-check");
+  const menuMcp = document.getElementById("menu-mcp");
   const menuReload = document.getElementById("menu-reload");
   const menuSettings = document.getElementById("menu-settings");
   const statusDot = document.getElementById("status-dot");
@@ -43,6 +46,7 @@
   const pendingToolCards = new Map(); // name -> array of card elements, FIFO
   let currentModel = "";
   let autoApprove = false;
+  let skillsEnabled = true;
   let pendingImages = []; // base64 PNG/JPEG data (no data: prefix)
 
   function scrollToBottom() {
@@ -141,6 +145,62 @@
     messagesEl.appendChild(el);
     scrollToBottom();
     return el;
+  }
+
+  // Provider HTTP errors arrive as Python's str(HTTPError): "HTTP Error
+  // 400: Bad Request: {...raw JSON body...}". Pull the human message out
+  // of that JSON (Anthropic/OpenAI both nest it under error.message) and
+  // show it up front, with the raw response tucked behind "Details".
+  function parseApiError(text) {
+    const match = /^HTTP Error (\d+): ([^:]+): ([\s\S]*)$/.exec(text);
+    if (!match) {
+      return null;
+    }
+    const [, status, reason, rest] = match;
+    let detail = null;
+    let friendly = null;
+    try {
+      detail = JSON.parse(rest);
+      friendly = detail?.error?.message || detail?.message || null;
+    } catch {
+      detail = rest;
+    }
+    return { status, reason, friendly, raw: typeof detail === "string" ? detail : JSON.stringify(detail, null, 2) };
+  }
+
+  function addErrorNote(text) {
+    const parsed = parseApiError(text);
+    if (!parsed) {
+      addSystemNote(text, true);
+      return;
+    }
+
+    const box = document.createElement("div");
+    box.className = "system-note error api-error";
+
+    const summary = document.createElement("div");
+    summary.className = "api-error-summary";
+    summary.textContent = `API error ${parsed.status} (${parsed.reason})`;
+    box.appendChild(summary);
+
+    if (parsed.friendly) {
+      const friendly = document.createElement("div");
+      friendly.className = "api-error-friendly";
+      friendly.textContent = parsed.friendly;
+      box.appendChild(friendly);
+    }
+
+    const details = document.createElement("details");
+    const summaryToggle = document.createElement("summary");
+    summaryToggle.textContent = "Details";
+    const pre = document.createElement("pre");
+    pre.textContent = parsed.raw;
+    details.appendChild(summaryToggle);
+    details.appendChild(pre);
+    box.appendChild(details);
+
+    messagesEl.appendChild(box);
+    scrollToBottom();
   }
 
   function addUserTurn(text, images) {
@@ -572,6 +632,7 @@
     }
     addUserTurn(prompt, pendingImages);
     promptEl.value = "";
+    commandMenu.hidden = true;
     const images = pendingImages;
     pendingImages = [];
     renderAttachmentsPreview();
@@ -579,6 +640,90 @@
     setBusy(true);
     vscode.postMessage({ type: "sendPrompt", prompt, images });
   }
+
+  // --- slash commands ---
+
+  const SLASH_COMMANDS = [
+    { name: "new", description: "Start a new session", run: () => vscode.postMessage({ type: "newSession" }) },
+    { name: "sessions", description: "Switch to a saved session", run: () => vscode.postMessage({ type: "selectSession" }) },
+    { name: "provider", description: "Select a provider config file", run: () => vscode.postMessage({ type: "selectConfig" }) },
+    { name: "model", description: "Set a model override", run: () => vscode.postMessage({ type: "selectModel", current: currentModel }) },
+    {
+      name: "auto-approve",
+      description: "Toggle auto-approve for dangerous tools",
+      run: () => vscode.postMessage({ type: "toggleAutoApprove", next: !autoApprove }),
+    },
+    {
+      name: "skills",
+      description: "Toggle Claude/Cursor/AGENTS.md skills discovery",
+      run: () => vscode.postMessage({ type: "toggleSkills", next: !skillsEnabled }),
+    },
+    { name: "mcp", description: "Add or remove MCP servers", run: () => vscode.postMessage({ type: "manageMcpServers" }) },
+    { name: "reload", description: "Reload the pycodeloop connection", run: () => vscode.postMessage({ type: "reload" }) },
+    { name: "settings", description: "Open CodeLoop settings", run: () => vscode.postMessage({ type: "openSettings" }) },
+    {
+      name: "help",
+      description: "List available commands",
+      run: () => addSystemNote(SLASH_COMMANDS.map((c) => "/" + c.name).join("  ")),
+    },
+  ];
+
+  const commandMenu = document.createElement("div");
+  commandMenu.id = "command-menu";
+  commandMenu.hidden = true;
+  promptEl.insertAdjacentElement("beforebegin", commandMenu);
+
+  let commandMenuItems = [];
+  let commandMenuIndex = 0;
+
+  function filteredCommands() {
+    const query = promptEl.value.slice(1).toLowerCase();
+    return SLASH_COMMANDS.filter((c) => c.name.startsWith(query));
+  }
+
+  function renderCommandMenu() {
+    commandMenu.innerHTML = "";
+    commandMenuItems.forEach((cmd, i) => {
+      const item = document.createElement("div");
+      item.className = "command-item" + (i === commandMenuIndex ? " active" : "");
+      const name = document.createElement("span");
+      name.className = "command-name";
+      name.textContent = "/" + cmd.name;
+      const desc = document.createElement("span");
+      desc.className = "command-desc";
+      desc.textContent = cmd.description;
+      item.appendChild(name);
+      item.appendChild(desc);
+      item.addEventListener("mousedown", (event) => {
+        event.preventDefault();
+        runCommand(cmd);
+      });
+      commandMenu.appendChild(item);
+    });
+  }
+
+  function updateCommandMenu() {
+    const isCommand = promptEl.value.startsWith("/") && !promptEl.value.includes(" ");
+    commandMenuItems = isCommand ? filteredCommands() : [];
+    if (!commandMenuItems.length) {
+      commandMenu.hidden = true;
+      return;
+    }
+    commandMenuIndex = Math.min(commandMenuIndex, commandMenuItems.length - 1);
+    renderCommandMenu();
+    commandMenu.hidden = false;
+  }
+
+  function runCommand(cmd) {
+    promptEl.value = "";
+    commandMenu.hidden = true;
+    cmd.run();
+  }
+
+  promptEl.addEventListener("input", () => {
+    commandMenuIndex = 0;
+    updateCommandMenu();
+  });
 
   sendButton.addEventListener("click", send);
   cancelButton.addEventListener("click", () => {
@@ -593,6 +738,31 @@
     vscode.postMessage({ type: "newSession" });
   });
   promptEl.addEventListener("keydown", (event) => {
+    if (!commandMenu.hidden) {
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        commandMenuIndex = (commandMenuIndex + 1) % commandMenuItems.length;
+        renderCommandMenu();
+        return;
+      }
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        commandMenuIndex = (commandMenuIndex - 1 + commandMenuItems.length) % commandMenuItems.length;
+        renderCommandMenu();
+        return;
+      }
+      if (event.key === "Enter" || event.key === "Tab") {
+        event.preventDefault();
+        runCommand(commandMenuItems[commandMenuIndex]);
+        return;
+      }
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        commandMenu.hidden = true;
+        return;
+      }
+    }
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       send();
@@ -646,6 +816,14 @@
     closeMenu();
     vscode.postMessage({ type: "toggleAutoApprove", next: !autoApprove });
   });
+  menuSkills.addEventListener("click", () => {
+    closeMenu();
+    vscode.postMessage({ type: "toggleSkills", next: !skillsEnabled });
+  });
+  menuMcp.addEventListener("click", () => {
+    closeMenu();
+    vscode.postMessage({ type: "manageMcpServers" });
+  });
   menuReload.addEventListener("click", () => {
     closeMenu();
     vscode.postMessage({ type: "reload" });
@@ -655,11 +833,13 @@
     vscode.postMessage({ type: "openSettings" });
   });
 
-  function applySettings(model, nextAutoApprove) {
+  function applySettings(model, nextAutoApprove, nextSkills) {
     currentModel = model || "";
     autoApprove = !!nextAutoApprove;
+    skillsEnabled = nextSkills !== false;
     menuModel.title = currentModel ? "Current: " + currentModel : "Using provider default";
-    menuAutoApproveCheck.textContent = autoApprove ? "☑" : "☐";
+    menuAutoApproveCheck.classList.toggle("checked", autoApprove);
+    menuSkillsCheck.classList.toggle("checked", skillsEnabled);
   }
 
   window.addEventListener("message", (event) => {
@@ -667,7 +847,7 @@
 
     switch (message.type) {
       case "settings":
-        applySettings(message.model, message.autoApprove);
+        applySettings(message.model, message.autoApprove, message.skills);
         break;
       case "cliMissing":
         clearStatusCards();
@@ -733,7 +913,7 @@
         break;
       case "error":
         finishAssistantTurn();
-        addSystemNote(message.message, true);
+        addErrorNote(message.message);
         setBusy(false);
         break;
       case "connectionError":

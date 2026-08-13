@@ -11,13 +11,6 @@ export interface RpcMessage {
   error?: { code: number; message: string };
 }
 
-/**
- * Talks JSON-RPC 2.0 to a `pycodeloop serve` child process over its
- * stdin/stdout — one JSON object per line in both directions. Requests
- * with an `id` resolve a promise on the matching response; everything
- * else (server notifications, and our own outgoing notifications) is
- * fire-and-forget, surfaced as EventEmitter events keyed by method name.
- */
 export class RpcClient extends EventEmitter {
   private process: ChildProcessWithoutNullStreams;
   private nextId = 1;
@@ -53,9 +46,6 @@ export class RpcClient extends EventEmitter {
       this.emit("exit", { code, signal });
     });
 
-    // Spawn failures (bad `pycodeloop.command` path, not on PATH, etc)
-    // land here instead of "exit" — without this listener Node treats
-    // it as an unhandled error and crashes the extension host.
     this.process.on("error", (error) => {
       this.emit("spawnError", error);
     });

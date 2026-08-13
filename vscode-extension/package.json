@@ -88,6 +88,12 @@
           "type": "boolean",
           "default": false,
           "description": "Automatically approve dangerous tool calls (write/edit/delete/bash) instead of prompting. Same as the CLI's --yes flag."
+        },
+        "pycodeloop.mcpServers": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "MCP server launch commands, one per --mcp flag (e.g. \"npx -y @modelcontextprotocol/server-filesystem .\"). Each server's tools are exposed to the agent alongside the built-in ones."
         }
       }
     }
@@ -95,7 +101,8 @@
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
-    "watch": "tsc -w -p ./"
+    "watch": "tsc -w -p ./",
+    "test": "tsc -p ./ && node --test out/test/*.test.js"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",

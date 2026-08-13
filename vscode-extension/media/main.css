@@ -112,6 +112,33 @@ body {
   white-space: nowrap;
 }
 
+.check-box {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  border: 1px solid var(--vscode-checkbox-border, currentColor);
+  border-radius: 3px;
+  background: var(--vscode-checkbox-background, transparent);
+  position: relative;
+}
+
+.check-box.checked {
+  background: var(--vscode-checkbox-selectBackground, var(--vscode-focusBorder));
+  border-color: var(--vscode-focusBorder);
+}
+
+.check-box.checked::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 0px;
+  width: 4px;
+  height: 8px;
+  border: solid var(--vscode-checkbox-foreground, #fff);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
 .menu-item:hover {
   background: var(--vscode-list-hoverBackground);
 }
@@ -201,6 +228,48 @@ body {
 
 .system-note.error {
   color: var(--vscode-errorForeground);
+}
+
+.api-error {
+  align-self: stretch;
+  width: 100%;
+  max-width: 100%;
+  border: 1px solid var(--vscode-errorForeground);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.85em;
+}
+
+.api-error-summary {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.api-error-friendly {
+  color: var(--vscode-foreground);
+  margin-bottom: 4px;
+}
+
+.api-error details {
+  margin-top: 4px;
+}
+
+.api-error summary {
+  cursor: pointer;
+  color: var(--vscode-descriptionForeground);
+  font-size: 0.9em;
+}
+
+.api-error pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 200px;
+  overflow-y: auto;
+  font-family: var(--vscode-editor-font-family);
+  background: var(--vscode-textCodeBlock-background);
+  padding: 6px;
+  border-radius: 4px;
+  margin: 4px 0 0;
 }
 
 /* --- tool call cards --- */
@@ -346,9 +415,58 @@ body {
 /* --- composer --- */
 
 #composer {
+  position: relative;
   border-top: 1px solid var(--vscode-widget-border);
   padding: 8px;
   flex-shrink: 0;
+}
+
+#command-menu {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 100%;
+  margin-bottom: 4px;
+  background: var(--vscode-menu-background, var(--vscode-editorWidget-background));
+  border: 1px solid var(--vscode-widget-border);
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  padding: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 10;
+}
+
+#command-menu[hidden] {
+  display: none;
+}
+
+.command-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+}
+
+.command-item.active,
+.command-item:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+
+.command-name {
+  font-family: var(--vscode-editor-font-family);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.command-desc {
+  color: var(--vscode-descriptionForeground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 #prompt {
