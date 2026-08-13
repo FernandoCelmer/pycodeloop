@@ -36,7 +36,27 @@ class Session:
         )
 
     def history(self) -> list[Message]:
+        self._repair_dangling_tool_calls()
         return self.messages
+
+    def _repair_dangling_tool_calls(self) -> None:
+        """Self-heals a session left with a trailing tool_calls message
+        that has no tool_result replies — e.g. the process was killed
+        (crash, force-quit) between persisting the assistant's tool_use
+        message and running the tools. Every provider rejects a tool_use
+        without a matching tool_result on the next call, which would
+        otherwise make the session permanently unusable."""
+        if not self.messages:
+            return
+
+        last = self.messages[-1]
+        if last.role != "assistant" or not last.tool_calls:
+            return
+
+        for call in last.tool_calls:
+            self.add_tool_result(
+                call["id"], "Cancelled — connection was lost before this tool ran."
+            )
 
     def trim(self, max_turns: int) -> None:
         """Keep only the most recent `max_turns` user-initiated turns,

@@ -187,7 +187,7 @@ class RpcServer:
                                 "toolCalls": message.tool_calls,
                                 "images": message.images,
                             }
-                            for message in (session.messages if session else [])
+                            for message in (session.history() if session else [])
                         ]
                     },
                 }
@@ -257,9 +257,6 @@ def serve(
     """Run CodeLoop as a JSON-RPC-over-stdio server for editor
     integrations — no interactive terminal output, one JSON message
     per line on stdin/stdout."""
-    # Any stray console.print() from shared CLI helpers (MCP connection
-    # notices, provider-resolution errors) would otherwise land on
-    # stdout and corrupt the JSON-RPC stream for the client.
     console.file = sys.stderr
 
     provider_instance, provider_name = resolve_provider(provider, model, base_url, url)

@@ -50,6 +50,53 @@ class TestSessionTrim(unittest.TestCase):
         self.assertEqual(roles, ["user", "assistant", "tool", "assistant"])
 
 
+class TestSessionRepairsDanglingToolCalls(unittest.TestCase):
+    def test_history_fills_in_missing_tool_results(self):
+        session = Session(system_prompt="sys")
+        session.add_user("do the thing")
+        session.add_assistant(
+            "",
+            tool_calls=[
+                {"id": "c1", "name": "bash", "arguments": {}},
+                {"id": "c2", "name": "read_file", "arguments": {}},
+            ],
+        )
+        # No add_tool_result() calls — simulates the process dying right
+        # after the assistant's tool_use message was persisted.
+
+        history = session.history()
+
+        roles = [m.role for m in history]
+        self.assertEqual(roles, ["user", "assistant", "tool", "tool"])
+        self.assertEqual(history[2].tool_call_id, "c1")
+        self.assertEqual(history[3].tool_call_id, "c2")
+
+    def test_history_is_idempotent_after_repair(self):
+        session = Session(system_prompt="sys")
+        session.add_user("do the thing")
+        session.add_assistant(
+            "", tool_calls=[{"id": "c1", "name": "bash", "arguments": {}}]
+        )
+
+        session.history()
+        second_call = session.history()
+
+        self.assertEqual(len(second_call), 3)
+
+    def test_history_leaves_a_complete_session_untouched(self):
+        session = Session(system_prompt="sys")
+        session.add_user("do the thing")
+        session.add_assistant(
+            "", tool_calls=[{"id": "c1", "name": "bash", "arguments": {}}]
+        )
+        session.add_tool_result("c1", "output")
+
+        history = session.history()
+
+        self.assertEqual(len(history), 3)
+        self.assertEqual(history[-1].content, "output")
+
+
 class TestSessionImages(unittest.TestCase):
     def test_add_user_without_images_leaves_images_none(self):
         session = Session(system_prompt="sys")

@@ -146,12 +146,6 @@ class Agent:
         try:
             result = tool.run(**arguments)
         except Exception as exc:
-            # A tool_calls message was already added to the session before
-            # `_execute` runs — an unhandled exception here would leave it
-            # without its matching tool_result, which every provider
-            # rejects on the next call (and `Session.trim()` can't safely
-            # split them either). Report the failure as this tool's
-            # result instead of crashing the whole conversation.
             return f"Tool '{name}' raised {exc.__class__.__name__}: {exc}", True
 
         return result.output, result.is_error
@@ -162,7 +156,7 @@ class Agent:
 
         names = [call.name for call in calls]
         if len(set(names)) != len(names):
-            return False  # same tool twice — don't risk shared instance state
+            return False
 
         return not any(
             (tool := self.tools.get(call.name)) is not None and tool.dangerous
@@ -243,10 +237,6 @@ class Agent:
         )
         self.usage = self.usage + summary.usage
 
-        # Prepended to the first kept message's own content (always a
-        # "user" turn) instead of inserted as a synthetic assistant
-        # message — some APIs reject history that doesn't start with a
-        # real user turn.
         recent[0] = Message(
             role=recent[0].role,
             content=(

@@ -106,10 +106,6 @@ def resolve_provider(
     is_json_config = provider_name.endswith(".json")
 
     if is_json_config:
-        # A JSON-configured provider owns its own model/api_key — only
-        # an explicitly-passed --model overrides it; the resolved
-        # Settings default (env var/saved setting) must not clobber
-        # what's in the file.
         provider_kwargs: dict = {}
         if model:
             provider_kwargs["model"] = model
@@ -211,9 +207,6 @@ def build_flow(
                 try:
                     answer_queue.put(input())
                 except (EOFError, KeyboardInterrupt):
-                    # Distinct from a bare Enter (which legitimately means
-                    # "yes") — stdin being closed/unavailable must default
-                    # to declining, not silently approving dangerous tools.
                     answer_queue.put(_EOF)
                     return
 
