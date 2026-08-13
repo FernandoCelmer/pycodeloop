@@ -26,6 +26,13 @@ _RETRYABLE_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 _MAX_RETRIES = 3
 _RETRY_BASE_DELAY = 1.0
 
+_TOOL_RESULT_SUMMARIZE_THRESHOLD = 8_000
+_TOOL_SUMMARY_PROMPT = (
+    "Summarize this tool output concisely, preserving specific facts, "
+    "file paths, error messages, and anything needed to continue the "
+    "task — this replaces the full output."
+)
+
 
 def _is_retryable(exc: Exception) -> bool:
     status = getattr(exc, "status_code", None) or getattr(exc, "code", None)
@@ -191,10 +198,26 @@ class Agent:
 
         for call in calls:
             result_text, is_error = results[call.id]
+            if not is_error and len(result_text) > _TOOL_RESULT_SUMMARIZE_THRESHOLD:
+                result_text = self._summarize_tool_result(call.name, result_text)
             if self.on_tool_result:
                 self.on_tool_result(call.name, result_text, is_error)
             session.add_tool_result(call.id, result_text)
             self._notify_message()
+
+    def _summarize_tool_result(self, tool_name: str, text: str) -> str:
+        summary = self._complete(
+            system_prompt="Summarize tool output concisely for context compaction.",
+            messages=[
+                Message(
+                    role="user",
+                    content=f"Tool '{tool_name}' returned:\n\n{text}\n\n{_TOOL_SUMMARY_PROMPT}",
+                )
+            ],
+            tools=[],
+        )
+        self.usage = self.usage + summary.usage
+        return f"[Summarized tool output — {len(text)} chars condensed]\n{summary.text}"
 
     def _compact(self, session: Session) -> None:
         """Summarize everything but the most recent turns via the
@@ -220,13 +243,21 @@ class Agent:
         )
         self.usage = self.usage + summary.usage
 
-        session.messages = [
-            Message(
-                role="assistant",
-                content=f"[Earlier conversation summary]\n{summary.text}",
+        # Prepended to the first kept message's own content (always a
+        # "user" turn) instead of inserted as a synthetic assistant
+        # message — some APIs reject history that doesn't start with a
+        # real user turn.
+        recent[0] = Message(
+            role=recent[0].role,
+            content=(
+                f"[Earlier conversation summary]\n{summary.text}\n\n---\n\n"
+                f"{recent[0].content}"
             ),
-            *recent,
-        ]
+            tool_call_id=recent[0].tool_call_id,
+            tool_calls=recent[0].tool_calls,
+            images=recent[0].images,
+        )
+        session.messages = recent
         self._notify_message()
 
         if self.on_compact_end:
