@@ -36,10 +36,10 @@ pip install pycodeloop[anthropic]   # or: pycodeloop[openai], pycodeloop[all]
 
 ```python
 from pycodeloop import CodeLoop, Config
-from pycodeloop.providers import AnthropicProvider
+from pycodeloop.providers import GenericProvider
 
 config = Config(
-    provider=AnthropicProvider(model="claude-sonnet-5"),
+    provider=GenericProvider.from_json("templates/anthropic.json"),
 )
 
 flow = CodeLoop(config=config)
@@ -59,25 +59,25 @@ pip install pycodeloop[all]         # both
 <details>
 <summary><strong>Providers</strong></summary>
 
-Swap the LLM backend without touching the agent loop:
+Swap the LLM backend without touching the agent loop — every backend is a JSON config fed to the one `GenericProvider` class:
 
 ```python
 from pycodeloop import Config
-from pycodeloop.providers import AnthropicProvider, OpenAIProvider
+from pycodeloop.providers import GenericProvider
 
 # Anthropic
-config = Config(provider=AnthropicProvider(model="claude-sonnet-5"))
+config = Config(provider=GenericProvider.from_json("templates/anthropic.json"))
 
 # OpenAI
-config = Config(provider=OpenAIProvider(model="gpt-5"))
+config = Config(provider=GenericProvider.from_json("templates/openai.json"))
 ```
 
 Env-based defaults, resolved by `pycodeloop.settings.Settings` when `Config()` gets no explicit provider:
 
 ```bash
-export PYCODELOOP_PROVIDER=anthropic   # or: openai
-export PYCODELOOP_MODEL=claude-sonnet-5
-export ANTHROPIC_API_KEY=sk-...    # or OPENAI_API_KEY
+export PYCODELOOP_PROVIDER=templates/openai.json
+export PYCODELOOP_MODEL=gpt-5
+export OPENAI_API_KEY=sk-...
 ```
 
 Point `GenericProvider` at any OpenAI-compatible HTTP endpoint, or configure one entirely from a JSON file — no Python required:
@@ -92,7 +92,7 @@ provider = get_provider("./provider.example.json")
 pycodeloop run "list the files here" --provider ./provider.example.json
 ```
 
-See [`docs/examples/provider.example.json`](docs/examples/provider.example.json) and the [JSON provider guide](docs/nav/development/json-provider.md).
+See [`docs/examples/provider.example.json`](docs/examples/provider.example.json), the [`templates/`](templates/) directory for ready-made vendor configs, and the [JSON provider guide](docs/nav/development/json-provider.md).
 
 Bring your own backend by implementing the `Provider` ABC:
 
@@ -115,11 +115,11 @@ The `Config` class validates and injects the pieces an agent run needs:
 
 ```python
 from pycodeloop import Config
-from pycodeloop.providers import AnthropicProvider
+from pycodeloop.providers import GenericProvider
 from pycodeloop.core.tools import DEFAULT_TOOLS
 
 config = Config(
-    provider=AnthropicProvider(model="claude-sonnet-5"),
+    provider=GenericProvider.from_json("templates/anthropic.json"),
     tools=DEFAULT_TOOLS,
     system_prompt="You are a terse code reviewer.",
     max_turns=25,
@@ -227,7 +227,7 @@ agent.run("...")
 print(agent.usage)  # Usage(input_tokens=..., output_tokens=...)
 ```
 
-`on_text_delta` only fires when the provider supports streaming (Anthropic and OpenAI both do); leave it `None` to get the assembled response in one shot instead.
+`on_text_delta` only fires when the provider supports streaming — `GenericProvider` streams real SSE chunks for the default OpenAI chat-completions shape (e.g. `templates/openai.json`); a config with a custom `response_shape`/`response_paths` (e.g. `templates/anthropic.json`) delivers the full text in one call instead. Leave `on_text_delta` `None` to get the assembled response in one shot regardless.
 
 ---
 
@@ -246,12 +246,12 @@ Connect to any Model Context Protocol server over stdio and expose its remote to
 from pycodeloop import CodeLoop, Config
 from pycodeloop.core.mcp import MCPServer, load_mcp_tools
 from pycodeloop.core.tools import DEFAULT_TOOLS
-from pycodeloop.providers import AnthropicProvider
+from pycodeloop.providers import GenericProvider
 
 server = MCPServer(command="npx", args=["-y", "@modelcontextprotocol/server-filesystem", "."])
 tools = DEFAULT_TOOLS + load_mcp_tools(server)
 
-config = Config(provider=AnthropicProvider(model="claude-sonnet-5"), tools=tools)
+config = Config(provider=GenericProvider.from_json("templates/anthropic.json"), tools=tools)
 flow = CodeLoop(config=config)
 ```
 
@@ -281,7 +281,7 @@ pycodeloop
 pycodeloop run "add a docstring to pycodeloop/core/agent.py"
 
 # Override provider/model per invocation
-pycodeloop run "..." --provider openai --model gpt-5
+pycodeloop run "..." --provider templates/openai.json --model gpt-5
 
 # Skip confirmation prompts for dangerous tools
 pycodeloop run "..." --yes
@@ -308,13 +308,13 @@ The CLI behaves like a terminal coding agent:
 
 ```python
 from pycodeloop.core.agent import Agent
-from pycodeloop.providers import AnthropicProvider
+from pycodeloop.providers import GenericProvider
 
 def on_tool_call(name, args):
     print(f"-> {name} {args}")
 
 agent = Agent(
-    provider=AnthropicProvider(model="claude-sonnet-5"),
+    provider=GenericProvider.from_json("templates/anthropic.json"),
     on_tool_call=on_tool_call,
 )
 

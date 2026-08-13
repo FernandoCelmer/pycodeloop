@@ -4,17 +4,17 @@ Pass `on_text_delta` to `Agent` and it's called with each chunk of text as the m
 
 ```python
 from pycodeloop.core.agent import Agent
-from pycodeloop.providers import AnthropicProvider
+from pycodeloop.providers import GenericProvider
 
 agent = Agent(
-    provider=AnthropicProvider(model="claude-sonnet-5"),
+    provider=GenericProvider.from_json("templates/openai.json"),
     on_text_delta=lambda chunk: print(chunk, end="", flush=True),
 )
 
 agent.run("explain what this codebase does")
 ```
 
-Both built-in providers (`AnthropicProvider`, `OpenAIProvider`) stream natively — Anthropic via `client.messages.stream(...)`, OpenAI via `stream=True`. If `on_text_delta` is `None` (the default), providers skip streaming entirely and return the full response in one call.
+`GenericProvider` streams real SSE chunks for the default OpenAI chat-completions request/response shape — a config like `templates/openai.json` or `templates/ollama.json` that doesn't override `response_shape`/`response_paths`. A config with a custom response shape (e.g. `templates/anthropic.json`, which sets `response_shape: "anthropic"`) still works with `on_text_delta`, but delivers the full text as a single chunk once the request completes rather than token-by-token. If `on_text_delta` is `None` (the default), providers skip streaming entirely and return the full response in one call.
 
 ## In the CLI
 

@@ -4,7 +4,7 @@
 
 ```python
 config = Config(
-    provider=AnthropicProvider(model="claude-sonnet-5"),
+    provider=GenericProvider.from_json("templates/anthropic.json"),
     tools=DEFAULT_TOOLS,
     system_prompt="You are a terse code reviewer.",
     max_turns=25,
@@ -24,9 +24,9 @@ config = Config(
 
 If `provider` is omitted, `Config` resolves one from `pycodeloop.settings.Settings`, which reads:
 
-- `PYCODELOOP_PROVIDER` — `anthropic` (default), `openai`, `ollama`, or a `module.path:ClassName` for a custom provider
-- `PYCODELOOP_MODEL` — overrides the provider's default model
-- `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` — read automatically based on `PYCODELOOP_PROVIDER`
+- `PYCODELOOP_PROVIDER` — a path to a JSON config file (a bundled `templates/anthropic.json`-equivalent is the default), the bare string `"generic"` paired with an explicit `url=`, or a `module.path:ClassName` for a custom provider
+- `PYCODELOOP_MODEL` — overrides the model named in the JSON config (or passed to a custom provider)
+- The API key env var named by the JSON config's own `api_key_env` field (`ANTHROPIC_API_KEY` for the bundled default) — read automatically, no separate `PYCODELOOP_*` var needed
 
 ## CodeLoop: Config + Agent + Session
 
@@ -34,9 +34,9 @@ If `provider` is omitted, `Config` resolves one from `pycodeloop.settings.Settin
 
 ```python
 from pycodeloop import CodeLoop, Config
-from pycodeloop.providers import AnthropicProvider
+from pycodeloop.providers import GenericProvider
 
-flow = CodeLoop(Config(provider=AnthropicProvider(model="claude-sonnet-5")))
+flow = CodeLoop(Config(provider=GenericProvider.from_json("templates/anthropic.json")))
 flow.run("what does this repo do?")
 flow.run("now add a test for it")  # remembers the first turn
 ```

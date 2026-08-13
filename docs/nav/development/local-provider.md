@@ -1,40 +1,52 @@
 # Local providers
 
-`OpenAIProvider` accepts a `base_url` — point it at any server that speaks the OpenAI chat-completions API and it runs through the same code path as `api.openai.com`.
+`GenericProvider` defaults to the OpenAI chat-completions request/response shape, so any server that speaks it — Ollama, LM Studio, vLLM, llama.cpp server, text-generation-webui, and similar — works by just pointing `url` at it.
 
 ## Ollama
 
-`OllamaProvider` (`pycodeloop.providers.OllamaProvider`) is `OpenAIProvider` pre-configured for a local Ollama server:
+[`templates/ollama.json`](../../../templates/ollama.json) is `GenericProvider` pre-configured for a local Ollama server:
+
+```json
+{
+  "url": "http://localhost:11434/v1/chat/completions",
+  "model": "llama3.1",
+  "timeout": 120
+}
+```
 
 ```python
 from pycodeloop import Config
-from pycodeloop.providers import OllamaProvider
+from pycodeloop.providers import GenericProvider
 
-config = Config(provider=OllamaProvider(model="llama3.1"))
+config = Config(provider=GenericProvider.from_json("templates/ollama.json"))
 ```
 
-Defaults: `base_url="http://localhost:11434/v1"`, `api_key="ollama"` (Ollama ignores it, the OpenAI client just requires a non-empty string).
+No `api_key`/`api_key_env` — `GenericProvider` only sends an `Authorization` header when a key is actually present, so it's simply omitted (Ollama doesn't check one).
 
 From the CLI:
 
 ```bash
-pycodeloop run "..." --provider ollama --model llama3.1
+pycodeloop run "..." --provider templates/ollama.json --model llama3.1
 ```
 
 ## Any other OpenAI-compatible server
 
-LM Studio, vLLM, llama.cpp server, text-generation-webui, and similar all expose an OpenAI-compatible endpoint. Point `OpenAIProvider` at it directly:
+LM Studio, vLLM, llama.cpp server, text-generation-webui, and similar all expose an OpenAI-compatible endpoint. [`templates/lmstudio.json`](../../../templates/lmstudio.json) is a ready-made example; point `url` at your own server the same way:
 
 ```python
-from pycodeloop.providers import OpenAIProvider
+from pycodeloop.providers import get_provider
 
-provider = OpenAIProvider(model="my-local-model", base_url="http://localhost:8000/v1", api_key="not-needed")
+provider = get_provider(
+    "generic",
+    url="http://localhost:8000/v1/chat/completions",
+    model="my-local-model",
+)
 ```
 
-Or from the CLI with `--base-url`:
+Or from the CLI with `--url`:
 
 ```bash
-pycodeloop run "..." --provider openai --model my-local-model --base-url http://localhost:8000/v1
+pycodeloop run "..." --provider generic --model my-local-model --url http://localhost:8000/v1/chat/completions
 ```
 
 Tool-calling support depends on the server and the model — not every local model handles the tool-use protocol as reliably as Claude or GPT. If tool calls come back malformed, try a model explicitly documented as supporting function calling.

@@ -17,10 +17,10 @@ Each match becomes a `Skill` (`pycodeloop.core.skills.Skill`): a name, a short d
 
 ```python
 from pycodeloop import Config
-from pycodeloop.providers import AnthropicProvider
+from pycodeloop.providers import GenericProvider
 
 config = Config(
-    provider=AnthropicProvider(model="claude-sonnet-5"),
+    provider=GenericProvider.from_json("templates/anthropic.json"),
     skills=True,
 )
 print([s.name for s in config.skills])

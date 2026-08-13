@@ -4,9 +4,9 @@
 
 ```python
 from pycodeloop import CodeLoop, Config
-from pycodeloop.providers import AnthropicProvider
+from pycodeloop.providers import GenericProvider
 
-config = Config(provider=AnthropicProvider(model="claude-sonnet-5"))
+config = Config(provider=GenericProvider.from_json("templates/anthropic.json"))
 flow = CodeLoop(config=config)
 
 print(flow.run("list the files in this repo and summarize the project"))
@@ -25,10 +25,10 @@ pycodeloop                                                 # full-screen chat (t
 
 ```python
 from pycodeloop.core.agent import Agent
-from pycodeloop.providers import AnthropicProvider
+from pycodeloop.providers import GenericProvider
 
 agent = Agent(
-    provider=AnthropicProvider(model="claude-sonnet-5"),
+    provider=GenericProvider.from_json("templates/anthropic.json"),
     on_tool_call=lambda name, args: print(f"-> {name} {args}"),
 )
 

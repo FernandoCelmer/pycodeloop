@@ -12,12 +12,12 @@ Connect to any [Model Context Protocol](https://modelcontextprotocol.io/) server
 from pycodeloop import CodeLoop, Config
 from pycodeloop.core.mcp import MCPServer, load_mcp_tools
 from pycodeloop.core.tools import DEFAULT_TOOLS
-from pycodeloop.providers import AnthropicProvider
+from pycodeloop.providers import GenericProvider
 
 server = MCPServer(command="npx", args=["-y", "@modelcontextprotocol/server-filesystem", "."])
 tools = DEFAULT_TOOLS + load_mcp_tools(server)
 
-config = Config(provider=AnthropicProvider(model="claude-sonnet-5"), tools=tools)
+config = Config(provider=GenericProvider.from_json("templates/anthropic.json"), tools=tools)
 flow = CodeLoop(config=config)
 ```
 
