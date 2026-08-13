@@ -1,10 +1,10 @@
 # Install
 
 ```bash
-pip install pypycodeloop[anthropic]   # Claude
-pip install pypycodeloop[openai]      # GPT / any OpenAI-compatible server, incl. Ollama
-pip install pypycodeloop[mcp]         # MCP server integration
-pip install pypycodeloop[all]         # everything
+pip install pycodeloop[anthropic]   # Claude
+pip install pycodeloop[openai]      # GPT / any OpenAI-compatible server, incl. Ollama
+pip install pycodeloop[mcp]         # MCP server integration
+pip install pycodeloop[all]         # everything
 ```
 
 Or with Poetry, inside a clone of the repo:

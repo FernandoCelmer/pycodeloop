@@ -1,7 +1,7 @@
 # MCP servers
 
 ```bash
-pip install pypycodeloop[mcp]
+pip install pycodeloop[mcp]
 ```
 
 Connect to any [Model Context Protocol](https://modelcontextprotocol.io/) server over stdio and expose its tools to the agent alongside the built-in ones.
