@@ -208,7 +208,7 @@ body {
 .tool-card {
   align-self: flex-start;
   width: 100%;
-  max-width: 100%;
+  max-width: 99%;
   border: 1px solid var(--vscode-widget-border);
   border-radius: 8px;
   font-size: 0.88em;

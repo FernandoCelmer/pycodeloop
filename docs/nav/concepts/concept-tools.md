@@ -27,6 +27,13 @@ class Tool(ABC):
 | `grep` | Regex search across files | No |
 | `bash` | Run a shell command with a timeout | Yes |
 | `web_fetch` | Fetch a URL and extract its text | No |
+| `http_request` | Call a JSON HTTP API — any method, headers, body | Yes |
+| `git_status` | `git status --porcelain=v1 --branch` | No |
+| `git_diff` | Unstaged (or staged) changes as a unified diff | No |
+| `git_log` | Recent commit history, one line per commit | No |
+| `git_commit` | Stage files and create a commit | Yes |
+| `env` | Read environment variables (sensitive values masked) | No |
+| `todo` | Scratchpad checklist for multi-step tasks | No |
 
 `DEFAULT_TOOLS` (`pycodeloop.core.tools.DEFAULT_TOOLS`) is that list, ready to pass into `Config`.
 

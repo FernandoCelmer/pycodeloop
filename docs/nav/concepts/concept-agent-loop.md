@@ -24,10 +24,18 @@ Each iteration:
 
 | Hook | Signature | When it fires |
 |------|-----------|----------------|
+| `on_request` | `(message_count, tool_count)` | Right before each provider call |
 | `on_tool_call` | `(name, arguments)` | Right before a tool call is attempted |
-| `on_tool_result` | `(name, result_text)` | After a tool call finishes (or is declined) |
+| `on_tool_result` | `(name, result_text, is_error)` | After a tool call finishes (or is declined) |
 | `on_text_delta` | `(chunk)` | For every streamed text chunk, if the provider supports streaming |
-| `confirm` | `(name, preview) -> bool` | Before a `dangerous` tool runs; declining skips it |
-| `on_usage` | `(turn_usage, total_usage)` | After every provider call, with per-turn and running token totals |
+| `confirm` | `(name, preview) -> bool \| str` | Before a `dangerous` tool runs; `False`/a string skips it |
+| `on_usage` | `(turn_usage, total_usage, elapsed)` | After every provider call, with per-turn/running token totals and wall-clock seconds |
+| `on_context` | `(used_tokens, limit_tokens)` | After every provider call, with context-window usage |
+| `on_compact_start` | `()` | When auto-compaction of older history begins |
+| `on_compact_end` | `(before_count, after_count)` | When auto-compaction finishes, with message counts before/after |
+| `on_retry` | `(attempt, delay, exc)` | Before retrying a transient provider failure (rate limits, 5xx, network errors) |
+| `on_message` | `()` | After every message (user/assistant/tool) is appended to the session — used to persist incrementally |
+
+`Agent` also retries transient provider failures (HTTP 408/429/500/502/503/504, timeouts, connection errors) up to 3 times with exponential backoff before raising, and auto-compacts older history via a provider-generated summary once context usage crosses `compact_threshold` (default `0.8`) of the model's context window.
 
 See [Streaming](../how-to/streaming.md), [Permission prompts](../how-to/permission-prompts.md), and [Token usage](../how-to/token-usage.md) for how the CLI wires these up.

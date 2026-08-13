@@ -46,11 +46,15 @@ provider = get_provider("./provider.example.json")
 |-------|----------|---------|
 | `url` | Yes | Endpoint that receives the chat-completions POST request |
 | `model` | No | Sent as `"model"` in the request body |
-| `api_key` | No | Literal key, sent as `Authorization: Bearer <key>` |
+| `api_key` | No | Literal key, sent as `Authorization: Bearer <key>` (or another header — see `auth_header`/`auth_prefix`) |
 | `api_key_env` | No | Env var name to read the key from instead of a literal in the file |
 | `headers` | No | Extra headers merged into every request |
+| `auth_header` | No | Header name the key is sent in (default `Authorization`) |
+| `auth_prefix` | No | Prefix prepended to the key's value in `auth_header` (default `"Bearer "`) |
 | `timeout` | No | Request timeout in seconds (default `60`) |
-| `response_paths` | No | Remaps the response shape — see below |
+| `response_shape` | No | `"anthropic"` to parse replies from Anthropic's native `content[]`/`usage.input_tokens` shape; omit for OpenAI-shaped responses or use `response_paths` |
+| `response_paths` | No | Remaps an arbitrary response shape via dot-paths — see below |
+| `request` | No | Customizes the outgoing request body — `message_shape`, `tool_schema`, `body_paths`, `params`, `params_key`, `extra_body` (see the Anthropic example below and [`reference.json`](../../../templates/reference.json)) |
 
 `--model` and the provider's own `*_API_KEY` env var (from `--provider`'s resolution) still override `model`/`api_key` from the file when passed explicitly on the CLI.
 
@@ -123,7 +127,7 @@ The request body defaults to the OpenAI chat-completions shape. For a backend th
     "body_paths": { "system": "system" },
     "message_shape": "anthropic",
     "tool_schema": "anthropic",
-    "params": { "max_tokens": 1024 }
+    "params": { "max_tokens": 8192 }
   },
   "response_shape": "anthropic"
 }

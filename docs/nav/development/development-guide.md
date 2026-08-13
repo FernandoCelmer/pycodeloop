@@ -100,7 +100,7 @@ pycodeloop/
 │   ├── abc/          # Abstract base classes (Provider, Tool)
 │   ├── cli/           # Typer CLI (run, chat)
 │   ├── core/          # Agent loop, Config, Session, tools, MCP client
-│   ├── providers/     # Anthropic, OpenAI, Ollama
+│   ├── providers/     # GenericProvider (any HTTP chat-completions API)
 │   └── settings.py    # Env-based defaults
 ├── tests/              # Test suite
 ├── docs/               # MkDocs documentation source

@@ -8,6 +8,8 @@ repo_url: https://github.com/dotflow-io/pycodeloop
 
 theme:
   name: material
+  logo: assets/logo.png
+  favicon: assets/logo.ico
   palette:
     - media: (prefers-color-scheme)
       toggle:

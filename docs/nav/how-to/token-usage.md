@@ -7,9 +7,9 @@ from pycodeloop.core.agent import Agent
 
 agent = Agent(
     provider=provider,
-    on_usage=lambda turn, total: print(
+    on_usage=lambda turn, total, elapsed: print(
         f"turn: {turn.input_tokens} in / {turn.output_tokens} out "
-        f"(total: {total.input_tokens} in / {total.output_tokens} out)"
+        f"(total: {total.input_tokens} in / {total.output_tokens} out) — {elapsed:.1f}s"
     ),
 )
 

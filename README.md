@@ -1,4 +1,7 @@
 <p align="center">
+  <img src="docs/assets/logo.png" alt="CodeLoop" width="120">
+</p>
+<p align="center">
   <strong>CodeLoop</strong>
 </p>
 <p align="center">

@@ -15,8 +15,13 @@ config = Config(
 |-----|---------|---------|
 | `provider` | resolved from `PYCODELOOP_PROVIDER`/`PYCODELOOP_MODEL` env vars | LLM backend driving the agent |
 | `tools` | `DEFAULT_TOOLS` | Tools exposed to the agent |
-| `system_prompt` | `Agent.DEFAULT_SYSTEM_PROMPT` | Overrides the default instructions |
+| `system_prompt` | `pycodeloop.core.agent.DEFAULT_SYSTEM_PROMPT` | Overrides the default instructions |
 | `max_turns` | `25` (or `PYCODELOOP_MAX_TURNS`) | Hard cap on tool-use loop iterations |
+| `max_history_turns` | `20` | Cap the session on the number of most recent user-initiated turns kept before each provider call; pass `None` for unbounded growth |
+| `skills` | `False` | Discover Claude Code/Cursor/`AGENTS.md` skills on disk, expose a `read_skill` tool, and list them in the system prompt |
+| `skill_sources` | all sources | Limit discovery to a subset (`"claude-skill"`, `"claude-memory"`, `"cursor-rule"`, `"agents-md"`) |
+| `skills_refresh` | `False` | Skip the skills cache and force a full rescan |
+| `storage` | `SqliteSessions()` (`~/.pycodeloop/pycodeloop.db`) | Persists sessions so `CodeLoop.run(prompt, session_key=...)` can resume across restarts; pass `False` for in-memory only |
 
 `Config.__init__` validates that `provider` is an instance of the `Provider` ABC and raises `NotProviderInstance` immediately if not — a wrong object fails at construction time, not three tool calls into a run.
 

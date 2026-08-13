@@ -13,7 +13,7 @@ Textual owns the whole terminal, so there's no readline/redraw contention — te
 Same options as [`pycodeloop run`](run.md):
 
 ```bash
-pycodeloop chat --provider openai --model gpt-5
+pycodeloop chat --provider templates/openai.json --model gpt-5
 pycodeloop chat --mcp "npx -y @modelcontextprotocol/server-filesystem ." --yes
 ```
 
