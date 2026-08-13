@@ -26,17 +26,18 @@
       {
         "command": "pycodeloop.newSession",
         "title": "CodeLoop: New Session"
+      },
+      {
+        "command": "pycodeloop.selectConfig",
+        "title": "CodeLoop: Select Provider Config File…",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "pycodeloop.selectSession",
+        "title": "CodeLoop: Switch Session…",
+        "icon": "$(history)"
       }
     ],
-    "menus": {
-      "view/title": [
-        {
-          "command": "pycodeloop.newSession",
-          "when": "view == pycodeloop.chat",
-          "group": "navigation"
-        }
-      ]
-    },
     "viewsContainers": {
       "activitybar": [
         {
@@ -82,6 +83,11 @@
           "type": "boolean",
           "default": true,
           "description": "Discover Claude/Cursor/AGENTS.md skills and expose a read_skill tool."
+        },
+        "pycodeloop.autoApprove": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically approve dangerous tool calls (write/edit/delete/bash) instead of prompting. Same as the CLI's --yes flag."
         }
       }
     }
