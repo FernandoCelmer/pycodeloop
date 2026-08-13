@@ -48,6 +48,9 @@ def _load_skill_md(path: Path, source: str) -> Skill | None:
     meta, body = _parse_frontmatter(text)
     name = meta.get("name") or path.stem
     description = meta.get("description") or (body.splitlines()[0] if body else "")
+    description = " ".join(description.split())
+    if len(description) > _MAX_DESCRIPTION:
+        description = description[:_MAX_DESCRIPTION] + "…"
 
     return Skill(
         name=name,
