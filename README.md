@@ -1,37 +1,62 @@
-<div align="center">
-
-**Bring your own model. Swap providers. Ship an agent.**
-
-[![PyPI](https://img.shields.io/pypi/v/pycodeloop?style=flat-square)](https://pypi.org/project/pycodeloop/)
-[![Python](https://img.shields.io/pypi/pyversions/pycodeloop?style=flat-square)](https://pypi.org/project/pycodeloop/)
-[![Stars](https://img.shields.io/github/stars/dotflow-io/pycodeloop?label=Stars&style=flat-square)](https://github.com/dotflow-io/pycodeloop)
-
-</div>
+<p align="center">
+  <strong>CodeLoop</strong>
+</p>
+<p align="center">
+    <em>Provider-agnostic terminal coding agent — point it at a JSON file, not a vendor SDK.</em>
+</p>
+<p align="center">
+<a href="https://pypi.org/project/pycodeloop/" target="_blank">
+    <img src="https://img.shields.io/pypi/v/pycodeloop?style=flat-square" alt="PyPI">
+</a>
+<a href="https://pypi.org/project/pycodeloop/" target="_blank">
+    <img src="https://img.shields.io/pypi/pyversions/pycodeloop?style=flat-square" alt="Python">
+</a>
+<a href="https://github.com/dotflow-io/pycodeloop/actions/workflows/test.yml" target="_blank">
+    <img src="https://img.shields.io/github/actions/workflow/status/dotflow-io/pycodeloop/test.yml?label=tests&style=flat-square" alt="Tests">
+</a>
+<a href="https://github.com/dotflow-io/pycodeloop/blob/master/LICENSE" target="_blank">
+    <img src="https://img.shields.io/github/license/dotflow-io/pycodeloop?style=flat-square" alt="License">
+</a>
+<a href="https://github.com/dotflow-io/pycodeloop" target="_blank">
+    <img src="https://img.shields.io/github/stars/dotflow-io/pycodeloop?label=Stars&style=flat-square" alt="Stars">
+</a>
+</p>
 
 ---
 
-# CodeLoop
+**Documentation**: <a href="https://dotflow-io.github.io/pycodeloop/" target="_blank">https://dotflow-io.github.io/pycodeloop/</a>
 
-CodeLoop is a terminal coding agent — in the shape of Claude Code, Codex, or Gemini CLI. Point it at a provider (a plain JSON config, no code) and give it a prompt: it drives a tool-use loop (read, write, edit, grep, bash, git, web fetch) until the task is done, right from your shell.
+**Source Code**: <a href="https://github.com/dotflow-io/pycodeloop" target="_blank">https://github.com/dotflow-io/pycodeloop</a>
 
-## Why CodeLoop?
+---
 
-- **Any model, one JSON file** — Anthropic, OpenAI, Ollama, LM Studio, or any OpenAI-compatible endpoint. No vendor SDKs, no code changes to switch — `GenericProvider` speaks HTTP directly.
-- **Full-screen chat** — bare `pycodeloop` drops you into a Textual-based interface.
-- **Asks before doing anything risky** — write/edit/delete/bash/commit/HTTP calls show a diff or command preview and wait for your OK, unless you pass `--yes`.
-- **Skills-aware** — auto-discovers `SKILL.md`/`CLAUDE.md`, `.cursorrules`, and `AGENTS.md` files already on disk.
-- **Sessions that persist** — conversations survive process restarts; switch between saved sessions.
-- **VS Code extension** — chat with CodeLoop from a sidebar panel instead of the terminal ([`vscode-extension/`](vscode-extension/)).
+CodeLoop is a terminal coding agent, in the shape of Claude Code, Codex, or Gemini CLI — except it isn't tied to any one of them. Point it at a plain JSON config and give it a prompt: it drives a tool-use loop (read, write, edit, grep, bash, git, web fetch) against your codebase until the task is done, streaming its reasoning to your shell the whole way.
 
-## Install
+The key features are:
+
+* **Provider-agnostic**: Anthropic, OpenAI, Ollama, LM Studio, or any OpenAI-compatible endpoint — swapping models means swapping a JSON file, never touching code. `GenericProvider` talks HTTP directly, no vendor SDK required.
+* **Fast to start**: one `pip install`, one JSON file, one prompt. No boilerplate, no framework to learn first.
+* **Safe by default**: every write, edit, delete, shell command, commit, or HTTP call shows a diff or command preview and waits for your OK before running.
+* **Full-screen chat**: bare `pycodeloop` drops you into a Textual-based terminal UI; `pycodeloop run` stays scriptable for CI and one-shot use.
+* **Skills-aware**: auto-discovers `SKILL.md`/`CLAUDE.md`, `.cursorrules`, and `AGENTS.md` files already on disk and hands them to the agent.
+* **MCP-ready**: connect any Model Context Protocol server over stdio with one flag; its tools show up alongside the built-in ones.
+* **Sessions that persist**: conversations survive process restarts and can be resumed from a menu.
+* **Also a library**: embed the same agent loop in your own app — see the [docs](https://dotflow-io.github.io/pycodeloop/) for the `Config`, `Agent`, and `Tool` APIs.
+* **Editor integration**: a VS Code extension ([`vscode-extension/`](vscode-extension/)) puts the same agent in a sidebar panel.
+
+## Requirements
+
+Python 3.10+
+
+## Installation
 
 ```bash
 pip install pycodeloop
 ```
 
-## Quick Start
+## Example
 
-Pick a provider template and set your key:
+Set your key and point at a ready-made provider template:
 
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-...
@@ -39,22 +64,22 @@ pycodeloop run "list the files in this repo and summarize the project" \
   --provider templates/anthropic.json
 ```
 
-Or drop into the full-screen chat:
+Or drop into the full-screen chat instead of one-shot mode:
 
 ```bash
 pycodeloop --provider templates/anthropic.json
 ```
 
-Set it once as the default instead of passing `--provider` every time:
+Set it once as the default so you stop passing `--provider` every time:
 
 ```bash
 export PYCODELOOP_PROVIDER=templates/anthropic.json
 pycodeloop
 ```
 
-## Providers
+### Switch providers
 
-Every backend is the same JSON shape fed to `GenericProvider` — swapping models means swapping a file, nothing else. Ready-made templates live in [`templates/`](templates/):
+Every backend is the same JSON shape — [`templates/`](templates/) ships one per vendor:
 
 ```bash
 pycodeloop run "..." --provider templates/anthropic.json   # Claude
@@ -65,15 +90,9 @@ pycodeloop run "..." --provider templates/lmstudio.json    # local, no key neede
 
 Point it at any OpenAI-compatible HTTP endpoint by writing your own JSON — see [`docs/examples/provider.example.json`](docs/examples/provider.example.json) and the [JSON provider guide](docs/nav/development/json-provider.md). No Python required to add a new backend.
 
-## CLI
+### More CLI flags
 
 ```bash
-# Bare pycodeloop drops into the full-screen chat
-pycodeloop
-
-# One-shot, non-interactive (scripting/CI)
-pycodeloop run "add a docstring to pycodeloop/core/agent.py"
-
 # Override provider/model per invocation
 pycodeloop run "..." --provider templates/openai.json --model gpt-5
 
@@ -88,12 +107,7 @@ pycodeloop run "list every allowed directory" \
 pycodeloop run "..." --no-skills
 ```
 
-The CLI behaves like a terminal coding agent:
-
-- **Streams** the model's text as it arrives instead of waiting for the full reply.
-- **Asks before running** `write_file`, `edit_file`, `delete_file`, `bash`, `git_commit`, `http_request`, or any MCP tool — shows a diff (or the shell command) and waits for confirmation, auto-running after 3s of no response. `--yes` skips this.
-- **Reports token usage** after every turn: input/output tokens for that turn plus the running session total.
-- **Discovers skills automatically** — `SKILL.md`/`CLAUDE.md` (Claude Code), `.mdc`/`.cursorrules` (Cursor), and `AGENTS.md` files already on disk are indexed and exposed to the agent via a `read_skill` tool, cached in `~/.pycodeloop/config.json` until something changes. `--no-skills` turns this off; `--skills-refresh` bypasses the cache.
+The CLI streams the model's text as it arrives, reports token usage after every turn, and caches discovered skills in `~/.pycodeloop/config.json` until something changes (`--skills-refresh` bypasses that).
 
 ## Tools
 
@@ -120,23 +134,6 @@ Ships with the actions an agent needs to actually change code:
 
 `write_file`, `edit_file`, `delete_file`, `bash`, `git_commit`, `http_request`, and every MCP tool are marked dangerous and gated behind confirmation.
 
-## MCP servers
-
-Connect to any Model Context Protocol server over stdio and its tools show up alongside the built-in ones — no config beyond a flag:
-
-```bash
-pycodeloop run "list every allowed directory" \
-  --mcp "npx -y @modelcontextprotocol/server-filesystem ."
-```
-
-## Sessions
-
-Conversations persist to `~/.pycodeloop/sessions/` and survive process restarts. In the full-screen chat, switch between saved sessions from the menu.
-
-## Using it as a library
-
-CodeLoop is also a small Python library if you want to embed the agent loop in your own app — see [`docs/`](docs/) for the `Config`, `Agent`, and `Tool` APIs.
-
 ## Commit Style
 
 | Icon | Type      | Description                                |
@@ -152,7 +149,5 @@ CodeLoop is also a small Python library if you want to embed the agent loop in y
 | ⚠️   | SECURITY  | Security improvements                      |
 
 ## License
-
-![GitHub License](https://img.shields.io/github/license/dotflow-io/pycodeloop)
 
 This project is licensed under the terms of the MIT License.
