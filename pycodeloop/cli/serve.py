@@ -156,7 +156,9 @@ class RpcServer:
                 waiter.put(params.get("answer"))
         elif method == "session/list":
             storage = self.flow.config.storage
-            sessions = storage.list_sessions() if hasattr(storage, "list_sessions") else {}
+            sessions = (
+                storage.list_sessions() if hasattr(storage, "list_sessions") else {}
+            )
             self._send(
                 {
                     "jsonrpc": "2.0",
