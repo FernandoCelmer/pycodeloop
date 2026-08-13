@@ -7,7 +7,6 @@ from pathlib import Path
 
 from pycodeloop.abc.tool import Tool, ToolResult
 from pycodeloop.core.tools._limits import truncate
-from pycodeloop.core.tools._sandbox import PathEscapesSandbox, resolve_in_sandbox
 
 
 def _diff(path: str, before: str, after: str) -> str:
@@ -37,10 +36,7 @@ class ReadFileTool(Tool):
     }
 
     def run(self, path: str, offset: int = 1, limit: int | None = None) -> ToolResult:
-        try:
-            target = resolve_in_sandbox(path)
-        except PathEscapesSandbox as exc:
-            return ToolResult(output=str(exc), is_error=True)
+        target = Path(path)
 
         try:
             lines = target.read_text().splitlines()
@@ -70,10 +66,7 @@ class WriteFileTool(Tool):
     dangerous = True
 
     def preview(self, path: str, content: str, **_) -> str:
-        try:
-            target = resolve_in_sandbox(path)
-        except PathEscapesSandbox as exc:
-            return str(exc)
+        target = Path(path)
 
         try:
             before = target.read_text()
@@ -82,10 +75,7 @@ class WriteFileTool(Tool):
         return _diff(path, before, content)
 
     def run(self, path: str, content: str) -> ToolResult:
-        try:
-            target = resolve_in_sandbox(path)
-        except PathEscapesSandbox as exc:
-            return ToolResult(output=str(exc), is_error=True)
+        target = Path(path)
 
         try:
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -114,10 +104,7 @@ class EditFileTool(Tool):
     def _apply(
         self, path: str, old_string: str, new_string: str, replace_all: bool
     ) -> tuple[Path, str, str] | ToolResult:
-        try:
-            target = resolve_in_sandbox(path)
-        except PathEscapesSandbox as exc:
-            return ToolResult(output=str(exc), is_error=True)
+        target = Path(path)
 
         try:
             text = target.read_text()
@@ -193,10 +180,7 @@ class DeleteFileTool(Tool):
     dangerous = True
 
     def preview(self, path: str, **_) -> str:
-        try:
-            target = resolve_in_sandbox(path)
-        except PathEscapesSandbox as exc:
-            return str(exc)
+        target = Path(path)
 
         try:
             before = target.read_text()
@@ -205,10 +189,7 @@ class DeleteFileTool(Tool):
         return _diff(path, before, "")
 
     def run(self, path: str) -> ToolResult:
-        try:
-            target = resolve_in_sandbox(path)
-        except PathEscapesSandbox as exc:
-            return ToolResult(output=str(exc), is_error=True)
+        target = Path(path)
 
         try:
             target.unlink()
@@ -227,10 +208,7 @@ class ListDirTool(Tool):
     }
 
     def run(self, path: str = ".") -> ToolResult:
-        try:
-            target = resolve_in_sandbox(path)
-        except PathEscapesSandbox as exc:
-            return ToolResult(output=str(exc), is_error=True)
+        target = Path(path)
 
         try:
             entries = sorted(target.iterdir())
