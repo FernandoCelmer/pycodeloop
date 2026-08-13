@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import os
 import queue
+import threading
 import time
 
 from rich.markdown import Markdown
@@ -89,6 +90,11 @@ class PromptArea(TextArea):
                 event.stop()
                 return
 
+        if event.key == "escape":
+            event.prevent_default()
+            event.stop()
+            self.app.cancel_turn()
+            return
         if event.key == "enter":
             event.prevent_default()
             event.stop()
@@ -160,6 +166,7 @@ class CodeLoopApp(App):
         self._stale_confirm_answer = False
         self._stale_expires_at = 0.0
         self._busy = False
+        self._cancel_event: threading.Event | None = None
         self._pending: list[tuple[str, list[str] | None]] = []
         self._pending_images: list[str] = []
 
@@ -368,11 +375,23 @@ class CodeLoopApp(App):
 
     def _start_turn(self, text: str, images: list[str] | None = None) -> None:
         self._busy = True
+        self._cancel_event = threading.Event()
         self.run_worker(self._run_turn(text, images), thread=True)
+
+    def cancel_turn(self) -> None:
+        if not self._busy or self._cancel_event is None:
+            return
+        self._cancel_event.set()
+        self._log("[dim]⊘ cancelling…[/dim]")
 
     async def _run_turn(self, text: str, images: list[str] | None = None) -> None:
         try:
-            self.flow.run(text, session_key=self.session_key, images=images)
+            self.flow.run(
+                text,
+                session_key=self.session_key,
+                images=images,
+                cancel_event=self._cancel_event,
+            )
         except Exception as exc:
             self.call_from_thread(
                 self._log, self._styled("[bold white]✗ Error:[/bold white] ", str(exc))

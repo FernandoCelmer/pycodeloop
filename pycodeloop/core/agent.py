@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import threading
 import time
 from collections.abc import Callable
 
@@ -157,7 +158,12 @@ class Agent:
         prompt: str,
         session: Session | None = None,
         images: list[str] | None = None,
+        cancel_event: threading.Event | None = None,
     ) -> str:
+        """Runs until the model stops calling tools, `max_turns` is hit,
+        or `cancel_event` is set — checked at each turn boundary and
+        before every tool call, never mid-request, so an in-flight
+        provider call always finishes first."""
         session = session or Session(system_prompt=self.system_prompt)
         session.add_user(prompt, images=images)
         self._notify_message()
@@ -168,6 +174,9 @@ class Agent:
         context_window = context_window_for(self.provider.model)
 
         for _ in range(self.max_turns):
+            if cancel_event and cancel_event.is_set():
+                return "Cancelled by user."
+
             if self.auto_compact and self._last_context_tokens >= (
                 context_window * self.compact_threshold
             ):
@@ -208,12 +217,18 @@ class Agent:
                 if self.on_tool_call:
                     self.on_tool_call(call.name, call.arguments)
 
-                result_text, is_error = self._execute(call.name, call.arguments)
+                if cancel_event and cancel_event.is_set():
+                    result_text, is_error = "Cancelled by user.", True
+                else:
+                    result_text, is_error = self._execute(call.name, call.arguments)
 
                 if self.on_tool_result:
                     self.on_tool_result(call.name, result_text, is_error)
 
                 session.add_tool_result(call.id, result_text)
                 self._notify_message()
+
+            if cancel_event and cancel_event.is_set():
+                return "Cancelled by user."
 
         return "Reached max_turns without finishing."

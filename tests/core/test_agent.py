@@ -1,5 +1,6 @@
 """Test Agent class"""
 
+import threading
 import unittest
 
 from pycodeloop.abc.confirm import Confirm
@@ -326,6 +327,44 @@ class TestAgent(unittest.TestCase):
         agent.run("third", session=session)
 
         self.assertEqual(len(session.messages), 6)
+
+    def test_cancel_event_stops_before_the_next_provider_call(self):
+        provider = FakeProvider(
+            [
+                ProviderResponse(
+                    text="",
+                    tool_calls=[ToolCall(id="1", name="echo", arguments={"text": "a"})],
+                ),
+                ProviderResponse(text="should never be reached"),
+            ]
+        )
+        cancel_event = threading.Event()
+
+        class CancellingEchoTool(EchoTool):
+            def run(self, text: str) -> ToolResult:
+                cancel_event.set()
+                return super().run(text)
+
+        agent = Agent(provider=provider, tools=[CancellingEchoTool()])
+        session = Session(system_prompt="sys")
+
+        result = agent.run("go", session=session, cancel_event=cancel_event)
+
+        self.assertEqual(result, "Cancelled by user.")
+        self.assertEqual(len(provider._scripted), 1)  # 2nd response never consumed
+        roles = [m.role for m in session.messages]
+        self.assertEqual(roles, ["user", "assistant", "tool"])
+
+    def test_cancel_event_set_before_run_returns_immediately(self):
+        provider = FakeProvider([ProviderResponse(text="should never be reached")])
+        cancel_event = threading.Event()
+        cancel_event.set()
+        agent = Agent(provider=provider)
+
+        result = agent.run("go", cancel_event=cancel_event)
+
+        self.assertEqual(result, "Cancelled by user.")
+        self.assertEqual(len(provider._scripted), 1)
 
 
 if __name__ == "__main__":

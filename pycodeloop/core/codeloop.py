@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import threading
 
 from pycodeloop.core.agent import Agent
 from pycodeloop.core.config import Config
@@ -64,6 +65,7 @@ class CodeLoop:
         prompt: str,
         session_key: str | None = None,
         images: list[str] | None = None,
+        cancel_event: threading.Event | None = None,
     ) -> str:
         """Run prompt to completion, keeping history across calls.
 
@@ -84,7 +86,9 @@ class CodeLoop:
             self.agent.on_message = None
 
         usage_before = self.agent.usage
-        result = self.agent.run(prompt, session=self.session, images=images)
+        result = self.agent.run(
+            prompt, session=self.session, images=images, cancel_event=cancel_event
+        )
         usage_after = self.agent.usage
 
         _usage_tracker.record_usage(
