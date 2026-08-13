@@ -36,6 +36,8 @@ _COMMANDS = [
     ("/paste", "attach the clipboard's image to your next message"),
 ]
 
+_THINKING_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+
 
 class PromptArea(TextArea):
     """Multi-line prompt box. Enter submits; shift+enter/alt+enter/ctrl+j
@@ -169,6 +171,10 @@ class CodeLoopApp(App):
         self._cancel_event: threading.Event | None = None
         self._pending: list[tuple[str, list[str] | None]] = []
         self._pending_images: list[str] = []
+        self._thinking_static: Static | None = None
+        self._thinking_timer = None
+        self._thinking_meta = (0, 0)
+        self._thinking_frame = 0
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -383,6 +389,7 @@ class CodeLoopApp(App):
         if not self._busy or self._cancel_event is None:
             return
         self._cancel_event.set()
+        self._stop_thinking()
         self._log("[dim]⊘ cancelling…[/dim]")
 
     async def _run_turn(self, text: str, images: list[str] | None = None) -> None:
@@ -394,6 +401,7 @@ class CodeLoopApp(App):
                 cancel_event=self._cancel_event,
             )
         except Exception as exc:
+            self.call_from_thread(self._stop_thinking)
             self.call_from_thread(
                 self._log, self._styled("[bold white]✗ Error:[/bold white] ", str(exc))
             )
@@ -407,11 +415,49 @@ class CodeLoopApp(App):
             self._start_turn(text, images)
 
     def _on_request(self, message_count: int, tool_count: int) -> None:
-        self.call_from_thread(
-            self._log,
-            f"[dim]💭 {self.provider_name}/{self.model_name} — "
-            f"{message_count} msg, {tool_count} tools…[/dim]",
+        self.call_from_thread(self._start_thinking, message_count, tool_count)
+
+    def _start_thinking(self, message_count: int, tool_count: int) -> None:
+        self._thinking_frame = 0
+        static = Static("")
+        self.query_one("#log", VerticalScroll).mount(static)
+        static.scroll_visible()
+        self._thinking_static = static
+        self._thinking_meta = (message_count, tool_count)
+        self._tick_thinking()
+        self._thinking_timer = self.set_interval(0.15, self._tick_thinking)
+
+    def _tick_thinking(self) -> None:
+        if self._thinking_static is None:
+            return
+
+        frame = _THINKING_FRAMES[self._thinking_frame % len(_THINKING_FRAMES)]
+        self._thinking_frame += 1
+        message_count, tool_count = self._thinking_meta
+        pct = (
+            f" · {self._context_pct}% context" if self._context_pct is not None else ""
         )
+        self._thinking_static.update(
+            f"[dim]{frame} thinking — {self.provider_name}/{self.model_name} · "
+            f"{message_count} msg, {tool_count} tools{pct}…[/dim]"
+        )
+
+    def _stop_thinking(self) -> None:
+        if self._thinking_timer is not None:
+            self._thinking_timer.stop()
+            self._thinking_timer = None
+        if self._thinking_static is not None:
+            message_count, tool_count = self._thinking_meta
+            pct = (
+                f" · {self._context_pct}% context"
+                if self._context_pct is not None
+                else ""
+            )
+            self._thinking_static.update(
+                f"[dim]💭 {self.provider_name}/{self.model_name} — "
+                f"{message_count} msg, {tool_count} tools{pct}[/dim]"
+            )
+        self._thinking_static = None
 
     def _on_context(self, used_tokens: int, limit_tokens: int) -> None:
         self._context_pct = (
@@ -471,6 +517,7 @@ class CodeLoopApp(App):
         self._text_buffer += delta
 
     def _on_usage(self, _turn: Usage, total: Usage, elapsed: float) -> None:
+        self.call_from_thread(self._stop_thinking)
         if self._text_buffer.strip():
             self.call_from_thread(
                 self._log,
