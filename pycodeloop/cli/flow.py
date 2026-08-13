@@ -11,7 +11,7 @@ from pathlib import Path
 import typer
 from rich.panel import Panel
 
-from pycodeloop.abc.provider import Usage
+from pycodeloop.abc.provider import Provider, Usage
 from pycodeloop.cli.render import (
     TurnBuffer,
     console,
@@ -94,16 +94,14 @@ def _load_mcp_tools(specs: list[str] | None) -> list:
     return tools
 
 
-def build_flow(
+def resolve_provider(
     provider_name: str | None,
     model: str | None,
     base_url: str | None = None,
     url: str | None = None,
-    mcp: list[str] | None = None,
-    auto_approve: bool = False,
-    skills: bool = False,
-    skills_refresh: bool = False,
-) -> tuple[CodeLoop, str, str]:
+) -> tuple[Provider, str]:
+    """Build a `Provider` from CLI-style args, returning it alongside the
+    resolved provider name — shared by the interactive CLI and `serve`."""
     provider_name = provider_name or Settings.PROVIDER
     is_json_config = provider_name.endswith(".json")
 
@@ -125,7 +123,20 @@ def build_flow(
     else:
         provider_kwargs = {"model": model or Settings.MODEL}
 
-    provider = get_provider(provider_name, **provider_kwargs)
+    return get_provider(provider_name, **provider_kwargs), provider_name
+
+
+def build_flow(
+    provider_name: str | None,
+    model: str | None,
+    base_url: str | None = None,
+    url: str | None = None,
+    mcp: list[str] | None = None,
+    auto_approve: bool = False,
+    skills: bool = False,
+    skills_refresh: bool = False,
+) -> tuple[CodeLoop, str, str]:
+    provider, provider_name = resolve_provider(provider_name, model, base_url, url)
 
     buffer = TurnBuffer(console)
 
