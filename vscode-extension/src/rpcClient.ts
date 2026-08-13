@@ -65,12 +65,10 @@ export class RpcClient extends EventEmitter {
     }
   }
 
-  /** Fire-and-forget notification — no response expected. */
   notify(method: string, params: Record<string, unknown> = {}): void {
     this.write({ jsonrpc: "2.0", method, params });
   }
 
-  /** Request/response round trip, resolved when a matching `id` comes back. */
   request(method: string, params: Record<string, unknown> = {}): Promise<RpcMessage> {
     const id = String(this.nextId++);
     return new Promise((resolve) => {
