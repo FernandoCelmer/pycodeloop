@@ -19,9 +19,7 @@ from pycodeloop.settings import Settings
 
 
 def _default_provider() -> Provider:
-    return get_provider(
-        Settings.PROVIDER, model=Settings.MODEL, api_key=Settings.API_KEY
-    )
+    return get_provider(Settings.PROVIDER, model=Settings.MODEL)
 
 
 def _default_storage() -> Sessions:
@@ -34,23 +32,22 @@ class Config:
         You can import the **Config** class with:
 
             from pycodeloop import Config
-
-            from pycodeloop.providers import (
-                AnthropicProvider,
-                OpenAIProvider,
-            )
+            from pycodeloop.providers import GenericProvider
 
     Example:
         `class` pycodeloop.core.config.Config
 
             config = Config(
-                provider=AnthropicProvider(model="claude-sonnet-5"),
+                provider=GenericProvider.from_json("path/to/config.json"),
             )
 
     Args:
-        provider (Optional[Provider]): LLM backend driving the agent.
-            Defaults to the provider named by the `PYCODELOOP_PROVIDER`
-            env var (anthropic when unset).
+        provider (Optional[Provider]): LLM backend driving the agent —
+            always a `GenericProvider` under the hood. Defaults to the
+            provider named by the `PYCODELOOP_PROVIDER` env var (a
+            path to a JSON config file, a bare `"generic"` name, or a
+            `'module.path:ClassName'`; a bundled Anthropic config when
+            unset).
 
         tools (Optional[List[Tool]]): Tools exposed to the agent.
             Defaults to the built-in read/write/edit/grep/bash set.
@@ -63,8 +60,8 @@ class Config:
         max_history_turns (Optional[int]): Cap the session on the
             number of most recent user-initiated turns kept — older
             turns are dropped as a whole unit (never mid tool_calls/
-            tool_result) before each provider call. Unset means the
-            session grows without bound for the life of the process.
+            tool_result) before each provider call. Defaults to `20`;
+            pass `None` to let the session grow without bound instead.
 
         skills (bool): Discover Claude Code skills/memory, Cursor rules,
             and AGENTS.md files on this machine and this project, expose
@@ -102,7 +99,7 @@ class Config:
         tools: list[Tool] | None = None,
         system_prompt: str | None = None,
         max_turns: int = Settings.MAX_TURNS,
-        max_history_turns: int | None = None,
+        max_history_turns: int | None = 20,
         skills: bool = False,
         skill_sources: set[str] | None = None,
         skills_refresh: bool = False,

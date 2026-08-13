@@ -12,7 +12,12 @@ from typing import Any
 
 from pycodeloop.abc.provider import Provider, ProviderResponse, ToolCall, Usage
 from pycodeloop.core.session import Message
-from pycodeloop.providers.openai import OpenAIProvider
+from pycodeloop.providers._shapes import (
+    anthropic_tool_schema,
+    openai_tool_schema,
+    to_anthropic_messages,
+    to_openai_messages,
+)
 
 RequestBuilder = Callable[[str, "list[Message]", "list[dict]", str], dict]
 ResponseParser = Callable[[dict], ProviderResponse]
@@ -159,8 +164,8 @@ class GenericProvider(Provider):
     ) -> dict:
         return {
             "model": model,
-            "messages": OpenAIProvider._to_openai_messages(system_prompt, messages),
-            "tools": OpenAIProvider._tool_schema(tools) if tools else None,
+            "messages": to_openai_messages(system_prompt, messages),
+            "tools": openai_tool_schema(tools) if tools else None,
         }
 
     @staticmethod
@@ -286,6 +291,8 @@ class GenericProvider(Provider):
         content_key = body_paths.get("message_content", "content")
 
         params = request_cfg.get("params") or {}
+        params_key = request_cfg.get("params_key")
+        extra_body = request_cfg.get("extra_body") or {}
 
         message_shape = request_cfg.get("message_shape", "openai")
         tool_schema = request_cfg.get("tool_schema", "openai")
@@ -293,23 +300,18 @@ class GenericProvider(Provider):
         system_key = body_paths.get("system")
         if system_key is None and message_shape == "anthropic":
             system_key = "system"
-        if message_shape == "anthropic" or tool_schema == "anthropic":
-            from pycodeloop.providers.anthropic import AnthropicProvider
 
-        if tool_schema == "anthropic":
-            build_tools = AnthropicProvider._tool_schema
-        else:
-            build_tools = OpenAIProvider._tool_schema
+        build_tools = (
+            anthropic_tool_schema if tool_schema == "anthropic" else openai_tool_schema
+        )
 
         def builder(
             system_prompt: str, messages: list, tools: list[dict], model: str
         ) -> dict:
             if message_shape == "anthropic":
-                out_messages = AnthropicProvider._to_anthropic_messages(messages)
+                out_messages = to_anthropic_messages(messages)
             else:
-                out_messages = OpenAIProvider._to_openai_messages(
-                    system_prompt, messages
-                )
+                out_messages = to_openai_messages(system_prompt, messages)
                 if system_key:
                     out_messages = out_messages[1:]
 
@@ -330,7 +332,11 @@ class GenericProvider(Provider):
             if tools:
                 body[tools_key] = build_tools(tools)
 
-            body.update(params)
+            if params_key:
+                body[params_key] = params
+            else:
+                body.update(params)
+            body.update(extra_body)
             return body
 
         return builder
@@ -367,7 +373,15 @@ class GenericProvider(Provider):
             return self._stream(body, on_delta)
 
         with self._open(body) as response:
-            data = json.loads(response.read())
+            raw = response.read()
+
+        try:
+            data = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            snippet = raw.decode(errors="replace")[:500]
+            raise ValueError(
+                f"{self.url} returned malformed/truncated JSON ({exc}): {snippet!r}"
+            ) from None
 
         result = self.response_parser(data)
 

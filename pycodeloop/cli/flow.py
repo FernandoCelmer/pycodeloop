@@ -30,7 +30,7 @@ from pycodeloop.providers import get_provider
 from pycodeloop.settings import Settings
 
 PROVIDER_HELP = (
-    "anthropic | openai | ollama | generic | path/to/config.json | "
+    "path/to/config.json (see templates/) | generic (with --url) | "
     "'module.path:ClassName' for a custom Provider"
 )
 
@@ -105,38 +105,33 @@ def build_flow(
     skills_refresh: bool = False,
 ) -> tuple[CodeLoop, str, str]:
     provider_name = provider_name or Settings.PROVIDER
-    model = model or Settings.MODEL
-    is_local_or_custom = (
-        provider_name in {"ollama", "generic"}
-        or ":" in provider_name
-        or provider_name.endswith(".json")
-    )
+    is_json_config = provider_name.endswith(".json")
 
-    if (
-        not Settings.API_KEY
-        and not is_local_or_custom
-        and provider_name == Settings.PROVIDER
-    ):
-        console.print(
-            f"{Settings.WARNING_ALERT} no API key found for provider "
-            f"'{provider_name}'. Set the matching *_API_KEY env var."
-        )
-
-    provider_kwargs = {"model": model, "api_key": Settings.API_KEY}
-    if provider_name == "generic":
+    if is_json_config:
+        # A JSON-configured provider owns its own model/api_key — only
+        # an explicitly-passed --model overrides it; the resolved
+        # Settings default (env var/saved setting) must not clobber
+        # what's in the file.
+        provider_kwargs: dict = {}
+        if model:
+            provider_kwargs["model"] = model
+    elif provider_name == "generic":
         if not url:
             console.print(f"{Settings.ERROR_ALERT} --provider generic requires --url")
             raise typer.Exit(code=1)
-        provider_kwargs["url"] = url
-    elif base_url:
-        provider_kwargs["base_url"] = base_url
+        provider_kwargs = {"model": model or Settings.MODEL, "url": url}
+        if base_url:
+            provider_kwargs["base_url"] = base_url
+    else:
+        provider_kwargs = {"model": model or Settings.MODEL}
+
     provider = get_provider(provider_name, **provider_kwargs)
 
     buffer = TurnBuffer(console)
 
     def on_request(message_count: int, tool_count: int) -> None:
         console.print(
-            f"[dim]💭 {provider_name}/{model} — {message_count} msg in "
+            f"[dim]💭 {provider_name}/{provider.model} — {message_count} msg in "
             f"context, {tool_count} tools available…[/dim]"
         )
 
@@ -267,4 +262,4 @@ def build_flow(
     flow.agent.on_compact_start = on_compact_start
     flow.agent.on_compact_end = on_compact_end
     flow.agent.on_retry = on_retry
-    return flow, provider_name, model
+    return flow, provider_name, provider.model

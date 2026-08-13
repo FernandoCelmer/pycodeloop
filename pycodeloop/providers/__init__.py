@@ -2,33 +2,23 @@
 
 import importlib
 
-from pycodeloop.providers.anthropic import AnthropicProvider
 from pycodeloop.providers.generic import GenericProvider
-from pycodeloop.providers.ollama import OllamaProvider
-from pycodeloop.providers.openai import OpenAIProvider
 
-PROVIDERS = {
-    "anthropic": AnthropicProvider,
-    "openai": OpenAIProvider,
-    "ollama": OllamaProvider,
-    "generic": GenericProvider,
-}
+PROVIDERS = {"generic": GenericProvider}
 
-__all__ = [
-    "AnthropicProvider",
-    "GenericProvider",
-    "OllamaProvider",
-    "OpenAIProvider",
-    "get_provider",
-    "PROVIDERS",
-]
+__all__ = ["GenericProvider", "get_provider", "PROVIDERS"]
 
 
 def get_provider(name: str, **kwargs):
-    """Build a Provider by registry name (anthropic, openai, ollama,
-    generic), by path to a JSON config file (see
-    `pycodeloop.providers.generic`), or by dotted path
-    'module.path:ClassName' for a custom Provider subclass."""
+    """Build a `Provider` — always a `GenericProvider` under the hood.
+
+    `name` is one of:
+      - a path to a JSON config file (see `pycodeloop.providers.generic`),
+        the standard way to point at any HTTP LLM API;
+      - `"generic"`, paired with `url=`/`model=` kwargs for an ad-hoc
+        config with no file;
+      - `'module.path:ClassName'` for a custom `Provider` subclass.
+    """
     if name.endswith(".json"):
         provider = GenericProvider.from_json(name)
 
@@ -52,7 +42,8 @@ def get_provider(name: str, **kwargs):
     except KeyError:
         raise ValueError(
             f"Unknown provider '{name}'. Available: {list(PROVIDERS)}, "
-            "or 'module.path:ClassName' for a custom Provider."
+            "a path to a JSON config file, or 'module.path:ClassName' "
+            "for a custom Provider."
         ) from None
 
     return provider_cls(**kwargs)
