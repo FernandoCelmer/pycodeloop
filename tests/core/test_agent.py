@@ -306,10 +306,11 @@ class TestAgent(unittest.TestCase):
         agent.run("second", session=session)
         agent.run("third", session=session)
 
-        self.assertEqual(events, ["start", (5, 4)])
-        self.assertEqual(session.messages[0].role, "assistant")
+        self.assertEqual(events, ["start", (5, 3)])
+        self.assertEqual(session.messages[0].role, "user")
         self.assertIn("summary of earlier turns", session.messages[0].content)
-        self.assertEqual(len(session.messages), 5)
+        self.assertIn("second", session.messages[0].content)
+        self.assertEqual(len(session.messages), 4)
 
     def test_auto_compact_false_never_compacts(self):
         provider = FakeProvider(
@@ -539,6 +540,81 @@ class TestAgentParallelTools(unittest.TestCase):
         agent.run("go")
 
         self.assertEqual(calls_seen, ["1", "2"])
+
+
+class TestAgentToolResultSummarization(unittest.TestCase):
+    def test_large_tool_result_gets_summarized(self):
+        class HugeOutputTool(Tool):
+            name = "huge"
+            description = "returns huge output"
+            parameters = {"type": "object", "properties": {}}
+
+            def run(self) -> ToolResult:
+                return ToolResult(output="x" * 10_000)
+
+        provider = FakeProvider(
+            [
+                ProviderResponse(
+                    text="", tool_calls=[ToolCall(id="1", name="huge", arguments={})]
+                ),
+                ProviderResponse(text="condensed"),
+                ProviderResponse(text="done"),
+            ]
+        )
+        agent = Agent(provider=provider, tools=[HugeOutputTool()])
+        session = Session(system_prompt="sys")
+
+        agent.run("go", session=session)
+
+        tool_message = next(m for m in session.messages if m.role == "tool")
+        self.assertLess(len(tool_message.content), 100)
+        self.assertIn("condensed", tool_message.content)
+
+    def test_small_tool_result_is_not_summarized(self):
+        provider = FakeProvider(
+            [
+                ProviderResponse(
+                    text="",
+                    tool_calls=[
+                        ToolCall(id="1", name="echo", arguments={"text": "hi"})
+                    ],
+                ),
+                ProviderResponse(text="done"),
+            ]
+        )
+        agent = Agent(provider=provider, tools=[EchoTool()])
+        session = Session(system_prompt="sys")
+
+        agent.run("go", session=session)
+
+        tool_message = next(m for m in session.messages if m.role == "tool")
+        self.assertEqual(tool_message.content, "echo: hi")
+
+    def test_error_result_is_not_summarized_even_if_large(self):
+        class HugeErrorTool(Tool):
+            name = "huge_error"
+            description = "returns a huge error"
+            parameters = {"type": "object", "properties": {}}
+
+            def run(self) -> ToolResult:
+                return ToolResult(output="e" * 10_000, is_error=True)
+
+        provider = FakeProvider(
+            [
+                ProviderResponse(
+                    text="",
+                    tool_calls=[ToolCall(id="1", name="huge_error", arguments={})],
+                ),
+                ProviderResponse(text="done"),
+            ]
+        )
+        agent = Agent(provider=provider, tools=[HugeErrorTool()])
+        session = Session(system_prompt="sys")
+
+        agent.run("go", session=session)
+
+        tool_message = next(m for m in session.messages if m.role == "tool")
+        self.assertEqual(len(tool_message.content), 10_000)
 
 
 if __name__ == "__main__":
