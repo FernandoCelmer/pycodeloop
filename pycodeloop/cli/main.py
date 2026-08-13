@@ -9,6 +9,7 @@ import typer
 
 from pycodeloop.cli.commands import chat, run
 from pycodeloop.cli.flow import PROVIDER_HELP
+from pycodeloop.cli.serve import serve
 
 sys.stdout.reconfigure(line_buffering=True)
 
@@ -19,6 +20,7 @@ if _cwd not in sys.path:
 app = typer.Typer(add_completion=False, help="CodeLoop — an agentic coding assistant.")
 app.command()(run)
 app.command(name="chat")(chat)
+app.command(name="serve")(serve)
 
 
 @app.callback(invoke_without_command=True)
