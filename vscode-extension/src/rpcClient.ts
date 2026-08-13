@@ -23,9 +23,12 @@ export class RpcClient extends EventEmitter {
   private nextId = 1;
   private pending = new Map<string, (message: RpcMessage) => void>();
 
-  constructor(command: string, args: string[], cwd: string) {
+  constructor(command: string, args: string[], cwd: string, env?: Record<string, string>) {
     super();
-    this.process = spawn(command, args, { cwd });
+    this.process = spawn(command, args, {
+      cwd,
+      env: env ? { ...process.env, ...env } : process.env,
+    });
 
     const rl = readline.createInterface({ input: this.process.stdout });
     rl.on("line", (line) => {

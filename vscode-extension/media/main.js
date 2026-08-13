@@ -1,4 +1,20 @@
 (function () {
+  function renderFatalError(message) {
+    const box = document.createElement("div");
+    box.style.cssText =
+      "margin:8px;padding:8px 10px;border:1px solid var(--vscode-errorForeground);" +
+      "border-radius:6px;color:var(--vscode-errorForeground);white-space:pre-wrap;" +
+      "font-family:var(--vscode-editor-font-family);font-size:0.85em;";
+    box.textContent = "CodeLoop UI error:\n" + message;
+    document.body.appendChild(box);
+  }
+  window.addEventListener("error", (event) => {
+    renderFatalError((event.error && event.error.stack) || event.message);
+  });
+  window.addEventListener("unhandledrejection", (event) => {
+    renderFatalError(String(event.reason && event.reason.stack ? event.reason.stack : event.reason));
+  });
+
   const vscode = acquireVsCodeApi();
 
   const messagesEl = document.getElementById("messages");
@@ -22,7 +38,8 @@
   const attachButton = document.getElementById("attach");
   const attachFileInput = document.getElementById("attach-file");
 
-  let assistantTurn = null; // { turnEl, bubbleEl, rawText }
+  let assistantTurn = null;
+  let pendingAssistantText = "";
   const pendingToolCards = new Map(); // name -> array of card elements, FIFO
   let currentModel = "";
   let autoApprove = false;
@@ -39,19 +56,73 @@
       .replace(/>/g, "&gt;");
   }
 
-  // Minimal, safe-ish markdown: fenced code blocks, inline code, bold.
-  // Escapes HTML first so model output can never inject markup.
+  // Minimal, safe-ish markdown: fenced code blocks, headings, lists, links,
+  // inline code, bold/italic. Escapes HTML first so model output can never
+  // inject markup.
+  function renderInline(segment) {
+    segment = escapeHtml(segment);
+    segment = segment.replace(/`([^`]+)`/g, "<code>$1</code>");
+    segment = segment.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
+    segment = segment.replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, "<i>$1</i>");
+    segment = segment.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2">$1</a>');
+    return segment;
+  }
+
+  function renderTextBlock(text) {
+    const lines = text.split("\n");
+    let html = "";
+    let listTag = null; // "ul" | "ol" | null
+    const closeList = () => {
+      if (listTag) {
+        html += "</" + listTag + ">";
+        listTag = null;
+      }
+    };
+    for (const line of lines) {
+      const heading = /^(#{1,6})\s+(.*)$/.exec(line);
+      const bullet = /^[-*]\s+(.*)$/.exec(line);
+      const numbered = /^\d+\.\s+(.*)$/.exec(line);
+      if (heading) {
+        closeList();
+        const level = heading[1].length;
+        html += "<h" + level + ">" + renderInline(heading[2]) + "</h" + level + ">";
+      } else if (bullet) {
+        if (listTag !== "ul") {
+          closeList();
+          html += "<ul>";
+          listTag = "ul";
+        }
+        html += "<li>" + renderInline(bullet[1]) + "</li>";
+      } else if (numbered) {
+        if (listTag !== "ol") {
+          closeList();
+          html += "<ol>";
+          listTag = "ol";
+        }
+        html += "<li>" + renderInline(numbered[1]) + "</li>";
+      } else if (line.trim() === "") {
+        closeList();
+        html += "\n";
+      } else {
+        closeList();
+        html += renderInline(line) + "\n";
+      }
+    }
+    closeList();
+    return html;
+  }
+
   function renderMarkdown(raw) {
-    const blocks = raw.split(/```([\s\S]*?)```/g);
+    // Guard against an unterminated fence mid-stream (odd backtick count):
+    // render everything before the last opening ``` as-is and leave the
+    // in-progress fence as plain text until it closes.
+    const blocks = raw.split(/```(\w*\n[\s\S]*?)```/g);
     let html = "";
     for (let i = 0; i < blocks.length; i++) {
       if (i % 2 === 1) {
         html += "<pre><code>" + escapeHtml(blocks[i].replace(/^\w*\n/, "")) + "</code></pre>";
       } else {
-        let segment = escapeHtml(blocks[i]);
-        segment = segment.replace(/`([^`]+)`/g, "<code>$1</code>");
-        segment = segment.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
-        html += segment;
+        html += renderTextBlock(blocks[i]);
       }
     }
     return html;
@@ -118,22 +189,30 @@
   }
 
   function appendAssistantDelta(delta) {
+    pendingAssistantText += delta;
+    if (!pendingAssistantText.trim()) {
+      return;
+    }
     const turn = ensureAssistantTurn();
-    turn.rawText += delta;
+    turn.rawText += pendingAssistantText;
+    pendingAssistantText = "";
     turn.bubbleEl.innerHTML = renderMarkdown(turn.rawText);
     scrollToBottom();
   }
 
   function finishAssistantTurn(fallbackText) {
+    pendingAssistantText = "";
     if (!assistantTurn) {
-      if (fallbackText) {
+      if (fallbackText && fallbackText.trim()) {
         const turn = ensureAssistantTurn();
         turn.rawText = fallbackText;
         turn.bubbleEl.innerHTML = renderMarkdown(fallbackText);
       }
-    } else if (!assistantTurn.rawText && fallbackText) {
+    } else if (!assistantTurn.rawText && fallbackText && fallbackText.trim()) {
       assistantTurn.rawText = fallbackText;
       assistantTurn.bubbleEl.innerHTML = renderMarkdown(fallbackText);
+    } else if (!assistantTurn.rawText.trim()) {
+      assistantTurn.turnEl.remove();
     }
     assistantTurn = null;
   }
@@ -316,9 +395,15 @@
     }
   }
 
+  function clearStatusCards() {
+    for (const box of messagesEl.querySelectorAll(".confirm-box.status-card")) {
+      box.remove();
+    }
+  }
+
   function renderSetupCard(title, body) {
     const box = document.createElement("div");
-    box.className = "confirm-box";
+    box.className = "confirm-box status-card";
 
     const heading = document.createElement("div");
     heading.className = "title";
@@ -349,6 +434,45 @@
     });
 
     actions.appendChild(configure);
+    actions.appendChild(settings);
+    box.appendChild(actions);
+
+    messagesEl.appendChild(box);
+    scrollToBottom();
+    return box;
+  }
+
+  function renderCliMissingCard(command) {
+    const box = document.createElement("div");
+    box.className = "confirm-box status-card";
+
+    const heading = document.createElement("div");
+    heading.className = "title";
+    heading.textContent = "CodeLoop CLI not found";
+    box.appendChild(heading);
+
+    const desc = document.createElement("div");
+    desc.className = "turn-meta";
+    desc.textContent = `"${command}" isn't on PATH. Install it and CodeLoop will connect automatically.`;
+    box.appendChild(desc);
+
+    const actions = document.createElement("div");
+    actions.className = "confirm-actions";
+
+    const install = document.createElement("button");
+    install.textContent = "Install CodeLoop CLI";
+    install.addEventListener("click", () => {
+      vscode.postMessage({ type: "installCli" });
+    });
+
+    const settings = document.createElement("button");
+    settings.className = "secondary";
+    settings.textContent = "Open Settings";
+    settings.addEventListener("click", () => {
+      vscode.postMessage({ type: "openSettings" });
+    });
+
+    actions.appendChild(install);
     actions.appendChild(settings);
     box.appendChild(actions);
 
@@ -460,6 +584,11 @@
   cancelButton.addEventListener("click", () => {
     vscode.postMessage({ type: "cancel" });
   });
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !cancelButton.disabled) {
+      vscode.postMessage({ type: "cancel" });
+    }
+  });
   newSessionButton.addEventListener("click", () => {
     vscode.postMessage({ type: "newSession" });
   });
@@ -540,7 +669,13 @@
       case "settings":
         applySettings(message.model, message.autoApprove);
         break;
+      case "cliMissing":
+        clearStatusCards();
+        setStatus("", "CLI not found");
+        renderCliMissingCard(message.command);
+        break;
       case "needsSetup":
+        clearStatusCards();
         setStatus("", "Not configured");
         renderSetupCard(
           "Set up a provider to start chatting",
@@ -602,6 +737,7 @@
         setBusy(false);
         break;
       case "connectionError":
+        clearStatusCards();
         setStatus("error", "Not connected");
         setReady(false);
         setBusy(false);

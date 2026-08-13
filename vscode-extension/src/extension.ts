@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import * as crypto from "crypto";
+import * as cp from "child_process";
 import { RpcClient } from "./rpcClient";
 
 const FORWARDED_NOTIFICATIONS = [
@@ -23,11 +24,16 @@ class ChatViewProvider implements vscode.WebviewViewProvider {
   private client: RpcClient | undefined;
   private sessionKey: string;
 
-  constructor(
-    private readonly extensionUri: vscode.Uri,
-    private readonly state: vscode.Memento
-  ) {
-    this.sessionKey = state.get<string>(SESSION_KEY_STATE) ?? crypto.randomUUID();
+  constructor(private readonly context: vscode.ExtensionContext) {
+    this.sessionKey = context.workspaceState.get<string>(SESSION_KEY_STATE) ?? crypto.randomUUID();
+  }
+
+  private get extensionUri(): vscode.Uri {
+    return this.context.extensionUri;
+  }
+
+  private get state(): vscode.Memento {
+    return this.context.workspaceState;
   }
 
   resolveWebviewView(webviewView: vscode.WebviewView): void {
@@ -42,12 +48,23 @@ class ChatViewProvider implements vscode.WebviewViewProvider {
     webviewView.onDidDispose(() => this.disposeClient());
 
     this.postSettings();
-    if (this.isConfigured()) {
-      this.post({ type: "connecting" });
-      this.ensureClient();
-    } else {
+    this.startConnection();
+  }
+
+  private async startConnection(): Promise<void> {
+    if (!this.isConfigured()) {
       this.post({ type: "needsSetup" });
+      return;
     }
+    if (!(await this.hasCli())) {
+      const command = this.resolveSetting(
+        vscode.workspace.getConfiguration("pycodeloop").get<string>("command", "pycodeloop")
+      );
+      this.post({ type: "cliMissing", command });
+      return;
+    }
+    this.post({ type: "connecting" });
+    this.ensureClient();
   }
 
   private isConfigured(): boolean {
@@ -126,8 +143,49 @@ class ChatViewProvider implements vscode.WebviewViewProvider {
 
   reload(): void {
     this.disposeClient();
-    this.post({ type: "connecting" });
-    this.ensureClient();
+    this.startConnection();
+  }
+
+  private async hasCli(): Promise<boolean> {
+    const command = this.resolveSetting(
+      vscode.workspace.getConfiguration("pycodeloop").get<string>("command", "pycodeloop")
+    );
+    return new Promise((resolve) => {
+      cp.exec(`"${command}" --version`, (error) => resolve(!error));
+    });
+  }
+
+  async installCli(): Promise<void> {
+    await vscode.window.withProgress(
+      { location: vscode.ProgressLocation.Notification, title: "Installing CodeLoop CLI…" },
+      () =>
+        new Promise<void>((resolve) => {
+          const pythonCmd = process.platform === "win32" ? "python" : "python3";
+          cp.exec(
+            `${pythonCmd} -m pip install --user pycodeloop`,
+            { timeout: 180000 },
+            (error, _stdout, stderr) => {
+              if (error) {
+                vscode.window
+                  .showErrorMessage(
+                    `Couldn't install pycodeloop automatically: ${stderr || error.message}. ` +
+                      `Run this yourself: ${pythonCmd} -m pip install --user pycodeloop`,
+                    "Copy command"
+                  )
+                  .then((choice) => {
+                    if (choice === "Copy command") {
+                      vscode.env.clipboard.writeText(`${pythonCmd} -m pip install --user pycodeloop`);
+                    }
+                  });
+              } else {
+                vscode.window.showInformationMessage("CodeLoop CLI installed.");
+                this.reload();
+              }
+              resolve();
+            }
+          );
+        })
+    );
   }
 
   async selectConfig(): Promise<void> {
@@ -221,6 +279,9 @@ class ChatViewProvider implements vscode.WebviewViewProvider {
       case "reload":
         this.reload();
         break;
+      case "installCli":
+        this.installCli();
+        break;
       case "openSettings":
         vscode.commands.executeCommand("workbench.action.openSettings", "pycodeloop");
         break;
@@ -279,11 +340,15 @@ class ChatViewProvider implements vscode.WebviewViewProvider {
       this.post({ type: "processExit", code });
       this.client = undefined;
     });
-    client.on("spawnError", (error: Error) => {
-      this.post({
-        type: "connectionError",
-        message: `Couldn't start "${command}" (${error.message}).`,
-      });
+    client.on("spawnError", (error: NodeJS.ErrnoException) => {
+      if (error.code === "ENOENT") {
+        this.post({ type: "cliMissing", command });
+      } else {
+        this.post({
+          type: "connectionError",
+          message: `Couldn't start "${command}" (${error.message}).`,
+        });
+      }
       this.client = undefined;
     });
 
@@ -358,7 +423,7 @@ class ChatViewProvider implements vscode.WebviewViewProvider {
 }
 
 export function activate(context: vscode.ExtensionContext): void {
-  const provider = new ChatViewProvider(context.extensionUri, context.workspaceState);
+  const provider = new ChatViewProvider(context);
 
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider("pycodeloop.chat", provider, {

@@ -52,7 +52,7 @@
         {
           "type": "webview",
           "id": "pycodeloop.chat",
-          "name": "Chat"
+          "name": "CodeLoop"
         }
       ]
     },

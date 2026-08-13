@@ -6,157 +6,96 @@
 [![Python](https://img.shields.io/pypi/pyversions/pycodeloop?style=flat-square)](https://pypi.org/project/pycodeloop/)
 [![Stars](https://img.shields.io/github/stars/dotflow-io/pycodeloop?label=Stars&style=flat-square)](https://github.com/dotflow-io/pycodeloop)
 
-[Repository](https://github.com/dotflow-io/pycodeloop)
-
 </div>
 
 ---
 
 # CodeLoop
 
-CodeLoop is a lightweight Python library for building agentic coding assistants — in the shape of Claude Code, Codex, or Gemini CLI. Give it a provider and a prompt, it drives a tool-use loop (read, write, edit, grep, bash, web fetch) until the task is done. Same shape everywhere: swap Anthropic for OpenAI without touching the agent loop.
+CodeLoop is a terminal coding agent — in the shape of Claude Code, Codex, or Gemini CLI. Point it at a provider (a plain JSON config, no code) and give it a prompt: it drives a tool-use loop (read, write, edit, grep, bash, git, web fetch) until the task is done, right from your shell.
 
 ## Why CodeLoop?
 
-- **Simple** — `CodeLoop(config=Config(...)).run("do the thing")`. That's it.
-- **Multi-provider** — Anthropic, OpenAI, Ollama, any OpenAI-compatible server, or a JSON-configured/custom backend.
-- **Decoupled** — providers, tools, and the system prompt are injected, not hardcoded.
-- **Embeddable** — use it as a library inside your own app, or drive it from the `pycodeloop` CLI.
-- **Extensible tools** — read/write/edit/delete/list/glob/grep/bash/web-fetch out of the box; add your own by subclassing `Tool`.
-- **Full-screen chat** — bare `pycodeloop` drops you into a Textual-based interface; `run` stays available for one-shot/scripting use.
-- **Skills-aware** — auto-discovers Claude Code, Cursor, and `AGENTS.md` skills already on disk and exposes them to the agent.
+- **Any model, one JSON file** — Anthropic, OpenAI, Ollama, LM Studio, or any OpenAI-compatible endpoint. No vendor SDKs, no code changes to switch — `GenericProvider` speaks HTTP directly.
+- **Full-screen chat** — bare `pycodeloop` drops you into a Textual-based interface.
+- **Asks before doing anything risky** — write/edit/delete/bash/commit/HTTP calls show a diff or command preview and wait for your OK, unless you pass `--yes`.
+- **Skills-aware** — auto-discovers `SKILL.md`/`CLAUDE.md`, `.cursorrules`, and `AGENTS.md` files already on disk.
+- **Sessions that persist** — conversations survive process restarts; switch between saved sessions.
+- **VS Code extension** — chat with CodeLoop from a sidebar panel instead of the terminal ([`vscode-extension/`](vscode-extension/)).
 
 ## Install
 
 ```bash
-pip install pycodeloop[anthropic]   # or: pycodeloop[openai], pycodeloop[all]
+pip install pycodeloop
 ```
 
 ## Quick Start
 
-```python
-from pycodeloop import CodeLoop, Config
-from pycodeloop.providers import GenericProvider
-
-config = Config(
-    provider=GenericProvider.from_json("templates/anthropic.json"),
-)
-
-flow = CodeLoop(config=config)
-print(flow.run("list the files in this repo and summarize the project"))
-```
-
-## Optional extras
+Pick a provider template and set your key:
 
 ```bash
-pip install pycodeloop[anthropic]   # Claude
-pip install pycodeloop[openai]      # GPT
-pip install pycodeloop[all]         # both
+export ANTHROPIC_API_KEY=sk-ant-...
+pycodeloop run "list the files in this repo and summarize the project" \
+  --provider templates/anthropic.json
 ```
 
-## Features
-
-<details>
-<summary><strong>Providers</strong></summary>
-
-Swap the LLM backend without touching the agent loop — every backend is a JSON config fed to the one `GenericProvider` class:
-
-```python
-from pycodeloop import Config
-from pycodeloop.providers import GenericProvider
-
-# Anthropic
-config = Config(provider=GenericProvider.from_json("templates/anthropic.json"))
-
-# OpenAI
-config = Config(provider=GenericProvider.from_json("templates/openai.json"))
-```
-
-Env-based defaults, resolved by `pycodeloop.settings.Settings` when `Config()` gets no explicit provider:
+Or drop into the full-screen chat:
 
 ```bash
-export PYCODELOOP_PROVIDER=templates/openai.json
-export PYCODELOOP_MODEL=gpt-5
-export OPENAI_API_KEY=sk-...
+pycodeloop --provider templates/anthropic.json
 ```
 
-Point `GenericProvider` at any OpenAI-compatible HTTP endpoint, or configure one entirely from a JSON file — no Python required:
-
-```python
-from pycodeloop.providers import get_provider
-
-provider = get_provider("./provider.example.json")
-```
+Set it once as the default instead of passing `--provider` every time:
 
 ```bash
-pycodeloop run "list the files here" --provider ./provider.example.json
+export PYCODELOOP_PROVIDER=templates/anthropic.json
+pycodeloop
 ```
 
-See [`docs/examples/provider.example.json`](docs/examples/provider.example.json), the [`templates/`](templates/) directory for ready-made vendor configs, and the [JSON provider guide](docs/nav/development/json-provider.md).
+## Providers
 
-Bring your own backend by implementing the `Provider` ABC:
+Every backend is the same JSON shape fed to `GenericProvider` — swapping models means swapping a file, nothing else. Ready-made templates live in [`templates/`](templates/):
 
-```python
-from pycodeloop.abc.provider import Provider, ProviderResponse
-
-class MyProvider(Provider):
-    def complete(self, system_prompt, messages, tools) -> ProviderResponse:
-        ...
+```bash
+pycodeloop run "..." --provider templates/anthropic.json   # Claude
+pycodeloop run "..." --provider templates/openai.json      # GPT
+pycodeloop run "..." --provider templates/ollama.json      # local, no key needed
+pycodeloop run "..." --provider templates/lmstudio.json    # local, no key needed
 ```
 
----
+Point it at any OpenAI-compatible HTTP endpoint by writing your own JSON — see [`docs/examples/provider.example.json`](docs/examples/provider.example.json) and the [JSON provider guide](docs/nav/development/json-provider.md). No Python required to add a new backend.
 
-</details>
+## CLI
 
-<details>
-<summary><strong>Dependency Injection via Config</strong></summary>
+```bash
+# Bare pycodeloop drops into the full-screen chat
+pycodeloop
 
-The `Config` class validates and injects the pieces an agent run needs:
+# One-shot, non-interactive (scripting/CI)
+pycodeloop run "add a docstring to pycodeloop/core/agent.py"
 
-```python
-from pycodeloop import Config
-from pycodeloop.providers import GenericProvider
-from pycodeloop.core.tools import DEFAULT_TOOLS
+# Override provider/model per invocation
+pycodeloop run "..." --provider templates/openai.json --model gpt-5
 
-config = Config(
-    provider=GenericProvider.from_json("templates/anthropic.json"),
-    tools=DEFAULT_TOOLS,
-    system_prompt="You are a terse code reviewer.",
-    max_turns=25,
-)
+# Skip confirmation prompts for dangerous tools
+pycodeloop run "..." --yes
+
+# Connect an MCP server, one flag per server
+pycodeloop run "list every allowed directory" \
+  --mcp "npx -y @modelcontextprotocol/server-filesystem ."
+
+# Skip skills auto-discovery
+pycodeloop run "..." --no-skills
 ```
 
-Passing anything that isn't a `Provider` instance raises `NotProviderInstance` at construction time, not mid-run.
+The CLI behaves like a terminal coding agent:
 
-By default the session grows without bound — every turn's full history is resent to the provider every call. Pass `max_history_turns` to cap it: older turns are dropped as a whole unit (never mid tool_calls/tool_result, which every provider rejects) before each provider call.
+- **Streams** the model's text as it arrives instead of waiting for the full reply.
+- **Asks before running** `write_file`, `edit_file`, `delete_file`, `bash`, `git_commit`, `http_request`, or any MCP tool — shows a diff (or the shell command) and waits for confirmation, auto-running after 3s of no response. `--yes` skips this.
+- **Reports token usage** after every turn: input/output tokens for that turn plus the running session total.
+- **Discovers skills automatically** — `SKILL.md`/`CLAUDE.md` (Claude Code), `.mdc`/`.cursorrules` (Cursor), and `AGENTS.md` files already on disk are indexed and exposed to the agent via a `read_skill` tool, cached in `~/.pycodeloop/config.json` until something changes. `--no-skills` turns this off; `--skills-refresh` bypasses the cache.
 
-```python
-config = Config(provider=provider, max_history_turns=20)
-```
-
-Two more pluggable pieces, both optional:
-
-- **`Sessions`** — persists a `Session` by key so a conversation survives process restarts. Pass one to `Config(storage=...)` and call `CodeLoop.run(prompt, session_key=...)`. Two built-in implementations: `FileSessions` writes one JSON file per session under `~/.pycodeloop/sessions/`; `SqliteSessions` (`from pycodeloop.core.store.sqlite_sessions import SqliteSessions`) is a SQLAlchemy model backed by a single queryable `~/.pycodeloop/pycodeloop.db` instead.
-- **`Confirm`** — an ABC form of the `confirm` callback (`Agent(confirm=...)`) for when you want a reusable class instead of a closure — same `bool | str` contract, just `.ask(name, preview)` instead of calling it directly. A plain callable still works everywhere `confirm` is accepted.
-
-```python
-from pycodeloop import CodeLoop, Config
-from pycodeloop.core.store.file_sessions import FileSessions
-
-config = Config(provider=provider, storage=FileSessions())
-flow = CodeLoop(config=config)
-
-flow.run("remember this", session_key="user-42")
-# ... later, even in a new process:
-flow.run("what did I say?", session_key="user-42")
-```
-
----
-
-</details>
-
-<details>
-<summary><strong>Tools</strong></summary>
+## Tools
 
 Ships with the actions an agent needs to actually change code:
 
@@ -179,151 +118,24 @@ Ships with the actions an agent needs to actually change code:
 | `env` | Read environment variables (secrets masked) |
 | `todo` | Track a checklist across turns in a session |
 
-Add your own by subclassing `Tool`:
+`write_file`, `edit_file`, `delete_file`, `bash`, `git_commit`, `http_request`, and every MCP tool are marked dangerous and gated behind confirmation.
 
-```python
-from pycodeloop.abc.tool import Tool, ToolResult
+## MCP servers
 
-class MyTool(Tool):
-    name = "my_tool"
-    description = "Does a thing."
-    parameters = {"type": "object", "properties": {"x": {"type": "string"}}}
-
-    def run(self, x: str) -> ToolResult:
-        return ToolResult(output=f"did {x}")
-```
-
-Mark a tool `dangerous = True` and it gets a confirmation gate before it runs — `write_file`, `edit_file`, `delete_file`, `bash`, `git_commit`, `http_request`, and every MCP tool already are. Override `preview(**kwargs)` to control what's shown at confirmation time (defaults to a diff for file tools, the command line for `bash`):
-
-```python
-from pycodeloop.core.agent import Agent
-
-def confirm(name: str, preview: str) -> bool:
-    print(preview)
-    return input(f"run {name}? [y/N] ").lower() == "y"
-
-agent = Agent(provider=provider, confirm=confirm)
-```
-
----
-
-</details>
-
-<details>
-<summary><strong>Streaming and token usage</strong></summary>
-
-`Agent` exposes hooks for everything the terminal UI needs — streamed text, per-turn and cumulative token usage:
-
-```python
-from pycodeloop.core.agent import Agent
-
-agent = Agent(
-    provider=provider,
-    on_text_delta=lambda chunk: print(chunk, end=""),
-    on_usage=lambda turn, total: print(f"\n{turn.input_tokens}in/{turn.output_tokens}out, total {total.input_tokens}in/{total.output_tokens}out"),
-)
-
-agent.run("...")
-print(agent.usage)  # Usage(input_tokens=..., output_tokens=...)
-```
-
-`on_text_delta` only fires when the provider supports streaming — `GenericProvider` streams real SSE chunks for the default OpenAI chat-completions shape (e.g. `templates/openai.json`); a config with a custom `response_shape`/`response_paths` (e.g. `templates/anthropic.json`) delivers the full text in one call instead. Leave `on_text_delta` `None` to get the assembled response in one shot regardless.
-
----
-
-</details>
-
-<details>
-<summary><strong>MCP servers</strong></summary>
-
-```bash
-pip install pycodeloop[mcp]
-```
-
-Connect to any Model Context Protocol server over stdio and expose its remote tools to the agent alongside the built-in ones:
-
-```python
-from pycodeloop import CodeLoop, Config
-from pycodeloop.core.mcp import MCPServer, load_mcp_tools
-from pycodeloop.core.tools import DEFAULT_TOOLS
-from pycodeloop.providers import GenericProvider
-
-server = MCPServer(command="npx", args=["-y", "@modelcontextprotocol/server-filesystem", "."])
-tools = DEFAULT_TOOLS + load_mcp_tools(server)
-
-config = Config(provider=GenericProvider.from_json("templates/anthropic.json"), tools=tools)
-flow = CodeLoop(config=config)
-```
-
-Or from the CLI, one `--mcp` flag per server:
+Connect to any Model Context Protocol server over stdio and its tools show up alongside the built-in ones — no config beyond a flag:
 
 ```bash
 pycodeloop run "list every allowed directory" \
   --mcp "npx -y @modelcontextprotocol/server-filesystem ."
 ```
 
-`load_mcp_tools` keeps the server subprocess alive on a background event loop for the life of the process, and adapts each remote tool schema into a regular `Tool` — the agent can't tell an MCP tool from a local one.
+## Sessions
 
----
+Conversations persist to `~/.pycodeloop/sessions/` and survive process restarts. In the full-screen chat, switch between saved sessions from the menu.
 
-</details>
+## Using it as a library
 
-<details>
-<summary><strong>CLI</strong></summary>
-
-Run the agent directly from the command line:
-
-```bash
-# Bare pycodeloop drops into the full-screen chat
-pycodeloop
-
-# One-shot, non-interactive (scripting/CI)
-pycodeloop run "add a docstring to pycodeloop/core/agent.py"
-
-# Override provider/model per invocation
-pycodeloop run "..." --provider templates/openai.json --model gpt-5
-
-# Skip confirmation prompts for dangerous tools
-pycodeloop run "..." --yes
-
-# Skip skills auto-discovery
-pycodeloop run "..." --no-skills
-```
-
-The CLI behaves like a terminal coding agent:
-
-- **Streams** the model's text as it arrives instead of waiting for the full reply.
-- **Asks before running** `write_file`, `edit_file`, `delete_file`, `bash`, `git_commit`, `http_request`, or any MCP tool — shows a diff (or the shell command) and waits for confirmation, auto-running after 3s of no response. `--yes` skips this.
-- **Reports token usage** after every turn: input/output tokens for that turn plus the running session total.
-- **Discovers skills automatically** — `SKILL.md`/`CLAUDE.md` (Claude Code), `.mdc`/`.cursorrules` (Cursor), and `AGENTS.md` files already on disk are indexed and exposed to the agent via a `read_skill` tool, cached in `~/.pycodeloop/config.json` until something changes. `--no-skills` turns this off; `--skills-refresh` bypasses the cache.
-
----
-
-</details>
-
-<details>
-<summary><strong>Low-level Agent loop</strong></summary>
-
-`CodeLoop` is a thin wrapper around `Agent` + `Session` for when you want direct control over the tool-use loop, hooks, or multi-turn state:
-
-```python
-from pycodeloop.core.agent import Agent
-from pycodeloop.providers import GenericProvider
-
-def on_tool_call(name, args):
-    print(f"-> {name} {args}")
-
-agent = Agent(
-    provider=GenericProvider.from_json("templates/anthropic.json"),
-    on_tool_call=on_tool_call,
-)
-
-reply = agent.run("fix the failing test in tests/test_agent.py")
-```
-
----
-
-</details>
+CodeLoop is also a small Python library if you want to embed the agent loop in your own app — see [`docs/`](docs/) for the `Config`, `Agent`, and `Tool` APIs.
 
 ## Commit Style
 

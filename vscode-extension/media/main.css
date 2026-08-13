@@ -207,21 +207,28 @@ body {
 
 .tool-card {
   align-self: flex-start;
-  max-width: 92%;
+  width: 100%;
+  max-width: 100%;
   border: 1px solid var(--vscode-widget-border);
   border-radius: 8px;
-  overflow: hidden;
   font-size: 0.88em;
 }
 
 .tool-card-header {
   display: flex;
   align-items: center;
+  min-width: 0;
   gap: 6px;
   padding: 5px 8px;
   cursor: pointer;
   font-family: var(--vscode-editor-font-family);
   background: var(--vscode-editorWidget-background);
+  border-radius: 7px;
+}
+
+.tool-card.expanded .tool-card-header {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
 .tool-card-header:hover {
@@ -231,11 +238,13 @@ body {
 .tool-icon {
   width: 14px;
   text-align: center;
+  flex-shrink: 0;
 }
 
 .tool-name {
   font-weight: 600;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .tool-args-preview {
@@ -250,6 +259,7 @@ body {
 .tool-status {
   margin-left: auto;
   font-size: 0.9em;
+  flex-shrink: 0;
 }
 
 .tool-status.pending {
@@ -277,6 +287,8 @@ body {
   white-space: pre-wrap;
   word-break: break-word;
   border-top: 1px solid var(--vscode-widget-border);
+  border-bottom-left-radius: 7px;
+  border-bottom-right-radius: 7px;
   max-height: 240px;
   overflow-y: auto;
 }
