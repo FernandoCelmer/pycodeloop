@@ -1,32 +1,38 @@
 """Test provider registry and dotted-path loading"""
 
+import json
 import sys
 import tempfile
 import unittest
 from pathlib import Path
 
 from pycodeloop.abc.provider import Provider, ProviderResponse
-from pycodeloop.providers import OllamaProvider, get_provider
-
-
-class TestOllamaProvider(unittest.TestCase):
-    def test_defaults(self):
-        provider = OllamaProvider()
-
-        self.assertEqual(provider.model, "llama3.1")
-        self.assertEqual(provider.base_url, "http://localhost:11434/v1")
-        self.assertEqual(provider.api_key, "ollama")
+from pycodeloop.providers import GenericProvider, get_provider
 
 
 class TestGetProvider(unittest.TestCase):
-    def test_by_registry_name(self):
-        provider = get_provider("ollama", model="llama3.1")
+    def test_generic_requires_url(self):
+        provider = get_provider("generic", model="llama3.1", url="http://x/chat")
 
-        self.assertIsInstance(provider, OllamaProvider)
+        self.assertIsInstance(provider, GenericProvider)
+        self.assertEqual(provider.url, "http://x/chat")
 
     def test_rejects_unknown_name(self):
         with self.assertRaises(ValueError):
             get_provider("does-not-exist")
+
+    def test_loads_json_config(self):
+        tmpdir = tempfile.TemporaryDirectory()
+        self.addCleanup(tmpdir.cleanup)
+        config_path = Path(tmpdir.name) / "config.json"
+        config_path.write_text(
+            json.dumps({"url": "http://x/chat", "model": "my-model"})
+        )
+
+        provider = get_provider(str(config_path))
+
+        self.assertIsInstance(provider, GenericProvider)
+        self.assertEqual(provider.model, "my-model")
 
     def test_loads_custom_dotted_path(self):
         tmpdir = tempfile.TemporaryDirectory()
