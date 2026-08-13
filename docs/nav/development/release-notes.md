@@ -1,5 +1,22 @@
 # Release Notes
 
+## v0.2.1
+
+- ⚙️ VS Code extension source restructured by responsibility — thin `extension.ts` entrypoint, `chatViewProvider.ts` for orchestration, `config/settings.ts` for typed config access, pure `lib/` helpers, and `webview/html.ts` for the panel template — plus 26 unit tests (`npm test`, no new dependency)
+- ⚙️ Skills-discovery toggle and MCP server management (add/remove) added to the extension's gear menu and settings, wired into `pycodeloop serve`'s existing `--no-skills`/`--mcp` flags
+- ⚙️ Slash commands (`/new`, `/sessions`, `/provider`, `/model`, `/auto-approve`, `/skills`, `/mcp`, `/reload`, `/settings`, `/help`) with an autocomplete dropdown in the extension's prompt box
+- 🪲 `Session.history()` self-heals a session left with a dangling `tool_use` (no matching `tool_result`) after the process was killed mid-turn — previously left that conversation permanently rejected by the provider
+- 🪲 Extension's CLI-missing detection fixed (was probing `--version`, a flag `pycodeloop` doesn't have) and its auto-install now always installs the CLI globally, matching `pycodeloop.command`'s default of a bare `pycodeloop` resolved off `PATH`
+
+## v0.2.0
+
+- ⚙️ VS Code extension — a sidebar chat panel talking to `pycodeloop serve` over JSON-RPC, with session switching, screenshot/image attachments, auto-approve setting, and Esc-to-cancel
+- ⚙️ `pycodeloop serve` — a JSON-RPC-over-stdio server exposing `chat/send`, `chat/cancel`, `chat/confirmResponse`, and `session/list`/`session/load`, plus a `--yes` auto-approve flag, for editor integrations
+- ⚙️ `GenericProvider` is now the sole provider implementation — dedicated Anthropic/OpenAI SDK-backed providers were removed in favor of the vendor-agnostic JSON-configured HTTP client
+- ⚙️ Agent loop: retries transient provider errors, runs independent tool calls in parallel, auto-compacts older history into the first kept message with tool-result summarization, and a TUI thinking indicator with live context %
+- 🪲 Fixed a `CodeLoop` session leak across `session_key` switches and a doubled `pypycodeloop` typo in install docs
+- 📘 README and docs updated for the `GenericProvider`-only model; repository moved to `dotflow-io/pycodeloop`
+
 ## v0.1.0
 
 Initial release.
