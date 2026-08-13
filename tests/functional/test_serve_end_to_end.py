@@ -185,6 +185,49 @@ class TestServeEndToEnd(unittest.TestCase):
         self.assertEqual(response["result"]["text"], "Wrote it.")
         self.assertEqual((self.tmp_path / "note.txt").read_text(), "hi")
 
+    def test_yes_flag_auto_approves_without_confirm_round_trip(self):
+        self.server = FakeLLMServer(
+            [
+                chat_completion(
+                    tool_calls=[
+                        tool_call(
+                            "call-1",
+                            "write_file",
+                            {"path": "note.txt", "content": "hi"},
+                        )
+                    ]
+                ),
+                chat_completion(text="Wrote it."),
+            ]
+        )
+        self.client = ServeSubprocess(
+            self.server.url, self.tmp_path, extra_args=["--yes"]
+        )
+        self.client.next_message()  # ready
+
+        self.client.send(
+            {
+                "jsonrpc": "2.0",
+                "id": "1",
+                "method": "chat/send",
+                "params": {"prompt": "write a note"},
+            }
+        )
+
+        methods = []
+        response = None
+        while response is None:
+            message = self.client.next_message()
+            if message.get("id") == "1" and "result" in message:
+                response = message
+            else:
+                methods.append(message.get("method"))
+
+        self.assertIn("chat/autoApproved", methods)
+        self.assertNotIn("chat/confirmRequest", methods)
+        self.assertEqual(response["result"]["text"], "Wrote it.")
+        self.assertEqual((self.tmp_path / "note.txt").read_text(), "hi")
+
 
 if __name__ == "__main__":
     unittest.main()
