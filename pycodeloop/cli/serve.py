@@ -154,6 +154,42 @@ class RpcServer:
             waiter = self._confirm_waiters.get(params.get("id"))
             if waiter is not None:
                 waiter.put(params.get("answer"))
+        elif method == "session/list":
+            storage = self.flow.config.storage
+            sessions = storage.list_sessions() if hasattr(storage, "list_sessions") else {}
+            self._send(
+                {
+                    "jsonrpc": "2.0",
+                    "id": request_id,
+                    "result": {
+                        "sessions": [
+                            {"key": key, **meta} for key, meta in sessions.items()
+                        ]
+                    },
+                }
+            )
+        elif method == "session/load":
+            storage = self.flow.config.storage
+            key = params.get("key")
+            session = storage.get(key) if storage is not None and key else None
+            self._send(
+                {
+                    "jsonrpc": "2.0",
+                    "id": request_id,
+                    "result": {
+                        "messages": [
+                            {
+                                "role": message.role,
+                                "content": message.content,
+                                "toolCallId": message.tool_call_id,
+                                "toolCalls": message.tool_calls,
+                                "images": message.images,
+                            }
+                            for message in (session.messages if session else [])
+                        ]
+                    },
+                }
+            )
         elif method == "initialize":
             self._send(
                 {
