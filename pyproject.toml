@@ -42,9 +42,9 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/FernandoCelmer/pycodeloop"
-Issues = "https://github.com/FernandoCelmer/pycodeloop/issues"
-Repository = "https://github.com/FernandoCelmer/pycodeloop"
+Homepage = "https://github.com/dotflow-io/pycodeloop"
+Issues = "https://github.com/dotflow-io/pycodeloop/issues"
+Repository = "https://github.com/dotflow-io/pycodeloop"
 
 [project.optional-dependencies]
 anthropic = ["anthropic"]
@@ -60,8 +60,8 @@ authors = ["Fernando Celmer <email@fernandocelmer.com>"]
 readme = "README.md"
 license = "MIT"
 package-mode = true
-homepage = "https://github.com/FernandoCelmer/pycodeloop"
-repository = "https://github.com/FernandoCelmer/pycodeloop"
+homepage = "https://github.com/dotflow-io/pycodeloop"
+repository = "https://github.com/dotflow-io/pycodeloop"
 packages = [{ include = "pycodeloop" }]
 
 [tool.poetry.scripts]

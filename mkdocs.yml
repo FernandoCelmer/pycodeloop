@@ -3,8 +3,8 @@ site_url: https://fernandocelmer.github.io/pycodeloop/
 site_author: Fernando Celmer
 
 copyright: Fernando Celmer
-repo_name: FernandoCelmer/pycodeloop
-repo_url: https://github.com/FernandoCelmer/pycodeloop
+repo_name: dotflow-io/pycodeloop
+repo_url: https://github.com/dotflow-io/pycodeloop
 
 theme:
   name: material

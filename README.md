@@ -2,11 +2,11 @@
 
 **Bring your own model. Swap providers. Ship an agent.**
 
-[![PyPI](https://img.shields.io/pypi/v/pypycodeloop?style=flat-square)](https://pypi.org/project/pypycodeloop/)
-[![Python](https://img.shields.io/pypi/pyversions/pypycodeloop?style=flat-square)](https://pypi.org/project/pypycodeloop/)
-[![Stars](https://img.shields.io/github/stars/FernandoCelmer/pycodeloop?label=Stars&style=flat-square)](https://github.com/FernandoCelmer/pycodeloop)
+[![PyPI](https://img.shields.io/pypi/v/pycodeloop?style=flat-square)](https://pypi.org/project/pycodeloop/)
+[![Python](https://img.shields.io/pypi/pyversions/pycodeloop?style=flat-square)](https://pypi.org/project/pycodeloop/)
+[![Stars](https://img.shields.io/github/stars/dotflow-io/pycodeloop?label=Stars&style=flat-square)](https://github.com/dotflow-io/pycodeloop)
 
-[Repository](https://github.com/FernandoCelmer/pycodeloop)
+[Repository](https://github.com/dotflow-io/pycodeloop)
 
 </div>
 
@@ -29,7 +29,7 @@ CodeLoop is a lightweight Python library for building agentic coding assistants 
 ## Install
 
 ```bash
-pip install pypycodeloop[anthropic]   # or: pypycodeloop[openai], pypycodeloop[all]
+pip install pycodeloop[anthropic]   # or: pycodeloop[openai], pycodeloop[all]
 ```
 
 ## Quick Start
@@ -49,9 +49,9 @@ print(flow.run("list the files in this repo and summarize the project"))
 ## Optional extras
 
 ```bash
-pip install pypycodeloop[anthropic]   # Claude
-pip install pypycodeloop[openai]      # GPT
-pip install pypycodeloop[all]         # both
+pip install pycodeloop[anthropic]   # Claude
+pip install pycodeloop[openai]      # GPT
+pip install pycodeloop[all]         # both
 ```
 
 ## Features
@@ -237,7 +237,7 @@ print(agent.usage)  # Usage(input_tokens=..., output_tokens=...)
 <summary><strong>MCP servers</strong></summary>
 
 ```bash
-pip install pypycodeloop[mcp]
+pip install pycodeloop[mcp]
 ```
 
 Connect to any Model Context Protocol server over stdio and expose its remote tools to the agent alongside the built-in ones:
@@ -341,6 +341,6 @@ reply = agent.run("fix the failing test in tests/test_agent.py")
 
 ## License
 
-![GitHub License](https://img.shields.io/github/license/FernandoCelmer/pycodeloop)
+![GitHub License](https://img.shields.io/github/license/dotflow-io/pycodeloop)
 
 This project is licensed under the terms of the MIT License.
