@@ -19,13 +19,13 @@ class CodeLoop:
         You can import the **CodeLoop** class directly from pycodeloop:
 
             from pycodeloop import CodeLoop, Config
-            from pycodeloop.providers import AnthropicProvider
+            from pycodeloop.providers import GenericProvider
 
     Example:
         `class` pycodeloop.core.codeloop.CodeLoop
 
             config = Config(
-                provider=AnthropicProvider(model="claude-sonnet-5")
+                provider=GenericProvider.from_json("path/to/config.json")
             )
 
             flow = CodeLoop(config=config)
@@ -77,8 +77,9 @@ class CodeLoop:
         can_persist = session_key is not None and self.config.storage is not None
         if can_persist:
             stored = self.config.storage.get(session_key)
-            if stored is not None:
-                self.session = stored
+            self.session = stored or Session(
+                system_prompt=self.agent.system_prompt, cwd=os.getcwd()
+            )
             self.agent.on_message = lambda: self.config.storage.post(
                 session_key, self.session
             )
