@@ -25,10 +25,17 @@ class RpcServer:
     interactive CLI's `console.print` calls, and turns the synchronous
     `confirm()` gate into a request/response round-trip over the wire."""
 
-    def __init__(self, flow: CodeLoop, provider_name: str, model_name: str) -> None:
+    def __init__(
+        self,
+        flow: CodeLoop,
+        provider_name: str,
+        model_name: str,
+        auto_approve: bool = False,
+    ) -> None:
         self.flow = flow
         self.provider_name = provider_name
         self.model_name = model_name
+        self.auto_approve = auto_approve
         self._out_lock = threading.Lock()
         self._confirm_waiters: dict[str, queue.Queue] = {}
         self._cancel_event: threading.Event | None = None
@@ -86,6 +93,10 @@ class RpcServer:
             self._notify("chat/compactEnd", {"before": before, "after": after})
 
         def confirm(name: str, preview: str) -> bool | str:
+            if self.auto_approve:
+                self._notify("chat/autoApproved", {"name": name})
+                return True
+
             request_id = str(uuid.uuid4())
             answer_queue: queue.Queue = queue.Queue()
             self._confirm_waiters[request_id] = answer_queue
@@ -198,6 +209,12 @@ def serve(
     skills_refresh: bool = typer.Option(
         False, "--skills-refresh", help="Bypass the skills cache and rescan."
     ),
+    yes: bool = typer.Option(
+        False,
+        "--yes",
+        "-y",
+        help="Auto-approve dangerous tool calls instead of round-tripping a confirmRequest.",
+    ),
 ) -> None:
     """Run CodeLoop as a JSON-RPC-over-stdio server for editor
     integrations — no interactive terminal output, one JSON message
@@ -215,4 +232,6 @@ def serve(
         skills_refresh=skills_refresh,
     )
     flow = CodeLoop(config=config)
-    RpcServer(flow, provider_name, provider_instance.model).serve_forever()
+    RpcServer(
+        flow, provider_name, provider_instance.model, auto_approve=yes
+    ).serve_forever()
