@@ -49,6 +49,13 @@ export class RpcClient extends EventEmitter {
     this.process.on("exit", (code, signal) => {
       this.emit("exit", { code, signal });
     });
+
+    // Spawn failures (bad `pycodeloop.command` path, not on PATH, etc)
+    // land here instead of "exit" — without this listener Node treats
+    // it as an unhandled error and crashes the extension host.
+    this.process.on("error", (error) => {
+      this.emit("spawnError", error);
+    });
   }
 
   private dispatch(message: RpcMessage): void {
