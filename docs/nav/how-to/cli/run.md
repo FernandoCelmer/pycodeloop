@@ -19,7 +19,7 @@ pycodeloop run "add a docstring to pycodeloop/core/agent.py"
 | `--skills-refresh` | Bypass the skills cache and rescan |
 | `--yes` / `-y` | Skip confirmation prompts for dangerous tools |
 
-There's no bare `anthropic`/`openai`/`ollama` provider name — every vendor is a `GenericProvider` pointed at a JSON config (see [`templates/`](../../../templates)) or, for an ad-hoc OpenAI-compatible endpoint, `--provider generic --url ...`.
+There's no bare `anthropic`/`openai`/`ollama` provider name — every vendor is a `GenericProvider` pointed at a JSON config (see [`templates/`](https://github.com/dotflow-io/pycodeloop/tree/master/templates)) or, for an ad-hoc OpenAI-compatible endpoint, `--provider generic --url ...`.
 
 ## Examples
 

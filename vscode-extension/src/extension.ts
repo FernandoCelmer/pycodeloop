@@ -151,39 +151,39 @@ class ChatViewProvider implements vscode.WebviewViewProvider {
       vscode.workspace.getConfiguration("pycodeloop").get<string>("command", "pycodeloop")
     );
     return new Promise((resolve) => {
-      cp.exec(`"${command}" --version`, (error) => resolve(!error));
+      cp.exec(`"${command}" --help`, (error) => resolve(!error));
     });
   }
 
+  /** Always installs globally (python3 -m pip install --user) so the CLI
+   * works no matter which project/venv is open — matches pycodeloop.command
+   * defaulting to bare "pycodeloop" resolved off PATH. */
   async installCli(): Promise<void> {
+    const pythonCmd = process.platform === "win32" ? "python" : "python3";
+    const installCmd = `${pythonCmd} -m pip install --user pycodeloop`;
     await vscode.window.withProgress(
       { location: vscode.ProgressLocation.Notification, title: "Installing CodeLoop CLI…" },
       () =>
         new Promise<void>((resolve) => {
-          const pythonCmd = process.platform === "win32" ? "python" : "python3";
-          cp.exec(
-            `${pythonCmd} -m pip install --user pycodeloop`,
-            { timeout: 180000 },
-            (error, _stdout, stderr) => {
-              if (error) {
-                vscode.window
-                  .showErrorMessage(
-                    `Couldn't install pycodeloop automatically: ${stderr || error.message}. ` +
-                      `Run this yourself: ${pythonCmd} -m pip install --user pycodeloop`,
-                    "Copy command"
-                  )
-                  .then((choice) => {
-                    if (choice === "Copy command") {
-                      vscode.env.clipboard.writeText(`${pythonCmd} -m pip install --user pycodeloop`);
-                    }
-                  });
-              } else {
-                vscode.window.showInformationMessage("CodeLoop CLI installed.");
-                this.reload();
-              }
-              resolve();
+          cp.exec(installCmd, { timeout: 180000 }, (error, _stdout, stderr) => {
+            if (error) {
+              vscode.window
+                .showErrorMessage(
+                  `Couldn't install pycodeloop automatically: ${stderr || error.message}. ` +
+                    `Run this yourself: ${installCmd}`,
+                  "Copy command"
+                )
+                .then((choice) => {
+                  if (choice === "Copy command") {
+                    vscode.env.clipboard.writeText(installCmd);
+                  }
+                });
+            } else {
+              vscode.window.showInformationMessage("CodeLoop CLI installed.");
+              this.reload();
             }
-          );
+            resolve();
+          });
         })
     );
   }

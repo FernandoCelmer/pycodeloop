@@ -18,7 +18,7 @@ poetry install --extras mcp
 
 ## Configure
 
-The bundled default is Anthropic (`templates/anthropic.json`, resolved automatically) — set `ANTHROPIC_API_KEY` and you're done. To point at a different backend, override `PYCODELOOP_PROVIDER` with a path to another JSON config (see [`templates/`](../../../templates)) or `generic` paired with `--url`:
+The bundled default is Anthropic (`templates/anthropic.json`, resolved automatically) — set `ANTHROPIC_API_KEY` and you're done. To point at a different backend, override `PYCODELOOP_PROVIDER` with a path to another JSON config (see [`templates/`](https://github.com/dotflow-io/pycodeloop/tree/master/templates)) or `generic` paired with `--url`:
 
 ```bash
 export ANTHROPIC_API_KEY=sk-...

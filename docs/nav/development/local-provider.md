@@ -4,7 +4,7 @@
 
 ## Ollama
 
-[`templates/ollama.json`](../../../templates/ollama.json) is `GenericProvider` pre-configured for a local Ollama server:
+[`templates/ollama.json`](https://github.com/dotflow-io/pycodeloop/blob/master/templates/ollama.json) is `GenericProvider` pre-configured for a local Ollama server:
 
 ```json
 {
@@ -31,7 +31,7 @@ pycodeloop run "..." --provider templates/ollama.json --model llama3.1
 
 ## Any other OpenAI-compatible server
 
-LM Studio, vLLM, llama.cpp server, text-generation-webui, and similar all expose an OpenAI-compatible endpoint. [`templates/lmstudio.json`](../../../templates/lmstudio.json) is a ready-made example; point `url` at your own server the same way:
+LM Studio, vLLM, llama.cpp server, text-generation-webui, and similar all expose an OpenAI-compatible endpoint. [`templates/lmstudio.json`](https://github.com/dotflow-io/pycodeloop/blob/master/templates/lmstudio.json) is a ready-made example; point `url` at your own server the same way:
 
 ```python
 from pycodeloop.providers import get_provider

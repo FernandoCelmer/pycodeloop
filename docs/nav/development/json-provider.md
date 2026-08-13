@@ -54,7 +54,7 @@ provider = get_provider("./provider.example.json")
 | `timeout` | No | Request timeout in seconds (default `60`) |
 | `response_shape` | No | `"anthropic"` to parse replies from Anthropic's native `content[]`/`usage.input_tokens` shape; omit for OpenAI-shaped responses or use `response_paths` |
 | `response_paths` | No | Remaps an arbitrary response shape via dot-paths — see below |
-| `request` | No | Customizes the outgoing request body — `message_shape`, `tool_schema`, `body_paths`, `params`, `params_key`, `extra_body` (see the Anthropic example below and [`reference.json`](../../../templates/reference.json)) |
+| `request` | No | Customizes the outgoing request body — `message_shape`, `tool_schema`, `body_paths`, `params`, `params_key`, `extra_body` (see the Anthropic example below and [`reference.json`](https://github.com/dotflow-io/pycodeloop/blob/master/templates/reference.json)) |
 
 `--model` and the provider's own `*_API_KEY` env var (from `--provider`'s resolution) still override `model`/`api_key` from the file when passed explicitly on the CLI.
 
@@ -95,15 +95,15 @@ For anything `response_paths` can't express (custom auth flow, non-JSON body, SS
 
 ## Ready-made templates
 
-[`templates/`](../../../templates) has configs for common backends — point `--provider` straight at one, or copy it as a starting point:
+[`templates/`](https://github.com/dotflow-io/pycodeloop/tree/master/templates) has configs for common backends — point `--provider` straight at one, or copy it as a starting point:
 
 | Template | Backend |
 |----------|---------|
-| [`anthropic.json`](../../../templates/anthropic.json) | Anthropic's native Messages API (not the OpenAI-compatible one) |
-| [`openai.json`](../../../templates/openai.json) | OpenAI directly |
-| [`ollama.json`](../../../templates/ollama.json) | Local [Ollama](https://ollama.com) (`ollama serve`, no API key) |
-| [`lmstudio.json`](../../../templates/lmstudio.json) | Local [LM Studio](https://lmstudio.ai) server (no API key) |
-| [`reference.json`](../../../templates/reference.json) | Every field below, with its default/example value — not meant to be run as-is |
+| [`anthropic.json`](https://github.com/dotflow-io/pycodeloop/blob/master/templates/anthropic.json) | Anthropic's native Messages API (not the OpenAI-compatible one) |
+| [`openai.json`](https://github.com/dotflow-io/pycodeloop/blob/master/templates/openai.json) | OpenAI directly |
+| [`ollama.json`](https://github.com/dotflow-io/pycodeloop/blob/master/templates/ollama.json) | Local [Ollama](https://ollama.com) (`ollama serve`, no API key) |
+| [`lmstudio.json`](https://github.com/dotflow-io/pycodeloop/blob/master/templates/lmstudio.json) | Local [LM Studio](https://lmstudio.ai) server (no API key) |
+| [`reference.json`](https://github.com/dotflow-io/pycodeloop/blob/master/templates/reference.json) | Every field below, with its default/example value — not meant to be run as-is |
 
 ```bash
 pycodeloop run "..." --provider templates/ollama.json
@@ -113,7 +113,7 @@ Local ones (Ollama, LM Studio) have no `api_key`/`api_key_env` — `GenericProvi
 
 ## Talking to a non-OpenAI-shaped API: Anthropic's native format
 
-The request body defaults to the OpenAI chat-completions shape. For a backend that speaks a genuinely different shape — like Anthropic's own Messages API, which [`templates/anthropic.json`](../../../templates/anthropic.json) targets — set both the outgoing request shape and the incoming response shape:
+The request body defaults to the OpenAI chat-completions shape. For a backend that speaks a genuinely different shape — like Anthropic's own Messages API, which [`templates/anthropic.json`](https://github.com/dotflow-io/pycodeloop/blob/master/templates/anthropic.json) targets — set both the outgoing request shape and the incoming response shape:
 
 ```json
 {
