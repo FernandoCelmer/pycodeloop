@@ -1,0 +1,99 @@
+{
+  "name": "pycodeloop",
+  "displayName": "CodeLoop",
+  "description": "Chat with CodeLoop — an agentic coding assistant — inside VS Code.",
+  "version": "0.1.0",
+  "publisher": "dotflow-io",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dotflow-io/pycodeloop.git",
+    "directory": "vscode-extension"
+  },
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "pycodeloop.openChat",
+        "title": "CodeLoop: Open Chat",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "pycodeloop.newSession",
+        "title": "CodeLoop: New Session"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "pycodeloop.newSession",
+          "when": "view == pycodeloop.chat",
+          "group": "navigation"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "pycodeloop",
+          "title": "CodeLoop",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "pycodeloop": [
+        {
+          "type": "webview",
+          "id": "pycodeloop.chat",
+          "name": "Chat"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "CodeLoop",
+      "properties": {
+        "pycodeloop.command": {
+          "type": "string",
+          "default": "pycodeloop",
+          "description": "Path to the pycodeloop executable used to spawn 'pycodeloop serve'."
+        },
+        "pycodeloop.provider": {
+          "type": "string",
+          "default": "",
+          "description": "Provider name: a path to a JSON config file, 'generic' (with pycodeloop.url), or a dotted 'module:Class'. Empty uses pycodeloop's own default."
+        },
+        "pycodeloop.model": {
+          "type": "string",
+          "default": "",
+          "description": "Model override. Empty uses the provider's configured default."
+        },
+        "pycodeloop.url": {
+          "type": "string",
+          "default": "",
+          "description": "Endpoint URL, required when pycodeloop.provider is 'generic'."
+        },
+        "pycodeloop.skills": {
+          "type": "boolean",
+          "default": true,
+          "description": "Discover Claude/Cursor/AGENTS.md skills and expose a read_skill tool."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -w -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.4.0"
+  }
+}
