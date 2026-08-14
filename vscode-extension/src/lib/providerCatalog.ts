@@ -12,7 +12,7 @@ export const PROVIDER_CATALOG: ProviderDef[] = [
   {
     id: "anthropic",
     label: "Anthropic",
-    description: "Claude models — needs ANTHROPIC_API_KEY",
+    description: "Claude models",
     file: "anthropic.json",
     models: ["claude-opus-5", "claude-sonnet-5", "claude-haiku-4-5", "claude-opus-4-8", "claude-fable-5"],
     defaultModel: "claude-sonnet-5",
@@ -21,7 +21,7 @@ export const PROVIDER_CATALOG: ProviderDef[] = [
   {
     id: "openai",
     label: "OpenAI",
-    description: "GPT models — needs OPENAI_API_KEY",
+    description: "GPT models",
     file: "openai.json",
     models: ["gpt-5.6", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-5.3-codex"],
     defaultModel: "gpt-5.6",
@@ -30,7 +30,7 @@ export const PROVIDER_CATALOG: ProviderDef[] = [
   {
     id: "gemini",
     label: "Gemini",
-    description: "Google Gemini models — needs GEMINI_API_KEY",
+    description: "Google Gemini models",
     file: "gemini.json",
     models: ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-2.5-pro", "gemini-2.5-flash"],
     defaultModel: "gemini-3.6-flash",
@@ -39,7 +39,7 @@ export const PROVIDER_CATALOG: ProviderDef[] = [
   {
     id: "grok",
     label: "Grok (xAI)",
-    description: "xAI Grok models — needs XAI_API_KEY",
+    description: "xAI Grok models",
     file: "grok.json",
     models: ["grok-4.5", "grok-4.3", "grok-build-0.1"],
     defaultModel: "grok-4.5",
@@ -48,7 +48,7 @@ export const PROVIDER_CATALOG: ProviderDef[] = [
   {
     id: "groq",
     label: "Groq",
-    description: "Fast open-weight inference — needs GROQ_API_KEY",
+    description: "Fast open-weight inference",
     file: "groq.json",
     models: ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "llama-3.3-70b-versatile"],
     defaultModel: "openai/gpt-oss-120b",
@@ -57,7 +57,7 @@ export const PROVIDER_CATALOG: ProviderDef[] = [
   {
     id: "aws",
     label: "AWS (Bedrock)",
-    description: "Amazon Bedrock, OpenAI-compatible — needs AWS_BEARER_TOKEN_BEDROCK",
+    description: "Amazon Bedrock, OpenAI-compatible",
     file: "aws.json",
     models: ["openai.gpt-oss-120b", "openai.gpt-oss-20b", "us.anthropic.claude-sonnet-4-6"],
     defaultModel: "openai.gpt-oss-120b",
@@ -66,7 +66,7 @@ export const PROVIDER_CATALOG: ProviderDef[] = [
   {
     id: "kimi",
     label: "Kimi (Moonshot AI)",
-    description: "Kimi models — needs MOONSHOT_API_KEY",
+    description: "Kimi models",
     file: "kimi.json",
     models: ["kimi-k3", "kimi-k2.7-code", "kimi-k2.6"],
     defaultModel: "kimi-k3",
@@ -75,7 +75,7 @@ export const PROVIDER_CATALOG: ProviderDef[] = [
   {
     id: "deepseek",
     label: "DeepSeek",
-    description: "DeepSeek models — needs DEEPSEEK_API_KEY",
+    description: "DeepSeek models",
     file: "deepseek.json",
     models: ["deepseek-v4-pro", "deepseek-v4-flash"],
     defaultModel: "deepseek-v4-pro",
@@ -84,7 +84,7 @@ export const PROVIDER_CATALOG: ProviderDef[] = [
   {
     id: "llama",
     label: "Llama (Together AI)",
-    description: "Meta Llama, hosted — needs TOGETHER_API_KEY",
+    description: "Meta Llama, hosted",
     file: "llama.json",
     models: ["meta-llama/Llama-3.3-70B-Instruct-Turbo"],
     defaultModel: "meta-llama/Llama-3.3-70B-Instruct-Turbo",
@@ -93,7 +93,7 @@ export const PROVIDER_CATALOG: ProviderDef[] = [
   {
     id: "qwen",
     label: "Qwen (Alibaba)",
-    description: "Qwen models via DashScope — needs DASHSCOPE_API_KEY",
+    description: "Qwen models via DashScope",
     file: "qwen.json",
     models: ["qwen-max", "qwen-plus", "qwen-turbo"],
     defaultModel: "qwen-max",
@@ -102,7 +102,7 @@ export const PROVIDER_CATALOG: ProviderDef[] = [
   {
     id: "nvidia",
     label: "NVIDIA NIM",
-    description: "Hosted open models on NVIDIA — needs NVIDIA_API_KEY",
+    description: "Hosted open models on NVIDIA",
     file: "nvidia.json",
     models: ["meta/llama-3.3-70b-instruct", "qwen/qwen3-next-80b-a3b-instruct", "deepseek-ai/deepseek-v4-pro"],
     defaultModel: "meta/llama-3.3-70b-instruct",

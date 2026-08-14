@@ -1,5 +1,11 @@
 # Release Notes
 
+## Unreleased
+
+- ⚙️ Sub-agent delegation (`--delegate`, off by default) — a `delegate` tool spawns a fresh sub-agent (same provider, read-only tools: `read_file`/`list_dir`/`glob`/`grep`/`git status`/`diff`/`log`/`web_fetch`, no write/edit/delete/bash) for an independent subtask. Several `delegate` calls in the same turn now run in parallel
+- 🪲 `Agent._can_parallelize` previously forced *any* repeated tool name in a batch to run sequentially, even for stateless tools — added `Tool.concurrent_safe` (opt-in, default `False`, preserves existing behavior for every built-in tool) so a tool like `delegate` can declare its repeated calls safe to run concurrently
+- ⚙️ VS Code extension (0.4.0): `pycodeloop.delegation` setting, ⚙ → Sub-agent delegation toggle, `/delegate` slash command
+
 ## v0.3.0
 
 - ⚙️ Ready-made provider templates for Gemini (`templates/gemini.json`), Grok/xAI (`templates/grok.json`), and Groq (`templates/groq.json`) — same `GenericProvider` JSON shape, OpenAI-compatible endpoints, no code required
