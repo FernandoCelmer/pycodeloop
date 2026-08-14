@@ -21,7 +21,7 @@ class TestHttpRequestTool(unittest.TestCase):
         with (
             mock.patch(
                 "httpx.request",
-                side_effect=lambda method, url, **kw: client.request(
+                side_effect=lambda method, url, **_kw: client.request(
                     method, url
                 ),
             ),
@@ -43,7 +43,7 @@ class TestHttpRequestTool(unittest.TestCase):
         with (
             mock.patch(
                 "httpx.request",
-                side_effect=lambda method, url, **kw: client.request(
+                side_effect=lambda method, url, **_kw: client.request(
                     method, url
                 ),
             ),

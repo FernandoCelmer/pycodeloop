@@ -94,12 +94,14 @@ class TestSafeRequest(unittest.TestCase):
         self.assertEqual(captured["sni"], "example.com")
 
     def test_raises_for_a_private_address(self):
-        with mock.patch(
-            "pycodeloop.tools._net.socket.getaddrinfo",
-            side_effect=_fake_dns("127.0.0.1"),
+        with (
+            mock.patch(
+                "pycodeloop.tools._net.socket.getaddrinfo",
+                side_effect=_fake_dns("127.0.0.1"),
+            ),
+            self.assertRaises(BlockedHostError),
         ):
-            with self.assertRaises(BlockedHostError):
-                safe_request("GET", "http://internal/path")
+            safe_request("GET", "http://internal/path")
 
 
 if __name__ == "__main__":

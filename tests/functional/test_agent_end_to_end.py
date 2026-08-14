@@ -73,7 +73,7 @@ class TestToolUseLoop(AgentEndToEndTestCase):
         agent = Agent(
             provider=provider,
             tools=[WriteFileTool(), ReadFileTool()],
-            confirm=lambda *args: True,
+            confirm=lambda *_args: True,
         )
 
         result = agent.run("write a note")
@@ -101,7 +101,7 @@ class TestToolUseLoop(AgentEndToEndTestCase):
         agent = Agent(
             provider=provider,
             tools=[ReadFileTool()],
-            confirm=lambda *args: True,
+            confirm=lambda *_args: True,
         )
 
         result = agent.run("what's in existing.txt?")
@@ -132,7 +132,7 @@ class TestToolUseLoop(AgentEndToEndTestCase):
         agent = Agent(
             provider=provider,
             tools=[WriteFileTool()],
-            confirm=lambda *args: False,
+            confirm=lambda *_args: False,
         )
 
         result = agent.run("write x.txt")

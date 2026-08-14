@@ -92,7 +92,7 @@ class TestAgent(unittest.TestCase):
         agent = Agent(
             provider=provider,
             tools=[DeleteTool()],
-            confirm=lambda name, preview: True,
+            confirm=lambda *_args: True,
         )
 
         result = agent.run("wipe")
@@ -471,7 +471,7 @@ class FlakyProvider(Provider):
     ) -> ProviderResponse:
         self.calls += 1
         if self.calls <= self.fail_times:
-            exc = Exception(f"failed attempt {self.calls}")
+            exc = RuntimeError(f"failed attempt {self.calls}")
             exc.status_code = self.status_code
             raise exc
         return ProviderResponse(text="ok")
@@ -491,7 +491,7 @@ class TestAgentRetry(unittest.TestCase):
         agent = Agent(
             provider=provider,
             tools=[],
-            on_retry=lambda attempt, delay, exc: events.append(
+            on_retry=lambda attempt, delay, _exc: events.append(
                 (attempt, delay)
             ),
         )
@@ -506,7 +506,7 @@ class TestAgentRetry(unittest.TestCase):
         provider = FlakyProvider(fail_times=10)
         agent = Agent(provider=provider, tools=[])
 
-        with self.assertRaises(Exception):
+        with self.assertRaises(RuntimeError):
             agent.run("hi")
 
         self.assertEqual(provider.calls, 4)  # 1 initial + 3 retries
@@ -515,7 +515,7 @@ class TestAgentRetry(unittest.TestCase):
         provider = FlakyProvider(fail_times=1, status_code=400)
         agent = Agent(provider=provider, tools=[])
 
-        with self.assertRaises(Exception):
+        with self.assertRaises(RuntimeError):
             agent.run("hi")
 
         self.assertEqual(provider.calls, 1)
@@ -596,7 +596,7 @@ class TestAgentParallelTools(unittest.TestCase):
         agent = Agent(
             provider=provider,
             tools=[SafeTool(), DangerTool()],
-            confirm=lambda name, preview: confirmed.append(name) or True,
+            confirm=lambda name, _preview: confirmed.append(name) or True,
         )
 
         agent.run("go")
