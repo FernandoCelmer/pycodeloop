@@ -14,38 +14,26 @@ already given more than once; don't make the user repeat them.
 - `write_file`/`edit_file` content is literal file text, never diff syntax
   — no `@@ ... @@` hunks, no leading `-`/`+` line markers.
 
-## Providers (`templates/`, `pycodeloop/providers/templates/`,
-## `vscode-extension/providers/`)
+## Providers (`templates/`, `pycodeloop/providers/templates/`)
 
-- These three directories must stay in sync — a new or changed provider
-  JSON goes in all three, or the CLI/docs and the extension disagree about
-  what's available.
+- These two directories must stay in sync — a new or changed provider JSON
+  goes in both, or the CLI and the docs disagree about what's available.
+  The VS Code extension (see below) keeps its own copy in a separate repo
+  and its own multi-model catalog — keep that in sync too when a model
+  list changes.
 - Before naming a model ID or endpoint, verify it against current vendor
   docs (WebFetch/WebSearch) — don't guess or reuse a remembered ID.
   Model catalogs (OpenAI, Gemini, Grok, Groq, ...) churn fast; a name that
   was right last month can 404 today.
 - `templates/openai.json`, `.../gemini.json`, etc. only carry one default
-  `model` each — the multi-choice list lives in
-  `vscode-extension/src/lib/providerCatalog.ts`.
+  `model` each — a multi-choice picker only exists in the VS Code
+  extension's own provider catalog.
 
-## VS Code extension (`vscode-extension/`)
+## VS Code extension
 
-- UI style: thin 1px borders, sharp corners (`border-radius: 0` except
-  circular status dots), monospace + uppercase for chrome/buttons, all
-  colors via `var(--vscode-*)` tokens (never hardcode hex — the panel must
-  follow the user's editor theme, light or dark).
-- No emoji as icons. Buttons are plain uppercase text unless there's
-  genuinely no room for a label (e.g. the Settings gear) — then a thin
-  inline stroke SVG (`stroke="currentColor"`, no fill), never a Unicode
-  symbol.
-- After *any* change under `vscode-extension/`, before saying the work is
-  done:
-  1. `npm run test` (must pass)
-  2. `rm -f pycodeloop-*.vsix && npx --no-install vsce package`
-  3. `code --uninstall-extension fernandocelmer.pycodeloop && code --install-extension pycodeloop-<version>.vsix`
-  A stale installed `.vsix` is the single most common source of "the fix
-  didn't work" confusion — always reinstall, don't assume the last build
-  is what's running.
+Lives in its own repo, [dotflow-io/vscodeloop](https://github.com/dotflow-io/vscodeloop)
+— not in this one. See that repo's own `AGENTS.md` for its conventions
+(UI style, no-emoji-icons rule, `.vsix` rebuild/reinstall steps).
 
 ## Commits
 
@@ -63,6 +51,4 @@ already given more than once; don't make the user repeat them.
 ## Testing
 
 - Python: `pytest -q` from repo root (venv at `.venv/`).
-- Extension: `npm run test` from `vscode-extension/` (compiles + runs
-  `node --test`).
-- Both must pass before calling anything finished.
+- Must pass before calling anything finished.

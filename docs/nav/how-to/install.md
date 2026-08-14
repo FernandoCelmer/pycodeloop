@@ -33,4 +33,4 @@ These are only defaults — every entrypoint (`Config(provider=...)`, `pycodeloo
 
 ## VS Code extension
 
-The `vscode-extension/` folder in the repo has a CodeLoop sidebar chat for VS Code — see its [README](https://github.com/dotflow-io/pycodeloop/blob/master/vscode-extension/README.md) for features and setup. It talks to `pycodeloop serve` over JSON-RPC instead of the terminal CLI.
+[dotflow-io/vscodeloop](https://github.com/dotflow-io/vscodeloop) — a CodeLoop sidebar chat for VS Code, also on the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=fernandocelmer.pycodeloop). See its README for features and setup. It talks to `pycodeloop serve` over JSON-RPC instead of the terminal CLI.
