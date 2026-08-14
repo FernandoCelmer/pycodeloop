@@ -230,6 +230,63 @@ class TestLoadProviderFromJson(GenericProviderTestCase):
             {"extra_content": {"google": {"thought_signature": "xyz789"}}},
         )
 
+    def test_streaming_cuts_a_looping_response_short(self):
+        path = self._write_config(
+            {"url": "http://fake/v1/chat/completions", "model": "my-model"}
+        )
+        provider = GenericProvider.from_json(path)
+
+        block = "The quick brown fox jumps over. "  # 33 chars
+        # Trickle it one char at a time so the tail-window check has to
+        # catch the repetition mid-stream, not just at end-of-response.
+        chunks = [
+            {"choices": [{"delta": {"content": ch}}]}
+            for ch in block * 6  # well past the 3x-window threshold
+        ]
+        chunks.append({"choices": [{"delta": {}, "finish_reason": "stop"}]})
+        sse_body = (
+            "".join(f"data: {json.dumps(c)}\n" for c in chunks)
+            + "data: [DONE]\n"
+        ).encode()
+
+        deltas = []
+        with mock.patch(
+            "pycodeloop.providers.generic.urllib.request.urlopen",
+            return_value=_FakeResponse(sse_body),
+        ):
+            result = provider.complete("sys", [], [], on_delta=deltas.append)
+
+        self.assertEqual(result.stop_reason, "repetition")
+        self.assertLess(len(result.text), len(block * 6))
+        self.assertEqual("".join(deltas), result.text)
+
+    def test_streaming_does_not_flag_normal_prose_as_repetition(self):
+        path = self._write_config(
+            {"url": "http://fake/v1/chat/completions", "model": "my-model"}
+        )
+        provider = GenericProvider.from_json(path)
+
+        prose = (
+            "This is an ordinary, non-repeating explanation of the change "
+            "that goes on for a while without ever looping back on itself, "
+            "so it should stream through untouched by the repetition guard."
+        )
+        chunks = [{"choices": [{"delta": {"content": prose}}]}]
+        chunks.append({"choices": [{"delta": {}, "finish_reason": "stop"}]})
+        sse_body = (
+            "".join(f"data: {json.dumps(c)}\n" for c in chunks)
+            + "data: [DONE]\n"
+        ).encode()
+
+        with mock.patch(
+            "pycodeloop.providers.generic.urllib.request.urlopen",
+            return_value=_FakeResponse(sse_body),
+        ):
+            result = provider.complete("sys", [], [], on_delta=lambda _: None)
+
+        self.assertEqual(result.text, prose)
+        self.assertEqual(result.stop_reason, "stop")
+
     def test_custom_response_paths(self):
         path = self._write_config(
             {

@@ -26,6 +26,29 @@ from pycodeloop.providers._shapes import (
 
 ResponseParser = Callable[[dict], ProviderResponse]
 
+_REPETITION_MIN_PERIOD = 8
+_REPETITION_MAX_PERIOD = 60
+_REPETITION_REPEATS = 3
+
+
+def _is_repeating(text: str) -> bool:
+    """True once the tail of `text` is some `period`-char block (for any
+    period between `_REPETITION_MIN_PERIOD` and `_REPETITION_MAX_PERIOD`)
+    repeated `_REPETITION_REPEATS` times in a row — a stuck local model
+    retyping the same block toward the token cap. Checks every period in
+    range rather than assuming one fixed width, since the looping unit
+    (a word, a line, a JSON fragment) varies in length."""
+    tail = text[-(_REPETITION_MAX_PERIOD * _REPETITION_REPEATS) :]
+    for period in range(_REPETITION_MIN_PERIOD, _REPETITION_MAX_PERIOD + 1):
+        span = period * _REPETITION_REPEATS
+        if len(tail) < span:
+            break
+        window = tail[-span:]
+        block = window[:period]
+        if block.strip() and window == block * _REPETITION_REPEATS:
+            return True
+    return False
+
 
 class GenericProvider(Provider):
     """Any JSON chat-completions HTTP API via the stdlib, no vendor SDK.
@@ -265,6 +288,9 @@ class GenericProvider(Provider):
                 if delta.get("content"):
                     text += delta["content"]
                     on_delta(delta["content"])
+                    if _is_repeating(text):
+                        stop_reason = "repetition"
+                        break
 
                 for tc in delta.get("tool_calls") or []:
                     index = tc.get("index", 0)
