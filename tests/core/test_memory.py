@@ -2,7 +2,6 @@
 
 import tempfile
 import unittest
-from pathlib import Path
 
 from pycodeloop.core.config import Config
 from pycodeloop.core.memory import RememberTool, load_memory, memory_path, render_memory_prompt
