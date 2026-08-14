@@ -26,6 +26,7 @@
   const menu = document.getElementById("menu");
   const menuSessions = document.getElementById("menu-sessions");
   const menuProvider = document.getElementById("menu-provider");
+  const menuApiKey = document.getElementById("menu-api-key");
   const menuModel = document.getElementById("menu-model");
   const menuAutoApprove = document.getElementById("menu-auto-approve");
   const menuAutoApproveCheck = document.getElementById("menu-auto-approve-check");
@@ -40,6 +41,8 @@
   const attachmentsEl = document.getElementById("attachments");
   const attachButton = document.getElementById("attach");
   const attachFileInput = document.getElementById("attach-file");
+  const apiKeyInput = document.getElementById("api-key");
+  const apiKeySave = document.getElementById("api-key-save");
 
   let assistantTurn = null;
   let pendingAssistantText = "";
@@ -647,6 +650,7 @@
     { name: "new", description: "Start a new session", run: () => vscode.postMessage({ type: "newSession" }) },
     { name: "sessions", description: "Switch to a saved session", run: () => vscode.postMessage({ type: "selectSession" }) },
     { name: "provider", description: "Select a provider config file", run: () => vscode.postMessage({ type: "selectConfig" }) },
+    { name: "key", description: "Focus the API key field", run: () => focusApiKey() },
     { name: "model", description: "Set a model override", run: () => vscode.postMessage({ type: "selectModel", current: currentModel }) },
     {
       name: "auto-approve",
@@ -808,6 +812,10 @@
     closeMenu();
     vscode.postMessage({ type: "selectConfig" });
   });
+  menuApiKey.addEventListener("click", () => {
+    closeMenu();
+    focusApiKey();
+  });
   menuModel.addEventListener("click", () => {
     closeMenu();
     vscode.postMessage({ type: "selectModel", current: currentModel });
@@ -833,13 +841,34 @@
     vscode.postMessage({ type: "openSettings" });
   });
 
-  function applySettings(model, nextAutoApprove, nextSkills) {
+  function focusApiKey() {
+    apiKeyInput.focus();
+    apiKeyInput.select();
+  }
+
+  function saveApiKey() {
+    vscode.postMessage({ type: "setApiKey", value: apiKeyInput.value });
+    apiKeyInput.value = "";
+  }
+
+  apiKeySave.addEventListener("click", saveApiKey);
+  apiKeyInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      saveApiKey();
+    }
+  });
+
+  function applySettings(model, nextAutoApprove, nextSkills, hasApiKey) {
     currentModel = model || "";
     autoApprove = !!nextAutoApprove;
     skillsEnabled = nextSkills !== false;
     menuModel.title = currentModel ? "Current: " + currentModel : "Using provider default";
     menuAutoApproveCheck.classList.toggle("checked", autoApprove);
     menuSkillsCheck.classList.toggle("checked", skillsEnabled);
+    apiKeyInput.placeholder = hasApiKey ? "API key saved — type to replace" : "API key";
+    apiKeySave.textContent = hasApiKey ? "Update" : "Save";
+    menuApiKey.textContent = hasApiKey ? "API Key (saved)…" : "API Key…";
   }
 
   window.addEventListener("message", (event) => {
@@ -847,7 +876,7 @@
 
     switch (message.type) {
       case "settings":
-        applySettings(message.model, message.autoApprove, message.skills);
+        applySettings(message.model, message.autoApprove, message.skills, message.hasApiKey);
         break;
       case "cliMissing":
         clearStatusCards();
@@ -859,7 +888,7 @@
         setStatus("", "Not configured");
         renderSetupCard(
           "Set up a provider to start chatting",
-          "Pick a provider config JSON file, or set pycodeloop.command/provider/model/url in Settings."
+          "Pick a provider config JSON file and paste your API key in the field below, or set pycodeloop.provider in Settings."
         );
         break;
       case "connecting":

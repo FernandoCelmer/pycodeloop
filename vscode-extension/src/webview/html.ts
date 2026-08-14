@@ -32,6 +32,7 @@ export function renderChatHtml(options: ChatHtmlOptions): string {
         <div id="menu" hidden>
           <button id="menu-sessions" class="menu-item">Sessions…</button>
           <button id="menu-provider" class="menu-item">Provider Config…</button>
+          <button id="menu-api-key" class="menu-item">API Key…</button>
           <button id="menu-model" class="menu-item">Model…</button>
           <button id="menu-auto-approve" class="menu-item">
             <span id="menu-auto-approve-check" class="check-box"></span> Auto-approve tools
@@ -48,6 +49,10 @@ export function renderChatHtml(options: ChatHtmlOptions): string {
   </div>
   <div id="messages"></div>
   <div id="composer">
+    <div id="api-key-row">
+      <input id="api-key" type="password" placeholder="API key" autocomplete="off" spellcheck="false" />
+      <button id="api-key-save" class="secondary" title="Save API key">Save</button>
+    </div>
     <div id="attachments" hidden></div>
     <textarea id="prompt" placeholder="Ask CodeLoop… (paste a screenshot to attach it)" rows="2" disabled></textarea>
     <input type="file" id="attach-file" accept="image/*" multiple hidden />

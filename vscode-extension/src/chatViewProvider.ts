@@ -6,6 +6,7 @@ import { currentWorkspaceFolder, readSettings, updateSetting } from "./config/se
 import { resolveWorkspacePath } from "./lib/resolveSetting";
 import { buildServeArgs } from "./lib/serveArgs";
 import { buildInstallCommand } from "./lib/installCommand";
+import { API_KEY_SECRET, spawnEnvForApiKey } from "./lib/apiKey";
 import { toSessionPickItems } from "./lib/sessionList";
 import { ADD_MCP_SERVER_LABEL, addServer, parseServerLabel, removeServer, toQuickPickLabels } from "./lib/mcpServerList";
 import { renderChatHtml } from "./webview/html";
@@ -64,17 +65,19 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       return;
     }
     this.post({ type: "connecting" });
-    this.ensureClient();
+    await this.ensureClient();
   }
 
-  private postSettings(): void {
+  private async postSettings(): Promise<void> {
     const settings = readSettings();
+    const apiKey = await this.context.secrets.get(API_KEY_SECRET);
     this.post({
       type: "settings",
       model: settings.model,
       autoApprove: settings.autoApprove,
       skills: settings.skills,
       mcpServers: settings.mcpServers,
+      hasApiKey: Boolean(apiKey),
     });
   }
 
@@ -85,7 +88,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   async selectSession(): Promise<void> {
-    this.ensureClient();
+    await this.ensureClient();
     if (!this.client) {
       return;
     }
@@ -193,19 +196,30 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
 
     await updateSetting("model", model);
-    this.postSettings();
+    await this.postSettings();
+    this.reload();
+  }
+
+  async setApiKey(value: string): Promise<void> {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      await this.context.secrets.delete(API_KEY_SECRET);
+    } else {
+      await this.context.secrets.store(API_KEY_SECRET, trimmed);
+    }
+    await this.postSettings();
     this.reload();
   }
 
   async toggleAutoApprove(next: boolean): Promise<void> {
     await updateSetting("autoApprove", next);
-    this.postSettings();
+    await this.postSettings();
     this.reload();
   }
 
   async toggleSkills(next: boolean): Promise<void> {
     await updateSetting("skills", next);
-    this.postSettings();
+    await this.postSettings();
     this.reload();
   }
 
@@ -245,27 +259,28 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       await updateSetting("mcpServers", removeServer(servers, removed));
     }
 
-    this.postSettings();
+    await this.postSettings();
     this.reload();
   }
 
   private onWebviewMessage(message: any): void {
     switch (message.type) {
       case "sendPrompt":
-        this.ensureClient();
-        this.client
-          ?.request("chat/send", {
-            prompt: message.prompt,
-            sessionKey: this.sessionKey,
-            images: message.images,
-          })
-          .then((response) => {
-            if (response.error) {
-              this.post({ type: "error", message: response.error.message });
-            } else {
-              this.post({ type: "done", text: response.result?.text ?? "" });
-            }
-          });
+        void this.ensureClient().then(() => {
+          this.client
+            ?.request("chat/send", {
+              prompt: message.prompt,
+              sessionKey: this.sessionKey,
+              images: message.images,
+            })
+            .then((response) => {
+              if (response.error) {
+                this.post({ type: "error", message: response.error.message });
+              } else {
+                this.post({ type: "done", text: response.result?.text ?? "" });
+              }
+            });
+        });
         break;
       case "cancel":
         this.client?.notify("chat/cancel");
@@ -284,6 +299,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         break;
       case "selectModel":
         this.selectModel(message.current ?? "");
+        break;
+      case "setApiKey":
+        this.setApiKey(String(message.value ?? ""));
         break;
       case "toggleAutoApprove":
         this.toggleAutoApprove(!!message.next);
@@ -306,7 +324,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  private ensureClient(): void {
+  private async ensureClient(): Promise<void> {
     if (this.client) {
       return;
     }
@@ -322,8 +340,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       mcpServers: settings.mcpServers,
       resolveSetting: (value) => this.resolveSetting(value),
     });
+    const apiKey = await this.context.secrets.get(API_KEY_SECRET);
+    const env = spawnEnvForApiKey(apiKey);
 
-    const client = new RpcClient(command, args, currentWorkspaceFolder());
+    const client = new RpcClient(command, args, currentWorkspaceFolder(), env);
     for (const method of FORWARDED_NOTIFICATIONS) {
       client.on(method, (params) => {
         this.post({ type: method.replace("chat/", ""), ...params });

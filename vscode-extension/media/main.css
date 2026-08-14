@@ -469,6 +469,25 @@ body {
   white-space: nowrap;
 }
 
+#api-key-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+#api-key {
+  flex: 1;
+  min-width: 0;
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border);
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-family: var(--vscode-font-family);
+  font-size: 0.9em;
+}
+
 #prompt {
   width: 100%;
   box-sizing: border-box;

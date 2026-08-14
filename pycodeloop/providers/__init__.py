@@ -1,7 +1,9 @@
 """Providers __init__ module."""
 
 import importlib
+import os
 
+from pycodeloop.constants import ENV_API_KEY
 from pycodeloop.providers.generic import GenericProvider
 
 PROVIDERS = {"generic": GenericProvider}
@@ -35,7 +37,7 @@ def get_provider(name: str, **kwargs):
         module = importlib.import_module(module_path)
         provider_cls = getattr(module, class_name)
 
-        return provider_cls(**kwargs)
+        return provider_cls(**_with_env_api_key(kwargs))
 
     try:
         provider_cls = PROVIDERS[name]
@@ -46,4 +48,13 @@ def get_provider(name: str, **kwargs):
             "for a custom Provider."
         ) from None
 
-    return provider_cls(**kwargs)
+    return provider_cls(**_with_env_api_key(kwargs))
+
+
+def _with_env_api_key(kwargs: dict) -> dict:
+    if kwargs.get("api_key"):
+        return kwargs
+    env_key = os.environ.get(ENV_API_KEY)
+    if not env_key:
+        return kwargs
+    return {**kwargs, "api_key": env_key}

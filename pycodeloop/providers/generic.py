@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from pycodeloop.abc.provider import Provider, ProviderResponse, ToolCall, Usage
+from pycodeloop.constants import ENV_API_KEY
 from pycodeloop.core.session import Message
 from pycodeloop.providers._shapes import (
     anthropic_tool_schema,
@@ -110,6 +111,8 @@ class GenericProvider(Provider):
         data = json.loads(Path(path).read_text())
 
         api_key = data.get("api_key")
+        if not api_key:
+            api_key = os.environ.get(ENV_API_KEY)
         if not api_key and data.get("api_key_env"):
             api_key = os.environ.get(data["api_key_env"])
 

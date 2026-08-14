@@ -65,6 +65,23 @@ class TestLoadProviderFromJson(GenericProviderTestCase):
 
         self.assertEqual(provider.api_key, "from-env")
 
+    def test_reads_api_key_from_pycodeloop_env_before_named_var(self):
+        path = self._write_config(
+            {
+                "url": "http://fake/v1/chat/completions",
+                "model": "my-model",
+                "api_key_env": "MY_FAKE_KEY",
+            }
+        )
+
+        with mock.patch.dict(
+            "os.environ",
+            {"PYCODELOOP_API_KEY": "from-extension", "MY_FAKE_KEY": "from-named"},
+        ):
+            provider = GenericProvider.from_json(path)
+
+        self.assertEqual(provider.api_key, "from-extension")
+
     def test_default_response_shape_without_response_paths(self):
         path = self._write_config(
             {"url": "http://fake/v1/chat/completions", "model": "my-model"}

@@ -5,6 +5,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from pycodeloop.abc.provider import Provider, ProviderResponse
 from pycodeloop.providers import GenericProvider, get_provider
@@ -16,6 +17,12 @@ class TestGetProvider(unittest.TestCase):
 
         self.assertIsInstance(provider, GenericProvider)
         self.assertEqual(provider.url, "http://x/chat")
+
+    def test_generic_reads_pycodeloop_api_key_env(self):
+        with mock.patch.dict("os.environ", {"PYCODELOOP_API_KEY": "from-extension"}):
+            provider = get_provider("generic", model="llama3.1", url="http://x/chat")
+
+        self.assertEqual(provider.api_key, "from-extension")
 
     def test_rejects_unknown_name(self):
         with self.assertRaises(ValueError):
