@@ -18,9 +18,15 @@ class SqlToolTestCase(unittest.TestCase):
 
         engine = create_engine(self.url)
         with engine.begin() as conn:
-            conn.execute(text("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)"))
-            conn.execute(text("INSERT INTO users (id, name) VALUES (1, 'ada')"))
-            conn.execute(text("INSERT INTO users (id, name) VALUES (2, 'grace')"))
+            conn.execute(
+                text("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)")
+            )
+            conn.execute(
+                text("INSERT INTO users (id, name) VALUES (1, 'ada')")
+            )
+            conn.execute(
+                text("INSERT INTO users (id, name) VALUES (2, 'grace')")
+            )
         engine.dispose()
 
 
@@ -77,7 +83,9 @@ class TestSqlQueryTool(SqlToolTestCase):
         self.assertTrue(result.is_error)
 
     def test_rejects_stacked_statements(self):
-        result = SqlQueryTool().run(url=self.url, query="SELECT 1; DROP TABLE users;")
+        result = SqlQueryTool().run(
+            url=self.url, query="SELECT 1; DROP TABLE users;"
+        )
 
         self.assertTrue(result.is_error)
         self.assertIn("single", result.output)
@@ -102,6 +110,42 @@ class TestSqlQueryTool(SqlToolTestCase):
         result = SqlQueryTool().run(url=self.url, query="SELECT * FROM nope")
 
         self.assertTrue(result.is_error)
+
+
+class TestSqlQuerySafety(SqlToolTestCase):
+    def test_rejects_writable_pragma(self):
+        result = SqlQueryTool().run(
+            url=self.url, query="PRAGMA writable_schema=ON"
+        )
+
+        self.assertTrue(result.is_error)
+        self.assertIn("read-only", result.output)
+
+    def test_rejects_into_outfile(self):
+        result = SqlQueryTool().run(
+            url=self.url,
+            query="SELECT name FROM users INTO OUTFILE '/tmp/x'",
+        )
+
+        self.assertTrue(result.is_error)
+
+    def test_allows_block_comment_before_select(self):
+        result = SqlQueryTool().run(
+            url=self.url, query="/* meta */ SELECT id FROM users"
+        )
+
+        self.assertFalse(result.is_error)
+        self.assertIn("1", result.output)
+
+    def test_rejects_unknown_scheme(self):
+        result = SqlQueryTool().run(url="oracle://u:p@h/db", query="SELECT 1")
+
+        self.assertTrue(result.is_error)
+        self.assertIn("Unsupported database scheme", result.output)
+
+    def test_tools_are_marked_dangerous(self):
+        self.assertTrue(SqlQueryTool.dangerous)
+        self.assertTrue(SqlSchemaTool.dangerous)
 
 
 if __name__ == "__main__":
