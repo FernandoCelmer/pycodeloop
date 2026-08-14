@@ -654,6 +654,7 @@ body {
 .provider-model-value {
   font-family: var(--vscode-editor-font-family);
   font-size: 0.82em;
+  text-transform: none;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -836,15 +837,24 @@ body {
 }
 
 button {
+  appearance: none;
+  -webkit-appearance: none;
   background: var(--vscode-button-background);
   color: var(--vscode-button-foreground);
   border: 1px solid transparent;
+  border-radius: 0;
   padding: 5px 13px;
   font-family: var(--vscode-font-family);
   font-size: 0.9em;
   font-weight: 600;
   letter-spacing: 0.03em;
   cursor: pointer;
+}
+
+button:not(.menu-item):not(.command-item):not(.footer-link) {
+  font-family: var(--vscode-editor-font-family);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 button:hover:not(:disabled) {
