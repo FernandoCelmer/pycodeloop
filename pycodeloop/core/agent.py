@@ -38,7 +38,7 @@ def _is_retryable(exc: Exception) -> bool:
     status = getattr(exc, "status_code", None) or getattr(exc, "code", None)
     if isinstance(status, int) and status in _RETRYABLE_STATUS_CODES:
         return True
-    return isinstance(exc, (TimeoutError, ConnectionError))
+    return isinstance(exc, TimeoutError | ConnectionError)
 
 
 DEFAULT_SYSTEM_PROMPT = (
