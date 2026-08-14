@@ -2,7 +2,7 @@
   "name": "pycodeloop",
   "displayName": "CodeLoop",
   "description": "Chat with CodeLoop — an agentic coding assistant — inside VS Code.",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "publisher": "fernandocelmer",
   "repository": {
     "type": "git",
@@ -27,6 +27,11 @@
       {
         "command": "pycodeloop.newSession",
         "title": "CodeLoop: New Session"
+      },
+      {
+        "command": "pycodeloop.selectProvider",
+        "title": "CodeLoop: Select Provider…",
+        "icon": "$(plug)"
       },
       {
         "command": "pycodeloop.selectConfig",
