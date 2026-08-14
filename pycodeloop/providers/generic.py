@@ -7,6 +7,7 @@ import os
 import re
 import urllib.error
 import urllib.request
+import uuid
 from collections.abc import Callable
 from pathlib import Path
 
@@ -52,17 +53,21 @@ def _parse_fenced_tool_call(
             arguments = data.get("arguments") or data.get("args") or {}
             if isinstance(arguments, dict):
                 return ToolCall(
-                    id="fallback-1", name=name, arguments=arguments
+                    id=_fallback_call_id(), name=name, arguments=arguments
                 )
 
         if len(data) == 1:
             (only_key, value) = next(iter(data.items()))
             if only_key in known_tools and isinstance(value, dict):
                 return ToolCall(
-                    id="fallback-1", name=only_key, arguments=value
+                    id=_fallback_call_id(), name=only_key, arguments=value
                 )
 
     return None
+
+
+def _fallback_call_id() -> str:
+    return f"fallback-{uuid.uuid4().hex[:8]}"
 
 
 class GenericProvider(Provider):
@@ -351,7 +356,6 @@ class GenericProvider(Provider):
             fallback_call = _parse_fenced_tool_call(text, known_tools)
             if fallback_call is not None:
                 tool_calls = [fallback_call]
-                text = ""
 
         return ProviderResponse(
             text=text,
