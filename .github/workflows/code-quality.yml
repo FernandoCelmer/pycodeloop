@@ -26,15 +26,20 @@ jobs:
 
       - name: 🔍 Ruff (Linting)
         run: |
-          poetry run ruff check pycodeloop/ tests/
+          poetry run ruff check pycodeloop/ tests/ --config .code_quality/ruff.toml
 
       - name: 🎨 Ruff (Format Check)
         run: |
-          poetry run ruff format --check pycodeloop/ tests/
+          poetry run ruff format --check pycodeloop/ tests/ --config .code_quality/ruff.toml
 
       - name: 🔍 MyPy (Type Checking)
+        continue-on-error: true
         run: |
-          poetry run mypy pycodeloop/ || true
+          poetry run mypy pycodeloop/ --config-file .code_quality/mypy.ini
+
+      - name: 📦 Provider templates in sync
+        run: |
+          diff -rq templates pycodeloop/providers/templates
 
       - name: ✅ Code Quality Summary
         if: always()

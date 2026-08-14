@@ -15,7 +15,7 @@ repos:
         args: [--fix=lf]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.1.15
+    rev: v0.9.10
     hooks:
       - id: ruff
         name: ruff (lint)
@@ -33,5 +33,5 @@ repos:
         entry: poetry run pytest tests/ --tb=short -q
         language: system
         types: [python]
-        files: ^(codeloop|tests)/
+        files: ^(pycodeloop|tests)/
         pass_filenames: false
