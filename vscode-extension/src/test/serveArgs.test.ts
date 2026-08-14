@@ -10,6 +10,7 @@ function baseOptions(overrides: Partial<ServeArgsOptions> = {}): ServeArgsOption
     model: "",
     url: "",
     skills: true,
+    delegation: false,
     autoApprove: false,
     mcpServers: [],
     resolveSetting: identity,
@@ -41,6 +42,11 @@ test("adds --no-skills only when skills is disabled", () => {
   assert.deepEqual(buildServeArgs(baseOptions({ skills: true })), ["serve"]);
 });
 
+test("adds --delegate only when delegation is enabled", () => {
+  assert.deepEqual(buildServeArgs(baseOptions({ delegation: true })), ["serve", "--delegate"]);
+  assert.deepEqual(buildServeArgs(baseOptions({ delegation: false })), ["serve"]);
+});
+
 test("adds --yes only when autoApprove is enabled", () => {
   assert.deepEqual(buildServeArgs(baseOptions({ autoApprove: true })), ["serve", "--yes"]);
 });
@@ -57,6 +63,7 @@ test("combines every flag together in a stable order", () => {
       model: "gpt-5",
       url: "http://x",
       skills: false,
+      delegation: true,
       autoApprove: true,
       mcpServers: ["srv"],
     })
@@ -70,6 +77,7 @@ test("combines every flag together in a stable order", () => {
     "--url",
     "http://x",
     "--no-skills",
+    "--delegate",
     "--yes",
     "--mcp",
     "srv",

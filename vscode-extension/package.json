@@ -2,7 +2,7 @@
   "name": "pycodeloop",
   "displayName": "CodeLoop",
   "description": "Chat with CodeLoop — an agentic coding assistant — inside VS Code.",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "publisher": "fernandocelmer",
   "repository": {
     "type": "git",
@@ -89,6 +89,11 @@
           "type": "boolean",
           "default": true,
           "description": "Discover Claude/Cursor/AGENTS.md skills and expose a read_skill tool."
+        },
+        "pycodeloop.delegation": {
+          "type": "boolean",
+          "default": false,
+          "description": "Expose a delegate tool that spawns read-only sub-agents for independent subtasks — several delegate calls in one turn run in parallel. Off by default."
         },
         "pycodeloop.autoApprove": {
           "type": "boolean",

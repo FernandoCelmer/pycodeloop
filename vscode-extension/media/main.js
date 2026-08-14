@@ -32,6 +32,8 @@
   const menuAutoApproveCheck = document.getElementById("menu-auto-approve-check");
   const menuSkills = document.getElementById("menu-skills");
   const menuSkillsCheck = document.getElementById("menu-skills-check");
+  const menuDelegation = document.getElementById("menu-delegation");
+  const menuDelegationCheck = document.getElementById("menu-delegation-check");
   const menuMcp = document.getElementById("menu-mcp");
   const menuReload = document.getElementById("menu-reload");
   const menuSettings = document.getElementById("menu-settings");
@@ -53,6 +55,7 @@
   let currentModel = "";
   let autoApprove = false;
   let skillsEnabled = true;
+  let delegationEnabled = false;
   let hasApiKey = false;
   let apiKeyEnv = "";
   let authHeader = "";
@@ -286,6 +289,30 @@
     scrollToBottom();
   }
 
+  let thinkingEl = null;
+
+  function showThinkingIndicator() {
+    if (thinkingEl) {
+      return;
+    }
+    const turn = document.createElement("div");
+    turn.className = "turn assistant";
+    const bubble = document.createElement("div");
+    bubble.className = "bubble thinking";
+    bubble.innerHTML = "<span></span><span></span><span></span>";
+    turn.appendChild(bubble);
+    messagesEl.appendChild(turn);
+    thinkingEl = turn;
+    scrollToBottom();
+  }
+
+  function hideThinkingIndicator() {
+    if (thinkingEl) {
+      thinkingEl.remove();
+      thinkingEl = null;
+    }
+  }
+
   function ensureAssistantTurn() {
     if (assistantTurn) {
       return assistantTurn;
@@ -302,6 +329,7 @@
   }
 
   function appendAssistantDelta(delta) {
+    hideThinkingIndicator();
     pendingAssistantText += delta;
     if (!pendingAssistantText.trim()) {
       return;
@@ -314,6 +342,7 @@
   }
 
   function finishAssistantTurn(fallbackText) {
+    hideThinkingIndicator();
     pendingAssistantText = "";
     if (!assistantTurn) {
       if (fallbackText && fallbackText.trim()) {
@@ -351,6 +380,7 @@
     http_request: "🌐",
     web_fetch: "🌐",
     todo: "☑",
+    delegate: "🤖",
   };
 
   function toolIcon(name) {
@@ -366,6 +396,7 @@
   }
 
   function renderToolCall(name, args) {
+    hideThinkingIndicator();
     const card = document.createElement("div");
     card.className = "tool-card";
 
@@ -438,6 +469,11 @@
     resultPre.textContent = result.length > 4000 ? result.slice(0, 4000) + "…" : result;
     card.__body.appendChild(resultLabel);
     card.__body.appendChild(resultPre);
+
+    const stillPending = [...pendingToolCards.values()].some((q) => q.length > 0);
+    if (!stillPending && isBusy) {
+      showThinkingIndicator();
+    }
   }
 
   function renderHistory(messages) {
@@ -820,6 +856,7 @@
     renderAttachmentsPreview();
     assistantTurn = null;
     setBusy(true);
+    showThinkingIndicator();
     vscode.postMessage({ type: "sendPrompt", prompt, images });
   }
 
@@ -840,6 +877,11 @@
       name: "skills",
       description: "Toggle Claude/Cursor/AGENTS.md skills discovery",
       run: () => vscode.postMessage({ type: "toggleSkills", next: !skillsEnabled }),
+    },
+    {
+      name: "delegate",
+      description: "Toggle sub-agent delegation (parallel, read-only sub-agents)",
+      run: () => vscode.postMessage({ type: "toggleDelegation", next: !delegationEnabled }),
     },
     { name: "mcp", description: "Add or remove MCP servers", run: () => vscode.postMessage({ type: "manageMcpServers" }) },
     { name: "reload", description: "Reload the pycodeloop connection", run: () => vscode.postMessage({ type: "reload" }) },
@@ -1007,6 +1049,10 @@
     closeMenu();
     vscode.postMessage({ type: "toggleSkills", next: !skillsEnabled });
   });
+  menuDelegation.addEventListener("click", () => {
+    closeMenu();
+    vscode.postMessage({ type: "toggleDelegation", next: !delegationEnabled });
+  });
   menuMcp.addEventListener("click", () => {
     closeMenu();
     vscode.postMessage({ type: "manageMcpServers" });
@@ -1024,6 +1070,7 @@
     currentModel = message.model || "";
     autoApprove = !!message.autoApprove;
     skillsEnabled = message.skills !== false;
+    delegationEnabled = !!message.delegation;
     hasApiKey = !!message.hasApiKey;
     apiKeyEnv = message.apiKeyEnv || "";
     authHeader = message.authHeader || "";
@@ -1031,6 +1078,7 @@
     menuModel.title = currentModel ? "Current: " + currentModel : "Using provider default";
     menuAutoApproveCheck.classList.toggle("checked", autoApprove);
     menuSkillsCheck.classList.toggle("checked", skillsEnabled);
+    menuDelegationCheck.classList.toggle("checked", delegationEnabled);
     menuApiKey.textContent = hasApiKey
       ? "API Key (saved)…"
       : apiKeyEnv
@@ -1086,18 +1134,22 @@
       const body = document.createElement("div");
       body.className = "provider-card-body";
 
-      const info = document.createElement("div");
       const desc = document.createElement("p");
       desc.className = "provider-desc";
       desc.textContent = item.description;
-      const model = document.createElement("button");
-      model.className = "provider-model";
-      model.textContent = item.model;
-      model.title = "Change model";
-      model.addEventListener("click", () => {
+
+      const actions = document.createElement("div");
+      actions.className = "provider-card-actions";
+
+      const modelBtn = document.createElement("button");
+      modelBtn.className = "secondary provider-model-btn";
+      modelBtn.innerHTML =
+        '<span class="provider-model-label">Model</span><span class="provider-model-value"></span>';
+      modelBtn.querySelector(".provider-model-value").textContent = item.model;
+      modelBtn.title = "Change model for this provider";
+      modelBtn.addEventListener("click", () => {
         vscode.postMessage({ type: "changeProviderModel", id: item.id });
       });
-      info.append(desc, model);
 
       const action = document.createElement("button");
       if (item.active) {
@@ -1110,7 +1162,8 @@
         });
       }
 
-      body.append(info, action);
+      actions.append(modelBtn, action);
+      body.append(desc, actions);
       card.append(head, body);
       galleryList.appendChild(card);
     }

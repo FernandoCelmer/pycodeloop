@@ -198,6 +198,41 @@ body {
   border-style: dashed;
 }
 
+.bubble.thinking {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 12px;
+}
+
+.bubble.thinking span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--vscode-descriptionForeground);
+  animation: thinking-bounce 1.2s ease-in-out infinite;
+}
+
+.bubble.thinking span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.bubble.thinking span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes thinking-bounce {
+  0%, 60%, 100% { opacity: 0.35; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-3px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bubble.thinking span {
+    animation: none;
+    opacity: 0.7;
+  }
+}
+
 .turn.assistant.aside .bubble.error {
   border-color: var(--vscode-errorForeground);
   color: var(--vscode-errorForeground);
@@ -580,34 +615,60 @@ body {
 .provider-card-body {
   padding: 9px 10px 10px;
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 10px;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .provider-desc {
-  margin: 0 0 6px;
+  margin: 0;
   font-size: 0.82em;
   line-height: 1.5;
   color: var(--vscode-descriptionForeground);
 }
 
-.provider-model {
-  all: unset;
-  cursor: pointer;
-  font-family: var(--vscode-editor-font-family);
-  font-size: 0.78em;
-  color: var(--vscode-descriptionForeground);
-  opacity: 0.8;
+.provider-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.provider-model:hover {
-  opacity: 1;
+.provider-model-btn {
+  flex: 1;
+  min-width: 0;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  justify-content: flex-start;
+  overflow: hidden;
+}
+
+.provider-model-label {
+  font-size: 0.72em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--vscode-descriptionForeground);
+  opacity: 0.75;
+  flex-shrink: 0;
+}
+
+.provider-model-value {
+  font-family: var(--vscode-editor-font-family);
+  font-size: 0.82em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.provider-model-btn:hover .provider-model-value {
   text-decoration: underline;
 }
 
-.provider-model::before {
-  content: "\2192  ";
+.provider-model-btn::after {
+  content: "\270E";
+  margin-left: auto;
+  flex-shrink: 0;
+  opacity: 0.7;
+  font-size: 0.85em;
 }
 
 .provider-card-body button {

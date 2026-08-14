@@ -80,6 +80,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       model: settings.model,
       autoApprove: settings.autoApprove,
       skills: settings.skills,
+      delegation: settings.delegation,
       mcpServers: settings.mcpServers,
       hasApiKey: Boolean(apiKey),
       apiKeyEnv: auth.apiKeyEnv,
@@ -429,6 +430,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.reload();
   }
 
+  async toggleDelegation(next: boolean): Promise<void> {
+    await updateSetting("delegation", next);
+    await this.postSettings();
+    this.reload();
+  }
+
   async manageMcpServers(): Promise<void> {
     const servers = readSettings().mcpServers;
 
@@ -540,6 +547,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       case "toggleSkills":
         this.toggleSkills(!!message.next);
         break;
+      case "toggleDelegation":
+        this.toggleDelegation(!!message.next);
+        break;
       case "manageMcpServers":
         this.manageMcpServers();
         break;
@@ -567,6 +577,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       model: settings.model,
       url: settings.url,
       skills: settings.skills,
+      delegation: settings.delegation,
       autoApprove: settings.autoApprove,
       mcpServers: settings.mcpServers,
       resolveSetting: (value) => this.resolveSetting(value),
