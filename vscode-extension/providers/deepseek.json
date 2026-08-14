@@ -1,0 +1,6 @@
+{
+  "url": "https://api.deepseek.com/chat/completions",
+  "model": "deepseek-v4-pro",
+  "api_key_env": "DEEPSEEK_API_KEY",
+  "timeout": 60
+}

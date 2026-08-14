@@ -37,7 +37,7 @@ CodeLoop is a terminal coding agent, in the shape of Claude Code, Codex, or Gemi
 
 The key features are:
 
-* **Provider-agnostic**: Anthropic, OpenAI, Gemini, Grok (xAI), Groq, Ollama, LM Studio, or any OpenAI-compatible endpoint — swapping models means swapping a JSON file, never touching code. `GenericProvider` talks HTTP directly, no vendor SDK required.
+* **Provider-agnostic**: Anthropic, OpenAI, Gemini, Grok (xAI), Groq, AWS Bedrock, Kimi (Moonshot AI), DeepSeek, Llama (Together AI), Qwen (Alibaba), NVIDIA NIM, Ollama, LM Studio, or any OpenAI-compatible endpoint — swapping models means swapping a JSON file, never touching code. `GenericProvider` talks HTTP directly, no vendor SDK required.
 * **Fast to start**: one `pip install`, one JSON file, one prompt. No boilerplate, no framework to learn first.
 * **Safe by default**: every write, edit, delete, shell command, commit, or HTTP call shows a diff or command preview and waits for your OK before running.
 * **Full-screen chat**: bare `pycodeloop` drops you into a Textual-based terminal UI; `pycodeloop run` stays scriptable for CI and one-shot use.
@@ -90,6 +90,12 @@ pycodeloop run "..." --provider templates/openai.json      # GPT
 pycodeloop run "..." --provider templates/gemini.json      # Gemini
 pycodeloop run "..." --provider templates/grok.json        # Grok (xAI)
 pycodeloop run "..." --provider templates/groq.json        # Groq (fast open-weight inference)
+pycodeloop run "..." --provider templates/aws.json         # Amazon Bedrock (OpenAI-compatible)
+pycodeloop run "..." --provider templates/kimi.json        # Kimi (Moonshot AI)
+pycodeloop run "..." --provider templates/deepseek.json    # DeepSeek
+pycodeloop run "..." --provider templates/llama.json       # Llama (Together AI)
+pycodeloop run "..." --provider templates/qwen.json        # Qwen (Alibaba)
+pycodeloop run "..." --provider templates/nvidia.json      # NVIDIA NIM
 pycodeloop run "..." --provider templates/ollama.json      # local, no key needed
 pycodeloop run "..." --provider templates/lmstudio.json    # local, no key needed
 ```

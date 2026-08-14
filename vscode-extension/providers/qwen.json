@@ -1,0 +1,6 @@
+{
+  "url": "https://dashscope-us.aliyuncs.com/compatible-mode/v1/chat/completions",
+  "model": "qwen-max",
+  "api_key_env": "DASHSCOPE_API_KEY",
+  "timeout": 60
+}

@@ -13,7 +13,7 @@ terminal.
 - **Multiple sessions** — start a new one (`CodeLoop: New Session`) or switch between existing ones (`CodeLoop: Switch Session…`), each keeping its own history.
 - **Image attachments** — paste a screenshot straight into the prompt box, or attach one from disk, to give the agent visual context.
 - **Live token usage and context %** — see input/output tokens per turn and how full the context window is, with compaction events surfaced inline.
-- **Provider gallery** — ⚙ → Select Provider… (or `/provider`) opens a card picker with ready-made configs for Anthropic, OpenAI, Gemini, Grok (xAI), Groq, Ollama, and LM Studio, plus a custom JSON file or a bare OpenAI-compatible URL. Pick a model, paste the key once — switching back to a provider you've already connected doesn't ask again.
+- **Provider gallery** — ⚙ → Select Provider… (or `/provider`) opens a card picker with ready-made configs for Anthropic, OpenAI, Gemini, Grok (xAI), Groq, AWS Bedrock, Kimi (Moonshot AI), DeepSeek, Llama (Together AI), Qwen (Alibaba), NVIDIA NIM, Ollama, and LM Studio, plus a custom JSON file or a bare OpenAI-compatible URL. Pick a model per provider, paste the key once — switching back to a provider you've already connected doesn't ask again.
 - **API key** — stored per provider via VS Code's secret storage and set as that provider's env var (e.g. `ANTHROPIC_API_KEY`) for `pycodeloop serve`. You don't export it in a terminal.
 
 ## How it works
