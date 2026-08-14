@@ -520,6 +520,52 @@ class TestAgentRetry(unittest.TestCase):
 
         self.assertEqual(provider.calls, 1)
 
+    def test_falls_back_to_next_provider_after_retries_exhausted(self):
+        primary = FlakyProvider(fail_times=10)
+        secondary = FlakyProvider(fail_times=0)
+        agent = Agent(
+            provider=primary,
+            fallback_providers=[secondary],
+            tools=[],
+        )
+
+        result = agent.run("hi")
+
+        self.assertEqual(result, "ok")
+        self.assertEqual(primary.calls, 4)  # 1 initial + 3 retries
+        self.assertEqual(secondary.calls, 1)
+        self.assertIs(agent.provider, secondary)
+
+    def test_falls_back_immediately_on_non_retryable_error(self):
+        primary = FlakyProvider(fail_times=1, status_code=400)
+        secondary = FlakyProvider(fail_times=0)
+        agent = Agent(
+            provider=primary,
+            fallback_providers=[secondary],
+            tools=[],
+        )
+
+        result = agent.run("hi")
+
+        self.assertEqual(result, "ok")
+        self.assertEqual(primary.calls, 1)
+        self.assertEqual(secondary.calls, 1)
+
+    def test_raises_when_every_provider_in_the_chain_fails(self):
+        primary = FlakyProvider(fail_times=10)
+        secondary = FlakyProvider(fail_times=10)
+        agent = Agent(
+            provider=primary,
+            fallback_providers=[secondary],
+            tools=[],
+        )
+
+        with self.assertRaises(RuntimeError):
+            agent.run("hi")
+
+        self.assertEqual(primary.calls, 4)
+        self.assertEqual(secondary.calls, 4)
+
 
 class TestAgentParallelTools(unittest.TestCase):
     def test_independent_safe_tools_run_concurrently(self):
