@@ -24,10 +24,10 @@ from pycodeloop.cli.render import (
 from pycodeloop.core.codeloop import CodeLoop
 from pycodeloop.core.config import Config
 from pycodeloop.mcp import MCPServer, MCPServerRegistry, load_mcp_tools
-from pycodeloop.store.json_store import default_store
-from pycodeloop.tools import DEFAULT_TOOLS
 from pycodeloop.providers import get_provider
 from pycodeloop.settings import Settings
+from pycodeloop.store.json_store import default_store
+from pycodeloop.tools import DEFAULT_TOOLS
 
 PROVIDER_HELP = (
     "path/to/config.json (see templates/) | generic (with --url) | "
@@ -88,7 +88,9 @@ def _load_mcp_tools(specs: list[str] | None) -> list:
             parts = shlex.split(spec)
             server = MCPServer(command=parts[0], args=parts[1:])
 
-        console.print(f"{Settings.INFO_ALERT} connecting to MCP server '{spec}'")
+        console.print(
+            f"{Settings.INFO_ALERT} connecting to MCP server '{spec}'"
+        )
         tools.extend(load_mcp_tools(server))
 
     return tools
@@ -111,7 +113,9 @@ def resolve_provider(
             provider_kwargs["model"] = model
     elif provider_name == "generic":
         if not url:
-            console.print(f"{Settings.ERROR_ALERT} --provider generic requires --url")
+            console.print(
+                f"{Settings.ERROR_ALERT} --provider generic requires --url"
+            )
             raise typer.Exit(code=1)
         provider_kwargs = {"model": model or Settings.MODEL, "url": url}
         if base_url:
@@ -134,7 +138,9 @@ def build_flow(
     delegation: bool = False,
     memory: bool = True,
 ) -> tuple[CodeLoop, str, str]:
-    provider, provider_name = resolve_provider(provider_name, model, base_url, url)
+    provider, provider_name = resolve_provider(
+        provider_name, model, base_url, url
+    )
 
     buffer = TurnBuffer(console)
 
@@ -158,9 +164,13 @@ def build_flow(
                 styled_text("  [bold white]↪ redirected:[/bold white] ", said)
             )
         elif is_error:
-            console.print(styled_text("  [bold white]✗[/bold white] ", preview, "dim"))
+            console.print(
+                styled_text("  [bold white]✗[/bold white] ", preview, "dim")
+            )
         else:
-            console.print(styled_text("  [bold white]✓[/bold white] ", preview, "dim"))
+            console.print(
+                styled_text("  [bold white]✓[/bold white] ", preview, "dim")
+            )
 
     def on_text_delta(delta: str) -> None:
         buffer.delta(delta)
@@ -183,12 +193,16 @@ def build_flow(
         console.print("[dim]🗜 compacting context…[/dim]")
 
     def on_compact_end(before: int, after: int) -> None:
-        console.print(f"[dim]✓ compacted context — {before} → {after} messages[/dim]")
+        console.print(
+            f"[dim]✓ compacted context — {before} → {after} messages[/dim]"
+        )
 
     def on_retry(attempt: int, delay: float, exc: Exception) -> None:
         console.print(
             styled_text(
-                f"[dim]⚠ retrying ({attempt}/3) in {delay:.0f}s — ", str(exc), "dim"
+                f"[dim]⚠ retrying ({attempt}/3) in {delay:.0f}s — ",
+                str(exc),
+                "dim",
             )
         )
 
@@ -211,6 +225,8 @@ def build_flow(
                 except (EOFError, KeyboardInterrupt):
                     answer_queue.put(_EOF)
                     return
+                except OSError:
+                    return
 
         threading.Thread(target=read_loop, daemon=True).start()
 
@@ -226,13 +242,17 @@ def build_flow(
                 border_style="grey50",
             )
         )
-        console.print(f"{Settings.QUESTION_ALERT} run '{name}'? [y/n] (y): ", end="")
+        console.print(
+            f"{Settings.QUESTION_ALERT} run '{name}'? [y/n] (y): ", end=""
+        )
 
         ensure_reader()
         try:
             answer = answer_queue.get(timeout=_CONFIRM_TIMEOUT)
         except queue.Empty:
-            console.print("\n  [dim]⏱ no response — running automatically[/dim]")
+            console.print(
+                "\n  [dim]⏱ no response — running automatically[/dim]"
+            )
             return True
 
         if answer is _EOF:
@@ -257,7 +277,9 @@ def build_flow(
         memory=memory,
     )
     if config.skills:
-        console.print(f"{Settings.INFO_ALERT} loaded {len(config.skills)} skill(s)")
+        console.print(
+            f"{Settings.INFO_ALERT} loaded {len(config.skills)} skill(s)"
+        )
 
     flow = CodeLoop(config=config)
     flow.agent.on_request = on_request
