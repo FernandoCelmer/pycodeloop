@@ -7,6 +7,7 @@ from pathlib import Path
 
 import typer
 
+from pycodeloop import __version__
 from pycodeloop.cli.commands import chat, run
 from pycodeloop.cli.flow import PROVIDER_HELP
 from pycodeloop.cli.serve import serve
@@ -23,9 +24,23 @@ app.command(name="chat")(chat)
 app.command(name="serve")(serve)
 
 
+def _version_callback(value: bool) -> None:
+    if value:
+        typer.echo(f"pycodeloop {__version__}")
+        raise typer.Exit()
+
+
 @app.callback(invoke_without_command=True)
 def default(
     ctx: typer.Context,
+    version: bool = typer.Option(
+        False,
+        "--version",
+        "-V",
+        callback=_version_callback,
+        is_eager=True,
+        help="Show the installed pycodeloop version and exit.",
+    ),
     provider: str = typer.Option(None, help=PROVIDER_HELP),
     model: str = typer.Option(None, help="Model name override."),
     base_url: str = typer.Option(
