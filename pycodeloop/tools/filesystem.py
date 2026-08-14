@@ -93,8 +93,12 @@ class ReadFileTool(Tool):
         )
 
         self._log.record(
-            path, "read", content_hash=content_hash, size=len(content),
-            offset=offset, limit=limit,
+            path,
+            "read",
+            content_hash=content_hash,
+            size=len(content),
+            offset=offset,
+            limit=limit,
         )
 
         if unchanged:

@@ -4,7 +4,12 @@ import tempfile
 import unittest
 
 from pycodeloop.core.config import Config
-from pycodeloop.memory import RememberTool, load_memory, memory_path, render_memory_prompt
+from pycodeloop.memory import (
+    RememberTool,
+    load_memory,
+    memory_path,
+    render_memory_prompt,
+)
 from pycodeloop.providers import GenericProvider
 
 
@@ -71,7 +76,9 @@ class TestRememberTool(unittest.TestCase):
 
 class TestConfigMemoryWiring(unittest.TestCase):
     def _provider(self) -> GenericProvider:
-        return GenericProvider(url="http://fake/v1/chat/completions", model="fake-model")
+        return GenericProvider(
+            url="http://fake/v1/chat/completions", model="fake-model"
+        )
 
     def test_remember_tool_present_by_default(self):
         config = Config(provider=self._provider(), storage=False)

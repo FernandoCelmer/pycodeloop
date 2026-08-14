@@ -139,7 +139,9 @@ class Config:
 
     def _append_to_system_prompt(self, text: str) -> None:
         base_prompt = (
-            self.system_prompt if self.system_prompt is not None else DEFAULT_SYSTEM_PROMPT
+            self.system_prompt
+            if self.system_prompt is not None
+            else DEFAULT_SYSTEM_PROMPT
         )
         self.system_prompt = f"{base_prompt}\n\n{text}"
 

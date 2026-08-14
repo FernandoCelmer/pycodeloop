@@ -16,4 +16,8 @@ def response(request_id: Any, result: dict) -> dict:
 
 
 def error_response(request_id: Any, code: int, message: str) -> dict:
-    return {"jsonrpc": "2.0", "id": request_id, "error": {"code": code, "message": message}}
+    return {
+        "jsonrpc": "2.0",
+        "id": request_id,
+        "error": {"code": code, "message": message},
+    }

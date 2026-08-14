@@ -5,7 +5,12 @@ from unittest import mock
 
 import httpx
 
-from pycodeloop.tools._net import BlockedHostError, is_blocked_host, resolve_safe_ip, safe_request
+from pycodeloop.tools._net import (
+    BlockedHostError,
+    is_blocked_host,
+    resolve_safe_ip,
+    safe_request,
+)
 
 
 def _fake_dns(addr):
@@ -18,13 +23,15 @@ def _fake_dns(addr):
 class TestResolveSafeIp(unittest.TestCase):
     def test_returns_the_address_for_a_public_host(self):
         with mock.patch(
-            "pycodeloop.tools._net.socket.getaddrinfo", side_effect=_fake_dns("93.184.216.34")
+            "pycodeloop.tools._net.socket.getaddrinfo",
+            side_effect=_fake_dns("93.184.216.34"),
         ):
             self.assertEqual(resolve_safe_ip("example.com"), "93.184.216.34")
 
     def test_returns_none_for_a_private_address(self):
         with mock.patch(
-            "pycodeloop.tools._net.socket.getaddrinfo", side_effect=_fake_dns("169.254.169.254")
+            "pycodeloop.tools._net.socket.getaddrinfo",
+            side_effect=_fake_dns("169.254.169.254"),
         ):
             self.assertIsNone(resolve_safe_ip("metadata.internal"))
 
@@ -40,13 +47,15 @@ class TestResolveSafeIp(unittest.TestCase):
 class TestIsBlockedHost(unittest.TestCase):
     def test_public_host_is_not_blocked(self):
         with mock.patch(
-            "pycodeloop.tools._net.socket.getaddrinfo", side_effect=_fake_dns("93.184.216.34")
+            "pycodeloop.tools._net.socket.getaddrinfo",
+            side_effect=_fake_dns("93.184.216.34"),
         ):
             self.assertFalse(is_blocked_host("example.com"))
 
     def test_private_host_is_blocked(self):
         with mock.patch(
-            "pycodeloop.tools._net.socket.getaddrinfo", side_effect=_fake_dns("10.0.0.5")
+            "pycodeloop.tools._net.socket.getaddrinfo",
+            side_effect=_fake_dns("10.0.0.5"),
         ):
             self.assertTrue(is_blocked_host("internal"))
 
@@ -71,7 +80,8 @@ class TestSafeRequest(unittest.TestCase):
                 side_effect=lambda method, url, **kw: client.request(method, url, **kw),
             ),
             mock.patch(
-                "pycodeloop.tools._net.socket.getaddrinfo", side_effect=_fake_dns("93.184.216.34")
+                "pycodeloop.tools._net.socket.getaddrinfo",
+                side_effect=_fake_dns("93.184.216.34"),
             ),
         ):
             safe_request("GET", "http://example.com/path")
@@ -82,7 +92,8 @@ class TestSafeRequest(unittest.TestCase):
 
     def test_raises_for_a_private_address(self):
         with mock.patch(
-            "pycodeloop.tools._net.socket.getaddrinfo", side_effect=_fake_dns("127.0.0.1")
+            "pycodeloop.tools._net.socket.getaddrinfo",
+            side_effect=_fake_dns("127.0.0.1"),
         ):
             with self.assertRaises(BlockedHostError):
                 safe_request("GET", "http://internal/path")

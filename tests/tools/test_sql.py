@@ -50,7 +50,9 @@ class TestSqlSchemaTool(SqlToolTestCase):
 
 class TestSqlQueryTool(SqlToolTestCase):
     def test_runs_a_select(self):
-        result = SqlQueryTool().run(url=self.url, query="SELECT id, name FROM users ORDER BY id")
+        result = SqlQueryTool().run(
+            url=self.url, query="SELECT id, name FROM users ORDER BY id"
+        )
 
         self.assertFalse(result.is_error)
         self.assertIn("ada", result.output)
@@ -75,9 +77,7 @@ class TestSqlQueryTool(SqlToolTestCase):
         self.assertTrue(result.is_error)
 
     def test_rejects_stacked_statements(self):
-        result = SqlQueryTool().run(
-            url=self.url, query="SELECT 1; DROP TABLE users;"
-        )
+        result = SqlQueryTool().run(url=self.url, query="SELECT 1; DROP TABLE users;")
 
         self.assertTrue(result.is_error)
         self.assertIn("single", result.output)
@@ -86,10 +86,15 @@ class TestSqlQueryTool(SqlToolTestCase):
         engine = create_engine(self.url)
         with engine.begin() as conn:
             for i in range(3, 13):
-                conn.execute(text("INSERT INTO users (id, name) VALUES (:i, :n)"), {"i": i, "n": f"u{i}"})
+                conn.execute(
+                    text("INSERT INTO users (id, name) VALUES (:i, :n)"),
+                    {"i": i, "n": f"u{i}"},
+                )
         engine.dispose()
 
-        result = SqlQueryTool().run(url=self.url, query="SELECT * FROM users", max_rows=5)
+        result = SqlQueryTool().run(
+            url=self.url, query="SELECT * FROM users", max_rows=5
+        )
 
         self.assertIn("capped at 5", result.output)
 

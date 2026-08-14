@@ -8,7 +8,9 @@ from pycodeloop.providers import GenericProvider
 
 class TestConfigDelegation(unittest.TestCase):
     def _provider(self) -> GenericProvider:
-        return GenericProvider(url="http://fake/v1/chat/completions", model="fake-model")
+        return GenericProvider(
+            url="http://fake/v1/chat/completions", model="fake-model"
+        )
 
     def test_delegation_off_by_default(self):
         config = Config(provider=self._provider(), storage=False)

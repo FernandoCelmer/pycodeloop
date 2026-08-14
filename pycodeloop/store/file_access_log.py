@@ -86,7 +86,8 @@ class FileAccessLog:
             return (
                 db.query(FileAccessRecord)
                 .filter(
-                    FileAccessRecord.session_key == (session_key or current_session_key()),
+                    FileAccessRecord.session_key
+                    == (session_key or current_session_key()),
                     FileAccessRecord.path == path,
                 )
                 .order_by(desc(FileAccessRecord.id))

@@ -20,9 +20,7 @@ def default_openai_response(data: dict) -> ProviderResponse:
             id=call["id"],
             name=call["function"]["name"],
             arguments=json.loads(call["function"].get("arguments") or "{}"),
-            extra={
-                k: v for k, v in call.items() if k not in ("id", "type", "function")
-            }
+            extra={k: v for k, v in call.items() if k not in ("id", "type", "function")}
             or None,
         )
         for call in (message.get("tool_calls") or [])

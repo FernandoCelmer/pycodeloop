@@ -61,4 +61,6 @@ def safe_request(method: str, url: str, **kwargs) -> httpx.Response:
     extensions = dict(kwargs.pop("extensions", None) or {})
     extensions.setdefault("sni_hostname", hostname)
 
-    return httpx.request(method, pinned_url, headers=headers, extensions=extensions, **kwargs)
+    return httpx.request(
+        method, pinned_url, headers=headers, extensions=extensions, **kwargs
+    )

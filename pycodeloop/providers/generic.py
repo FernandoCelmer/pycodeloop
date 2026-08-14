@@ -269,7 +269,11 @@ class GenericProvider(Provider):
                     if function.get("arguments"):
                         acc["arguments"] += function["arguments"]
                     acc["extra"].update(
-                        {k: v for k, v in tc.items() if k not in ("index", "id", "type", "function")}
+                        {
+                            k: v
+                            for k, v in tc.items()
+                            if k not in ("index", "id", "type", "function")
+                        }
                     )
 
                 if choice.get("finish_reason"):

@@ -15,7 +15,9 @@ class FakeProvider(Provider):
         self._scripted = list(scripted)
         self.requests: list[list] = []
 
-    def complete(self, system_prompt, messages, tools, on_delta=None) -> ProviderResponse:
+    def complete(
+        self, system_prompt, messages, tools, on_delta=None
+    ) -> ProviderResponse:
         self.requests.append(tools)
         return self._scripted.pop(0)
 
@@ -46,7 +48,9 @@ class TestDelegateTool(unittest.TestCase):
     def test_preview_shows_the_task(self):
         tool = DelegateTool(provider=FakeProvider([]), tools=[])
 
-        self.assertEqual(tool.preview(task="investigate the bug"), "investigate the bug")
+        self.assertEqual(
+            tool.preview(task="investigate the bug"), "investigate the bug"
+        )
 
 
 if __name__ == "__main__":

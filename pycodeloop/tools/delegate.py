@@ -32,9 +32,7 @@ class DelegateTool(Tool):
         "properties": {
             "task": {
                 "type": "string",
-                "description": (
-                    "The complete, self-contained task for the sub-agent."
-                ),
+                "description": ("The complete, self-contained task for the sub-agent."),
             },
         },
         "required": ["task"],
