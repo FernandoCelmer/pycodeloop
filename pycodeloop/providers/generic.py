@@ -31,21 +31,28 @@ _REPETITION_MAX_PERIOD = 60
 _REPETITION_REPEATS = 3
 
 
-def _is_repeating(text: str) -> bool:
+def _is_repeating(
+    text: str,
+    min_period: int = _REPETITION_MIN_PERIOD,
+    max_period: int = _REPETITION_MAX_PERIOD,
+    repeats: int = _REPETITION_REPEATS,
+) -> bool:
     """True once the tail of `text` is some `period`-char block (for any
-    period between `_REPETITION_MIN_PERIOD` and `_REPETITION_MAX_PERIOD`)
-    repeated `_REPETITION_REPEATS` times in a row — a stuck local model
-    retyping the same block toward the token cap. Checks every period in
-    range rather than assuming one fixed width, since the looping unit
-    (a word, a line, a JSON fragment) varies in length."""
-    tail = text[-(_REPETITION_MAX_PERIOD * _REPETITION_REPEATS) :]
-    for period in range(_REPETITION_MIN_PERIOD, _REPETITION_MAX_PERIOD + 1):
-        span = period * _REPETITION_REPEATS
+    period between `min_period` and `max_period`) repeated `repeats`
+    times in a row — a stuck local model retyping the same block toward
+    the token cap. Checks every period in range rather than assuming one
+    fixed width, since the looping unit (a word, a line, a JSON
+    fragment) varies in length. Widen `min_period`/lower `repeats` if a
+    model legitimately emits short repeated tokens (JSON arrays,
+    markdown/CSV rows with an identical short column)."""
+    tail = text[-(max_period * repeats) :]
+    for period in range(min_period, max_period + 1):
+        span = period * repeats
         if len(tail) < span:
             break
         window = tail[-span:]
         block = window[:period]
-        if block.strip() and window == block * _REPETITION_REPEATS:
+        if block.strip() and window == block * repeats:
             return True
     return False
 
@@ -110,6 +117,9 @@ class GenericProvider(Provider):
         request_builder: RequestBuilder | None = None,
         response_parser: ResponseParser | None = None,
         timeout: float = 60.0,
+        repetition_min_period: int = _REPETITION_MIN_PERIOD,
+        repetition_max_period: int = _REPETITION_MAX_PERIOD,
+        repetition_repeats: int = _REPETITION_REPEATS,
         **kwargs,
     ) -> None:
         super().__init__(model=model, api_key=api_key, **kwargs)
@@ -120,6 +130,9 @@ class GenericProvider(Provider):
         self.request_builder = request_builder or self._default_request
         self.response_parser = response_parser or default_openai_response
         self.timeout = timeout
+        self.repetition_min_period = repetition_min_period
+        self.repetition_max_period = repetition_max_period
+        self.repetition_repeats = repetition_repeats
         self._uses_default_parser = response_parser is None
         self._config_path: Path | None = None
 
@@ -286,11 +299,17 @@ class GenericProvider(Provider):
                 delta = choice.get("delta") or {}
 
                 if delta.get("content"):
-                    text += delta["content"]
-                    on_delta(delta["content"])
-                    if _is_repeating(text):
+                    candidate = text + delta["content"]
+                    if _is_repeating(
+                        candidate,
+                        self.repetition_min_period,
+                        self.repetition_max_period,
+                        self.repetition_repeats,
+                    ):
                         stop_reason = "repetition"
                         break
+                    text = candidate
+                    on_delta(delta["content"])
 
                 for tc in delta.get("tool_calls") or []:
                     index = tc.get("index", 0)

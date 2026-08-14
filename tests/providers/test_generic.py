@@ -236,12 +236,9 @@ class TestLoadProviderFromJson(GenericProviderTestCase):
         )
         provider = GenericProvider.from_json(path)
 
-        block = "The quick brown fox jumps over. "  # 33 chars
-        # Trickle it one char at a time so the tail-window check has to
-        # catch the repetition mid-stream, not just at end-of-response.
+        block = "The quick brown fox jumps over. "
         chunks = [
-            {"choices": [{"delta": {"content": ch}}]}
-            for ch in block * 6  # well past the 3x-window threshold
+            {"choices": [{"delta": {"content": ch}}]} for ch in block * 6
         ]
         chunks.append({"choices": [{"delta": {}, "finish_reason": "stop"}]})
         sse_body = (
@@ -286,6 +283,34 @@ class TestLoadProviderFromJson(GenericProviderTestCase):
 
         self.assertEqual(result.text, prose)
         self.assertEqual(result.stop_reason, "stop")
+
+    def test_repetition_thresholds_are_configurable_per_provider(self):
+        path = self._write_config(
+            {"url": "http://fake/v1/chat/completions", "model": "my-model"}
+        )
+        provider = GenericProvider.from_json(path)
+        provider.repetition_min_period = 1
+        provider.repetition_max_period = 4
+        provider.repetition_repeats = 3
+
+        short_loop = "ab" * 6
+        chunks = [
+            {"choices": [{"delta": {"content": ch}}]} for ch in short_loop
+        ]
+        chunks.append({"choices": [{"delta": {}, "finish_reason": "stop"}]})
+        sse_body = (
+            "".join(f"data: {json.dumps(c)}\n" for c in chunks)
+            + "data: [DONE]\n"
+        ).encode()
+
+        with mock.patch(
+            "pycodeloop.providers.generic.urllib.request.urlopen",
+            return_value=_FakeResponse(sse_body),
+        ):
+            result = provider.complete("sys", [], [], on_delta=lambda _: None)
+
+        self.assertEqual(result.stop_reason, "repetition")
+        self.assertLess(len(result.text), len(short_loop))
 
     def test_custom_response_paths(self):
         path = self._write_config(
