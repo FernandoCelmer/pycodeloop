@@ -37,12 +37,13 @@ export const PROVIDER_CATALOG: ProviderDef[] = [
     label: "Gemini",
     description: "Google Gemini models — needs GEMINI_API_KEY",
     file: "gemini.json",
-    // Google rotates dated Gemini model IDs every few weeks; the "-latest"
-    // aliases stay valid across those releases (hot-swapped by Google, per
-    // their docs) so the picker doesn't go stale. Pin an exact dated model
-    // via "Custom…" if you need reproducibility.
-    models: ["gemini-pro-latest", "gemini-flash-latest", "gemini-flash-lite-latest"],
-    defaultModel: "gemini-flash-latest",
+    // Deliberately pinned to 2.5, not the "-latest" aliases: those now
+    // resolve to Gemini 3.x, whose "thinking" models attach a
+    // thought_signature to function calls that the OpenAI-compatible
+    // endpoint doesn't round-trip — the 2nd tool call in a turn 400s.
+    // https://github.com/openai/codex/issues/7519
+    models: ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.5-flash-lite"],
+    defaultModel: "gemini-2.5-flash",
     local: false,
   },
   {
