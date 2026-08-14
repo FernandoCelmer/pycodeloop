@@ -23,6 +23,7 @@
 - 🎨 `providers/generic.py` (one class doing config loading, three response-parsing strategies, a request-builder factory, and raw HTTP/SSE transport) split — the response parsers moved to a new `providers/_responses.py`, the config-driven request builder moved into `providers/_shapes.py` next to the message/tool-schema builders it already used. `GenericProvider` now only orchestrates config loading and HTTP transport
 - 🎨 `Config._append_to_system_prompt` helper extracted (was duplicated between skills discovery and memory loading); `tools/__init__.py`'s `DEFAULT_TOOLS`/`READ_ONLY_TOOLS` no longer double-instantiate the tools they share
 - 🗑️ Removed the `anthropic`/`openai` poetry extras — dead weight, `GenericProvider` is stdlib-only and never imports either SDK. The `mcp` extra (actually used, by `pycodeloop/mcp.py`) stays
+- ⚙️ `pycodeloop --version`/`-V` prints the installed version and exits — nothing previously let a caller check it without importing the package; the VS Code extension uses this to detect an outdated CLI and offer to update it
 
 **VS Code extension — now its own repo, [dotflow-io/vscodeloop](https://github.com/dotflow-io/vscodeloop)**
 
@@ -34,6 +35,7 @@ The extension moved out of this repo's `vscode-extension/` into its own, with fu
 - ⚙️ Claude Code-style status line ("● Thinking… · 12s") replacing the earlier 3-dot bubble — live elapsed-time counter, and switches to "N sub-agents working…" while parallel `delegate` calls are in flight
 - ⚙️ Completed write_file/edit_file/delete_file tool cards now render the diff computed for the confirmation prompt (colored +/- lines, "Added N lines" summary) instead of discarding it for a bare "Edited path" string
 - 🪲 A per-provider model choice that's since been retired by the vendor (e.g. Gemini's `gemini-2.5-flash`, no longer available to new API keys) used to keep 404ing every session until manually changed — the extension now self-heals it back to the provider's current default the next time it connects
+- ⚙️ CLI update check — on connect, compares the installed `pycodeloop --version` against the latest release on PyPI and, if outdated, shows a card with an "Update CodeLoop CLI" button (`pip install --user --upgrade pycodeloop`)
 - 🎨 Panel reworked to an owline-style visual language: thin 1px borders, sharp corners, monospace uppercase for buttons/labels, SVG line icons instead of emoji, no VS Code default rounded-button chrome — all still on `var(--vscode-*)` tokens so it follows the user's editor theme
 - 🎨 "API Key" removed from the gear menu — redundant with the provider gallery's own connect/key flow, which is where the key actually gets set
 - 🎨 `src/` restructured from a flat bag of `lib`/`config`/`webview` files into `features/` (chat, sessions, settings — each with its own controller), `vscode/` (webview shell, sidebar registration), `core-client/` (RPC client, process management, wire protocol), and `services/` (credentials, settings, storage, terminal, workspace)
