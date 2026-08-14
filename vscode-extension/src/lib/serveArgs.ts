@@ -7,14 +7,9 @@ export interface ServeArgsOptions {
   memory: boolean;
   autoApprove: boolean;
   mcpServers: string[];
-  /** Resolves ${workspaceFolder} etc. in a setting value — injected so this
-   * stays pure and doesn't need the VS Code API to be unit tested. */
   resolveSetting: (value: string) => string;
 }
 
-/** Builds the argv for `pycodeloop serve`, mirroring the CLI's own flags.
- * Pure function extracted from ChatViewProvider.ensureClient() so the
- * option-to-flag mapping can be unit tested without spawning a process. */
 export function buildServeArgs(options: ServeArgsOptions): string[] {
   const args = ["serve"];
 

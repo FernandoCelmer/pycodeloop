@@ -16,17 +16,16 @@ class ToolResult:
 class Tool(ABC):
     """Action the agent can take. Set `dangerous = True` on subclasses that
     change state (filesystem, shell, remote calls) so Agent asks for
-    confirmation before running them."""
+    confirmation before running them. Set `concurrent_safe = True` on
+    subclasses whose `run()` has no shared mutable state, so Agent may
+    run several calls to the *same* tool concurrently within one batch
+    (distinct-named tools in a batch already run concurrently regardless
+    of this flag — it only affects repeated same-name calls)."""
 
     name: str
     description: str
     parameters: dict[str, Any] = {"type": "object", "properties": {}}
     dangerous: bool = False
-
-    #: Set True on subclasses whose `run()` has no shared mutable state, so
-    #: Agent may run several calls to the *same* tool concurrently within
-    #: one batch (distinct-named tools in a batch already run concurrently
-    #: regardless of this flag — it only affects repeated same-name calls).
     concurrent_safe: bool = False
 
     def schema(self) -> dict:

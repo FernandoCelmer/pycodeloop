@@ -58,7 +58,7 @@
   let assistantTurn = null;
   let pendingAssistantText = "";
   let isBusy = false;
-  const pendingToolCards = new Map(); // name -> array of card elements, FIFO
+  const pendingToolCards = new Map();
   let currentModel = "";
   let autoApprove = false;
   let skillsEnabled = true;
@@ -70,7 +70,7 @@
   let providerFile = "";
   let apiKeyCard = null;
   let apiKeyPromptHidden = false;
-  let pendingImages = []; // base64 PNG/JPEG data (no data: prefix)
+  let pendingImages = [];
 
   function scrollToBottom() {
     messagesEl.scrollTop = messagesEl.scrollHeight;
@@ -126,7 +126,7 @@
   function renderTextBlock(text) {
     const lines = text.split("\n");
     let html = "";
-    let listTag = null; // "ul" | "ol" | null
+    let listTag = null;
     const closeList = () => {
       if (listTag) {
         html += "</" + listTag + ">";
@@ -1022,8 +1022,6 @@
     vscode.postMessage({ type: "sendPrompt", prompt, images });
   }
 
-  // --- slash commands ---
-
   const SLASH_COMMANDS = [
     { name: "new", description: "Start a new session", run: () => vscode.postMessage({ type: "newSession" }) },
     { name: "sessions", description: "Switch to a saved session", run: () => vscode.postMessage({ type: "showSessions" }) },
@@ -1176,8 +1174,6 @@
     }
     attachFileInput.value = "";
   });
-
-  // --- gear menu ---
 
   function closeMenu() {
     menu.hidden = true;

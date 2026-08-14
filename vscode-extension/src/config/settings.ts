@@ -14,9 +14,6 @@ export interface PycodeloopSettings {
   mcpServers: string[];
 }
 
-/** Single place that knows the pycodeloop.* config keys and their
- * defaults — everywhere else asks this instead of calling
- * vscode.workspace.getConfiguration("pycodeloop") directly. */
 export function readSettings(): PycodeloopSettings {
   const config = vscode.workspace.getConfiguration(SECTION);
   return {

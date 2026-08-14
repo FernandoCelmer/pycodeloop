@@ -5,13 +5,10 @@ export interface ChatHtmlOptions {
   nonce: string;
 }
 
-/** Renders the webview shell markup. Pure string template — the caller
- * resolves URIs/nonce via the VS Code API and passes plain strings in, so
- * this is unit-testable without a real webview. */
 export function renderChatHtml(options: ChatHtmlOptions): string {
   const { cspSource, scriptUri, styleUri, nonce } = options;
 
-  return /* html */ `<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
