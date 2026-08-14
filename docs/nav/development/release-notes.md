@@ -1,5 +1,18 @@
 # Release Notes
 
+## v0.6.0
+
+**Reliability**
+
+- ⚙️ `Agent(provider=primary, fallback_providers=[secondary, ...])` — when the active provider exhausts its retry budget (or fails with a non-retryable error), `_complete` advances to the next provider in a fixed chain instead of raising immediately. The chain is captured once at construction and walked by index, so a provider already tried this run is never retried and one earlier in the chain isn't skipped forever once a later one takes over. New `on_provider_fallback(old, new, exc)` callback fires on every switch.
+- 🪲 `GenericProvider._stream` now recognizes a tool call a model narrated as a fenced JSON block (`` ```json\n{"tool": "read_file", "arguments": {...}}\n``` ``) instead of a proper `tool_calls` delta — common on local/open models routed through an OpenAI-compatible shim. Promoted to a real tool call with a unique ID; `response.text` stays consistent with whatever `on_delta` already streamed.
+- 🪲 Repetition guard in `GenericProvider._stream` — if the tail of a streamed response is some block (8–60 chars, configurable via `repetition_min_period`/`repetition_max_period`/`repetition_repeats`) repeated 3× in a row, the connection is cut early with `stop_reason="repetition"` instead of streaming a stuck local model all the way to `max_tokens`.
+- ⚙️ Per-run JSONL execution trace — `Config(trace=True)` (on by default) wires `Agent.on_trace_event` to a `JsonlTracer` that appends one JSON line per provider call/tool call/retry/compaction event to `~/.pycodeloop/logs/<session_key or "global">.jsonl`, for postmortem debugging when a run misbehaves. Session keys are validated against path traversal; the tracer keeps one lock-guarded file handle open for its lifetime so concurrent writers can't interleave mid-line.
+
+**Security**
+
+- ⚙️ `Config(workspace=True)` / `pycodeloop serve/run/chat --workspace/--no-workspace` — toggles the FS jail (`read_file`/`write_file`/`edit_file`/`delete_file`/`grep`/`glob`) that's been on by default since v0.5.0. `bash`/`git` run arbitrary shell commands with no path parsing and were never covered by it; `BashTool`'s description now says so plainly instead of leaving that boundary implicit.
+
 ## v0.5.0
 
 - ⚙️ `pycodeloop --version`/`-V` prints the installed version and exits — nothing previously let a caller check it without importing the package; the VS Code extension uses this to detect an outdated CLI and offer to update it
