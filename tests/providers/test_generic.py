@@ -230,6 +230,112 @@ class TestLoadProviderFromJson(GenericProviderTestCase):
             {"extra_content": {"google": {"thought_signature": "xyz789"}}},
         )
 
+    def test_streaming_falls_back_to_fenced_tool_call_when_narrated_as_prose(
+        self,
+    ):
+        path = self._write_config(
+            {"url": "http://fake/v1/chat/completions", "model": "my-model"}
+        )
+        provider = GenericProvider.from_json(path)
+
+        narrated = (
+            'Sure, I will read that file:\n```json\n{"tool": "read_file", '
+            '"arguments": {"path": "a.py"}}\n```\n'
+        )
+        chunks = [
+            {"choices": [{"delta": {"content": narrated}}]},
+            {"choices": [{"delta": {}, "finish_reason": "stop"}]},
+        ]
+        sse_body = (
+            "".join(f"data: {json.dumps(c)}\n" for c in chunks)
+            + "data: [DONE]\n"
+        ).encode()
+
+        deltas = []
+        with mock.patch(
+            "pycodeloop.providers.generic.urllib.request.urlopen",
+            return_value=_FakeResponse(sse_body),
+        ):
+            result = provider.complete(
+                "sys",
+                [],
+                [{"name": "read_file", "description": "", "parameters": {}}],
+                on_delta=deltas.append,
+            )
+
+        self.assertEqual(result.text, narrated)
+        self.assertEqual("".join(deltas), result.text)
+        self.assertEqual(len(result.tool_calls), 1)
+        self.assertEqual(result.tool_calls[0].name, "read_file")
+        self.assertEqual(result.tool_calls[0].arguments, {"path": "a.py"})
+
+    def test_streaming_fenced_tool_calls_get_unique_ids_across_turns(self):
+        path = self._write_config(
+            {"url": "http://fake/v1/chat/completions", "model": "my-model"}
+        )
+        provider = GenericProvider.from_json(path)
+        tools = [{"name": "read_file", "description": "", "parameters": {}}]
+
+        def _sse(narrated: str) -> bytes:
+            chunks = [
+                {"choices": [{"delta": {"content": narrated}}]},
+                {"choices": [{"delta": {}, "finish_reason": "stop"}]},
+            ]
+            return (
+                "".join(f"data: {json.dumps(c)}\n" for c in chunks)
+                + "data: [DONE]\n"
+            ).encode()
+
+        narrated = '```json\n{"tool": "read_file", "arguments": {"path": "a.py"}}\n```'
+
+        with mock.patch(
+            "pycodeloop.providers.generic.urllib.request.urlopen",
+            side_effect=[
+                _FakeResponse(_sse(narrated)),
+                _FakeResponse(_sse(narrated)),
+            ],
+        ):
+            first = provider.complete(
+                "sys", [], tools, on_delta=lambda _: None
+            )
+            second = provider.complete(
+                "sys", [], tools, on_delta=lambda _: None
+            )
+
+        self.assertNotEqual(first.tool_calls[0].id, second.tool_calls[0].id)
+
+    def test_streaming_ignores_fenced_json_naming_an_unknown_tool(self):
+        path = self._write_config(
+            {"url": "http://fake/v1/chat/completions", "model": "my-model"}
+        )
+        provider = GenericProvider.from_json(path)
+
+        narrated = (
+            '```json\n{"tool": "delete_universe", "arguments": {}}\n```\n'
+        )
+        chunks = [
+            {"choices": [{"delta": {"content": narrated}}]},
+            {"choices": [{"delta": {}, "finish_reason": "stop"}]},
+        ]
+        sse_body = (
+            "".join(f"data: {json.dumps(c)}\n" for c in chunks)
+            + "data: [DONE]\n"
+        ).encode()
+
+        with mock.patch(
+            "pycodeloop.providers.generic.urllib.request.urlopen",
+            return_value=_FakeResponse(sse_body),
+        ):
+            result = provider.complete(
+                "sys",
+                [],
+                [{"name": "read_file", "description": "", "parameters": {}}],
+                on_delta=lambda _: None,
+            )
+
+        self.assertEqual(result.text, narrated)
+        self.assertEqual(result.tool_calls, [])
+
     def test_custom_response_paths(self):
         path = self._write_config(
             {
