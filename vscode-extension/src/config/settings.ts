@@ -18,7 +18,7 @@ export interface PycodeloopSettings {
 export function readSettings(): PycodeloopSettings {
   const config = vscode.workspace.getConfiguration(SECTION);
   return {
-    command: config.get<string>("command", "pycodeloop"),
+    command: config.get<string>("command", "pycodeloop") || "pycodeloop",
     provider: config.get<string>("provider", ""),
     model: config.get<string>("model", ""),
     url: config.get<string>("url", ""),
