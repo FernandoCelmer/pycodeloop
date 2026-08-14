@@ -62,6 +62,12 @@ class TestRememberTool(unittest.TestCase):
 
             self.assertTrue(result.is_error)
 
+    def test_is_marked_dangerous_so_agent_asks_before_writing(self):
+        """remember writes to disk like write_file/edit_file/delete_file —
+        it must be gated behind confirmation the same way, or the agent
+        can silently rewrite project memory without the user's OK."""
+        self.assertTrue(RememberTool().dangerous)
+
 
 class TestConfigMemoryWiring(unittest.TestCase):
     def _provider(self) -> GenericProvider:
