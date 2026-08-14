@@ -63,6 +63,7 @@ class CodeLoop:
         self.session = Session(
             system_prompt=self.agent.system_prompt, cwd=os.getcwd()
         )
+        self._tracers: dict[str, JsonlTracer] = {}
 
     def run(
         self,
@@ -93,7 +94,9 @@ class CodeLoop:
             self.agent.on_message = None
 
         self.agent.on_trace_event = (
-            JsonlTracer(session_key or "global") if self.config.trace else None
+            self._tracer_for(session_key or "global")
+            if self.config.trace
+            else None
         )
 
         usage_before = self.agent.usage
@@ -116,6 +119,13 @@ class CodeLoop:
             self.config.storage.post(session_key, self.session)
 
         return result
+
+    def _tracer_for(self, key: str) -> JsonlTracer:
+        tracer = self._tracers.get(key)
+        if tracer is None:
+            tracer = JsonlTracer(key)
+            self._tracers[key] = tracer
+        return tracer
 
     def ask(self, question: str) -> str:
         """One-shot Q&A against a read-only snapshot of the current
