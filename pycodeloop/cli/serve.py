@@ -280,6 +280,14 @@ def serve(
     skills_refresh: bool = typer.Option(
         False, "--skills-refresh", help="Bypass the skills cache and rescan."
     ),
+    delegate: bool = typer.Option(
+        False,
+        "--delegate/--no-delegate",
+        help=(
+            "Expose a delegate tool that spawns read-only sub-agents for "
+            "independent subtasks, run in parallel. Off by default."
+        ),
+    ),
     yes: bool = typer.Option(
         False,
         "--yes",
@@ -298,6 +306,7 @@ def serve(
         tools=_load_mcp_tools(mcp),
         skills=skills,
         skills_refresh=skills_refresh,
+        delegation=delegate,
     )
     flow = CodeLoop(config=config)
     RpcServer(

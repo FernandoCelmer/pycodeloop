@@ -13,7 +13,7 @@ from pycodeloop.core.skills import (
     discover_skills,
     render_skills_index,
 )
-from pycodeloop.core.tools import DEFAULT_TOOLS
+from pycodeloop.core.tools import DEFAULT_TOOLS, READ_ONLY_TOOLS, DelegateTool
 from pycodeloop.providers import get_provider
 from pycodeloop.settings import Settings
 
@@ -75,6 +75,12 @@ class Config:
         skills_refresh (bool): Skip the `~/.pycodeloop/config.json` skills
             cache and force a full rescan.
 
+        delegation (bool): Expose a `delegate` tool that spawns a fresh
+            sub-agent (same provider, read-only tools — no write/edit/
+            delete/bash) for an independent subtask. Multiple `delegate`
+            calls in one turn run in parallel, same as any other
+            same-name, non-dangerous tool calls. Off by default.
+
         storage (Optional[Sessions]): Persists the session so
             `CodeLoop.run(prompt, session_key=...)` can resume a
             conversation across process restarts. Defaults to
@@ -103,6 +109,7 @@ class Config:
         skills: bool = False,
         skill_sources: set[str] | None = None,
         skills_refresh: bool = False,
+        delegation: bool = False,
         storage: Sessions | bool | None = None,
     ) -> None:
         self.provider = provider if provider is not None else _default_provider()
@@ -111,6 +118,11 @@ class Config:
         self.max_turns = max_turns
         self.max_history_turns = max_history_turns
         self.skills = self._discover_skills(skills, skill_sources, skills_refresh)
+        if delegation:
+            self.tools = [
+                *self.tools,
+                DelegateTool(provider=self.provider, tools=list(READ_ONLY_TOOLS)),
+            ]
         self.storage = None if storage is False else storage or _default_storage()
 
         self._validate()

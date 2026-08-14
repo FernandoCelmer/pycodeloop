@@ -23,6 +23,12 @@ class Tool(ABC):
     parameters: dict[str, Any] = {"type": "object", "properties": {}}
     dangerous: bool = False
 
+    #: Set True on subclasses whose `run()` has no shared mutable state, so
+    #: Agent may run several calls to the *same* tool concurrently within
+    #: one batch (distinct-named tools in a batch already run concurrently
+    #: regardless of this flag — it only affects repeated same-name calls).
+    concurrent_safe: bool = False
+
     def schema(self) -> dict:
         return {
             "name": self.name,

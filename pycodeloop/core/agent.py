@@ -157,8 +157,12 @@ class Agent:
             return False
 
         names = [call.name for call in calls]
-        if len(set(names)) != len(names):
-            return False
+        for name in set(names):
+            if names.count(name) <= 1:
+                continue
+            tool = self.tools.get(name)
+            if tool is None or not tool.concurrent_safe:
+                return False
 
         return not any(
             (tool := self.tools.get(call.name)) is not None and tool.dangerous

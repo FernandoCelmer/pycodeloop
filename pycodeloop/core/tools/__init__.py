@@ -3,6 +3,7 @@
 from pycodeloop.abc.tool import Tool, ToolResult
 
 from .bash import BashTool
+from .delegate import DelegateTool
 from .env import EnvTool
 from .filesystem import (
     DeleteFileTool,
@@ -36,10 +37,22 @@ DEFAULT_TOOLS: list[Tool] = [
     TodoTool(),
 ]
 
+READ_ONLY_TOOLS: list[Tool] = [
+    ReadFileTool(),
+    ListDirTool(),
+    GlobTool(),
+    GrepTool(),
+    WebFetchTool(),
+    GitStatusTool(),
+    GitDiffTool(),
+    GitLogTool(),
+]
+
 __all__ = [
     "Tool",
     "ToolResult",
     "BashTool",
+    "DelegateTool",
     "EnvTool",
     "ReadFileTool",
     "WriteFileTool",
@@ -56,4 +69,5 @@ __all__ = [
     "TodoTool",
     "WebFetchTool",
     "DEFAULT_TOOLS",
+    "READ_ONLY_TOOLS",
 ]

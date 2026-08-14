@@ -131,6 +131,7 @@ def build_flow(
     auto_approve: bool = False,
     skills: bool = False,
     skills_refresh: bool = False,
+    delegation: bool = False,
 ) -> tuple[CodeLoop, str, str]:
     provider, provider_name = resolve_provider(provider_name, model, base_url, url)
 
@@ -251,6 +252,7 @@ def build_flow(
         tools=_load_mcp_tools(mcp),
         skills=skills,
         skills_refresh=skills_refresh,
+        delegation=delegation,
     )
     if config.skills:
         console.print(f"{Settings.INFO_ALERT} loaded {len(config.skills)} skill(s)")

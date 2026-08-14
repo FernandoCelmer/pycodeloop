@@ -541,6 +541,40 @@ class TestAgentParallelTools(unittest.TestCase):
 
         self.assertEqual(calls_seen, ["1", "2"])
 
+    def test_repeated_concurrent_safe_tool_name_runs_in_parallel(self):
+        """A tool that opts into concurrent_safe (e.g. DelegateTool) must
+        run its repeated same-name calls in parallel, or fanning out N
+        sub-agents in one turn would serialize them — defeating the point."""
+        barrier = threading.Barrier(2, timeout=2)
+
+        class ConcurrentSafeTool(Tool):
+            name = "spawn"
+            description = "opts into concurrent same-name execution"
+            parameters = {"type": "object", "properties": {"id": {"type": "string"}}}
+            concurrent_safe = True
+
+            def run(self, id: str) -> ToolResult:
+                barrier.wait()
+                return ToolResult(output=f"done {id}")
+
+        provider = FakeProvider(
+            [
+                ProviderResponse(
+                    text="",
+                    tool_calls=[
+                        ToolCall(id="1", name="spawn", arguments={"id": "a"}),
+                        ToolCall(id="2", name="spawn", arguments={"id": "b"}),
+                    ],
+                ),
+                ProviderResponse(text="done"),
+            ]
+        )
+        agent = Agent(provider=provider, tools=[ConcurrentSafeTool()])
+
+        result = agent.run("go")
+
+        self.assertEqual(result, "done")
+
 
 class TestAgentToolResultSummarization(unittest.TestCase):
     def test_large_tool_result_gets_summarized(self):

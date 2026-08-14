@@ -32,6 +32,14 @@ def run(
     skills_refresh: bool = typer.Option(
         False, "--skills-refresh", help="Bypass the skills cache and rescan."
     ),
+    delegate: bool = typer.Option(
+        False,
+        "--delegate/--no-delegate",
+        help=(
+            "Expose a delegate tool that spawns read-only sub-agents for "
+            "independent subtasks, run in parallel. Off by default."
+        ),
+    ),
     yes: bool = typer.Option(
         False,
         "--yes",
@@ -49,6 +57,7 @@ def run(
         auto_approve=yes,
         skills=skills,
         skills_refresh=skills_refresh,
+        delegation=delegate,
     )
     flow.run(prompt, session_key=default_session_key())
     console.print()
