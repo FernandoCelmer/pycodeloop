@@ -55,6 +55,50 @@ class DeleteTool(Tool):
 
 
 class TestAgent(unittest.TestCase):
+    def test_refuses_dangerous_tool_without_confirm(self):
+        provider = FakeProvider(
+            [
+                ProviderResponse(
+                    text="",
+                    tool_calls=[
+                        ToolCall(
+                            id="1", name="delete_everything", arguments={}
+                        )
+                    ],
+                ),
+                ProviderResponse(text="blocked"),
+            ]
+        )
+        agent = Agent(provider=provider, tools=[DeleteTool()])
+
+        result = agent.run("wipe")
+
+        self.assertEqual(result, "blocked")
+
+    def test_runs_dangerous_tool_when_confirm_approves(self):
+        provider = FakeProvider(
+            [
+                ProviderResponse(
+                    text="",
+                    tool_calls=[
+                        ToolCall(
+                            id="1", name="delete_everything", arguments={}
+                        )
+                    ],
+                ),
+                ProviderResponse(text="done"),
+            ]
+        )
+        agent = Agent(
+            provider=provider,
+            tools=[DeleteTool()],
+            confirm=lambda name, preview: True,
+        )
+
+        result = agent.run("wipe")
+
+        self.assertEqual(result, "done")
+
     def test_returns_text_when_no_tool_calls(self):
         provider = FakeProvider([ProviderResponse(text="hello")])
         agent = Agent(provider=provider, tools=[EchoTool()])
@@ -69,7 +113,9 @@ class TestAgent(unittest.TestCase):
                 ProviderResponse(
                     text="",
                     tool_calls=[
-                        ToolCall(id="1", name="echo", arguments={"text": "hey"})
+                        ToolCall(
+                            id="1", name="echo", arguments={"text": "hey"}
+                        )
                     ],
                 ),
                 ProviderResponse(text="done"),
@@ -94,7 +140,9 @@ class TestAgent(unittest.TestCase):
             [
                 ProviderResponse(
                     text="",
-                    tool_calls=[ToolCall(id="1", name="missing", arguments={})],
+                    tool_calls=[
+                        ToolCall(id="1", name="missing", arguments={})
+                    ],
                 ),
                 ProviderResponse(text="ok"),
             ]
@@ -103,7 +151,9 @@ class TestAgent(unittest.TestCase):
         agent = Agent(
             provider=provider,
             tools=[EchoTool()],
-            on_tool_result=lambda _name, result, _is_error: results.append(result),
+            on_tool_result=lambda _name, result, _is_error: results.append(
+                result
+            ),
         )
 
         agent.run("do it")
@@ -139,7 +189,9 @@ class TestAgent(unittest.TestCase):
                 ProviderResponse(
                     text="",
                     tool_calls=[
-                        ToolCall(id="1", name="delete_everything", arguments={})
+                        ToolCall(
+                            id="1", name="delete_everything", arguments={}
+                        )
                     ],
                 ),
                 ProviderResponse(text="ok"),
@@ -150,7 +202,9 @@ class TestAgent(unittest.TestCase):
             provider=provider,
             tools=[DeleteTool()],
             confirm=lambda _name, _preview: False,
-            on_tool_result=lambda _name, result, _is_error: results.append(result),
+            on_tool_result=lambda _name, result, _is_error: results.append(
+                result
+            ),
         )
 
         agent.run("do it")
@@ -163,7 +217,9 @@ class TestAgent(unittest.TestCase):
                 ProviderResponse(
                     text="",
                     tool_calls=[
-                        ToolCall(id="1", name="delete_everything", arguments={})
+                        ToolCall(
+                            id="1", name="delete_everything", arguments={}
+                        )
                     ],
                 ),
                 ProviderResponse(text="ok"),
@@ -174,7 +230,9 @@ class TestAgent(unittest.TestCase):
             provider=provider,
             tools=[DeleteTool()],
             confirm=lambda _name, _preview: True,
-            on_tool_result=lambda _name, result, _is_error: results.append(result),
+            on_tool_result=lambda _name, result, _is_error: results.append(
+                result
+            ),
         )
 
         agent.run("do it")
@@ -187,7 +245,9 @@ class TestAgent(unittest.TestCase):
                 ProviderResponse(
                     text="",
                     tool_calls=[
-                        ToolCall(id="1", name="delete_everything", arguments={})
+                        ToolCall(
+                            id="1", name="delete_everything", arguments={}
+                        )
                     ],
                 ),
                 ProviderResponse(text="ok"),
@@ -203,7 +263,9 @@ class TestAgent(unittest.TestCase):
             provider=provider,
             tools=[DeleteTool()],
             confirm=AlwaysConfirm(),
-            on_tool_result=lambda _name, result, _is_error: results.append(result),
+            on_tool_result=lambda _name, result, _is_error: results.append(
+                result
+            ),
         )
 
         agent.run("do it")
@@ -215,7 +277,9 @@ class TestAgent(unittest.TestCase):
             [
                 ProviderResponse(
                     text="",
-                    tool_calls=[ToolCall(id="1", name="echo", arguments={"text": "x"})],
+                    tool_calls=[
+                        ToolCall(id="1", name="echo", arguments={"text": "x"})
+                    ],
                 ),
                 ProviderResponse(text="done"),
             ]
@@ -278,7 +342,9 @@ class TestAgent(unittest.TestCase):
         )
         provider.model = "claude-sonnet-5"
         seen = []
-        agent = Agent(provider=provider, on_context=lambda *args: seen.append(args))
+        agent = Agent(
+            provider=provider, on_context=lambda *args: seen.append(args)
+        )
 
         agent.run("hi")
 
@@ -287,10 +353,16 @@ class TestAgent(unittest.TestCase):
     def test_compacts_when_context_usage_crosses_threshold(self):
         provider = FakeProvider(
             [
-                ProviderResponse(text="reply-1", usage=Usage(input_tokens=190_000)),
-                ProviderResponse(text="reply-2", usage=Usage(input_tokens=190_000)),
+                ProviderResponse(
+                    text="reply-1", usage=Usage(input_tokens=190_000)
+                ),
+                ProviderResponse(
+                    text="reply-2", usage=Usage(input_tokens=190_000)
+                ),
                 ProviderResponse(text="summary of earlier turns"),
-                ProviderResponse(text="reply-3", usage=Usage(input_tokens=1_000)),
+                ProviderResponse(
+                    text="reply-3", usage=Usage(input_tokens=1_000)
+                ),
             ]
         )
         provider.model = "claude-sonnet-5"
@@ -298,7 +370,9 @@ class TestAgent(unittest.TestCase):
         agent = Agent(
             provider=provider,
             on_compact_start=lambda: events.append("start"),
-            on_compact_end=lambda before, after: events.append((before, after)),
+            on_compact_end=lambda before, after: events.append(
+                (before, after)
+            ),
         )
         session = Session(system_prompt="sys")
 
@@ -315,9 +389,15 @@ class TestAgent(unittest.TestCase):
     def test_auto_compact_false_never_compacts(self):
         provider = FakeProvider(
             [
-                ProviderResponse(text="reply-1", usage=Usage(input_tokens=190_000)),
-                ProviderResponse(text="reply-2", usage=Usage(input_tokens=190_000)),
-                ProviderResponse(text="reply-3", usage=Usage(input_tokens=190_000)),
+                ProviderResponse(
+                    text="reply-1", usage=Usage(input_tokens=190_000)
+                ),
+                ProviderResponse(
+                    text="reply-2", usage=Usage(input_tokens=190_000)
+                ),
+                ProviderResponse(
+                    text="reply-3", usage=Usage(input_tokens=190_000)
+                ),
             ]
         )
         provider.model = "claude-sonnet-5"
@@ -335,7 +415,9 @@ class TestAgent(unittest.TestCase):
             [
                 ProviderResponse(
                     text="",
-                    tool_calls=[ToolCall(id="1", name="echo", arguments={"text": "a"})],
+                    tool_calls=[
+                        ToolCall(id="1", name="echo", arguments={"text": "a"})
+                    ],
                 ),
                 ProviderResponse(text="should never be reached"),
             ]
@@ -353,12 +435,16 @@ class TestAgent(unittest.TestCase):
         result = agent.run("go", session=session, cancel_event=cancel_event)
 
         self.assertEqual(result, "Cancelled by user.")
-        self.assertEqual(len(provider._scripted), 1)  # 2nd response never consumed
+        self.assertEqual(
+            len(provider._scripted), 1
+        )  # 2nd response never consumed
         roles = [m.role for m in session.messages]
         self.assertEqual(roles, ["user", "assistant", "tool"])
 
     def test_cancel_event_set_before_run_returns_immediately(self):
-        provider = FakeProvider([ProviderResponse(text="should never be reached")])
+        provider = FakeProvider(
+            [ProviderResponse(text="should never be reached")]
+        )
         cancel_event = threading.Event()
         cancel_event.set()
         agent = Agent(provider=provider)
@@ -405,7 +491,9 @@ class TestAgentRetry(unittest.TestCase):
         agent = Agent(
             provider=provider,
             tools=[],
-            on_retry=lambda attempt, delay, exc: events.append((attempt, delay)),
+            on_retry=lambda attempt, delay, exc: events.append(
+                (attempt, delay)
+            ),
         )
 
         result = agent.run("hi")
@@ -457,8 +545,12 @@ class TestAgentParallelTools(unittest.TestCase):
                 ProviderResponse(
                     text="",
                     tool_calls=[
-                        ToolCall(id="1", name="barrier", arguments={"id": "a"}),
-                        ToolCall(id="2", name="barrier2", arguments={"id": "b"}),
+                        ToolCall(
+                            id="1", name="barrier", arguments={"id": "a"}
+                        ),
+                        ToolCall(
+                            id="2", name="barrier2", arguments={"id": "b"}
+                        ),
                     ],
                 ),
                 ProviderResponse(text="done"),
@@ -517,7 +609,10 @@ class TestAgentParallelTools(unittest.TestCase):
         class RecordingTool(Tool):
             name = "rec"
             description = "records call order, not thread-safe"
-            parameters = {"type": "object", "properties": {"n": {"type": "string"}}}
+            parameters = {
+                "type": "object",
+                "properties": {"n": {"type": "string"}},
+            }
 
             def run(self, n: str) -> ToolResult:
                 calls_seen.append(n)
@@ -550,7 +645,10 @@ class TestAgentParallelTools(unittest.TestCase):
         class ConcurrentSafeTool(Tool):
             name = "spawn"
             description = "opts into concurrent same-name execution"
-            parameters = {"type": "object", "properties": {"id": {"type": "string"}}}
+            parameters = {
+                "type": "object",
+                "properties": {"id": {"type": "string"}},
+            }
             concurrent_safe = True
 
             def run(self, id: str) -> ToolResult:
@@ -589,7 +687,8 @@ class TestAgentToolResultSummarization(unittest.TestCase):
         provider = FakeProvider(
             [
                 ProviderResponse(
-                    text="", tool_calls=[ToolCall(id="1", name="huge", arguments={})]
+                    text="",
+                    tool_calls=[ToolCall(id="1", name="huge", arguments={})],
                 ),
                 ProviderResponse(text="condensed"),
                 ProviderResponse(text="done"),
@@ -637,7 +736,9 @@ class TestAgentToolResultSummarization(unittest.TestCase):
             [
                 ProviderResponse(
                     text="",
-                    tool_calls=[ToolCall(id="1", name="huge_error", arguments={})],
+                    tool_calls=[
+                        ToolCall(id="1", name="huge_error", arguments={})
+                    ],
                 ),
                 ProviderResponse(text="done"),
             ]

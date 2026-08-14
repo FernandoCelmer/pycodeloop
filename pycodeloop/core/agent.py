@@ -78,6 +78,7 @@ class Agent:
         on_compact_end: Callable[[int, int], None] | None = None,
         on_message: Callable[[], None] | None = None,
         on_retry: Callable[[int, float, Exception], None] | None = None,
+        on_turn_end: Callable[[], None] | None = None,
     ) -> None:
         self.provider = provider
         self.tools = {tool.name: tool for tool in (tools or DEFAULT_TOOLS)}
@@ -97,6 +98,7 @@ class Agent:
         self.on_compact_end = on_compact_end
         self.on_message = on_message
         self.on_retry = on_retry
+        self.on_turn_end = on_turn_end
         self.usage = Usage()
         self._last_context_tokens = 0
 
@@ -134,10 +136,18 @@ class Agent:
         if tool is None:
             return f"Unknown tool: {name}", True
 
-        if tool.dangerous and self.confirm is not None:
+        if tool.dangerous:
+            if self.confirm is None:
+                return (
+                    f"Refused to run dangerous tool '{name}' without a confirm "
+                    "callback. Pass confirm=... or use --yes only from a trusted CLI.",
+                    True,
+                )
             preview = tool.preview(**arguments)
             ask = (
-                self.confirm.ask if isinstance(self.confirm, Confirm) else self.confirm
+                self.confirm.ask
+                if isinstance(self.confirm, Confirm)
+                else self.confirm
             )
             answer = ask(name, preview)
             if answer is not True:
@@ -148,7 +158,10 @@ class Agent:
         try:
             result = tool.run(**arguments)
         except Exception as exc:
-            return f"Tool '{name}' raised {exc.__class__.__name__}: {exc}", True
+            return (
+                f"Tool '{name}' raised {exc.__class__.__name__}: {exc}",
+                True,
+            )
 
         return result.output, result.is_error
 
@@ -184,10 +197,14 @@ class Agent:
         elif self._can_parallelize(calls):
             with ThreadPoolExecutor(max_workers=len(calls)) as executor:
                 futures = {
-                    call.id: executor.submit(self._execute, call.name, call.arguments)
+                    call.id: executor.submit(
+                        self._execute, call.name, call.arguments
+                    )
                     for call in calls
                 }
-            results = {call_id: future.result() for call_id, future in futures.items()}
+            results = {
+                call_id: future.result() for call_id, future in futures.items()
+            }
         else:
             results = {}
             for call in calls:
@@ -198,8 +215,13 @@ class Agent:
 
         for call in calls:
             result_text, is_error = results[call.id]
-            if not is_error and len(result_text) > _TOOL_RESULT_SUMMARIZE_THRESHOLD:
-                result_text = self._summarize_tool_result(call.name, result_text)
+            if (
+                not is_error
+                and len(result_text) > _TOOL_RESULT_SUMMARIZE_THRESHOLD
+            ):
+                result_text = self._summarize_tool_result(
+                    call.name, result_text
+                )
             if self.on_tool_result:
                 self.on_tool_result(call.name, result_text, is_error)
             session.add_tool_result(call.id, result_text)
@@ -224,7 +246,9 @@ class Agent:
         provider itself, replacing the older history with one condensed
         message — keeps the conversation going instead of hitting the
         model's context limit."""
-        turn_starts = [i for i, m in enumerate(session.messages) if m.role == "user"]
+        turn_starts = [
+            i for i, m in enumerate(session.messages) if m.role == "user"
+        ]
 
         if len(turn_starts) <= _COMPACT_KEEP_RECENT_TURNS:
             return
@@ -238,7 +262,10 @@ class Agent:
 
         summary = self._complete(
             system_prompt="Summarize conversations concisely for context compaction.",
-            messages=[*older, Message(role="user", content=_COMPACT_SUMMARY_PROMPT)],
+            messages=[
+                *older,
+                Message(role="user", content=_COMPACT_SUMMARY_PROMPT),
+            ],
             tools=[],
         )
         self.usage = self.usage + summary.usage
@@ -320,6 +347,8 @@ class Agent:
             ]
             session.add_assistant(response.text, tool_calls=tool_calls or None)
             self._notify_message()
+            if self.on_turn_end:
+                self.on_turn_end()
 
             if not response.tool_calls:
                 return response.text
