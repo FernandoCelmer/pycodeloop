@@ -433,7 +433,7 @@ class GenericProvider(Provider):
                 for tc in delta.get("tool_calls") or []:
                     index = tc.get("index", 0)
                     acc = pending.setdefault(
-                        index, {"id": None, "name": None, "arguments": ""}
+                        index, {"id": None, "name": None, "arguments": "", "extra": {}}
                     )
                     if tc.get("id"):
                         acc["id"] = tc["id"]
@@ -442,6 +442,9 @@ class GenericProvider(Provider):
                         acc["name"] = function["name"]
                     if function.get("arguments"):
                         acc["arguments"] += function["arguments"]
+                    acc["extra"].update(
+                        {k: v for k, v in tc.items() if k not in ("index", "id", "type", "function")}
+                    )
 
                 if choice.get("finish_reason"):
                     stop_reason = choice["finish_reason"]
@@ -451,6 +454,7 @@ class GenericProvider(Provider):
                 id=acc["id"],
                 name=acc["name"],
                 arguments=json.loads(acc["arguments"] or "{}"),
+                extra=acc["extra"] or None,
             )
             for acc in pending.values()
         ]

@@ -150,6 +150,69 @@ class TestLoadProviderFromJson(GenericProviderTestCase):
             {"extra_content": {"google": {"thought_signature": "abc123"}}},
         )
 
+    def test_streaming_response_also_captures_extra_tool_call_fields(self):
+        """Same as above, but through _stream() — the code path actually
+        used whenever a caller passes on_delta (i.e. every real pycodeloop
+        run), which builds ToolCalls from accumulated deltas instead of
+        _default_response and previously dropped extra fields entirely."""
+        path = self._write_config(
+            {"url": "http://fake/v1/chat/completions", "model": "my-model"}
+        )
+        provider = GenericProvider.from_json(path)
+
+        chunks = [
+            {
+                "choices": [
+                    {
+                        "delta": {
+                            "tool_calls": [
+                                {
+                                    "index": 0,
+                                    "id": "call_1",
+                                    "type": "function",
+                                    "function": {"name": "bash", "arguments": ""},
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            {
+                "choices": [
+                    {
+                        "delta": {
+                            "tool_calls": [
+                                {
+                                    "index": 0,
+                                    "function": {"arguments": '{"command": "ls"}'},
+                                    "extra_content": {
+                                        "google": {"thought_signature": "xyz789"}
+                                    },
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            {"choices": [{"delta": {}, "finish_reason": "tool_calls"}]},
+        ]
+        sse_body = (
+            "".join(f"data: {json.dumps(c)}\n" for c in chunks) + "data: [DONE]\n"
+        ).encode()
+
+        with mock.patch(
+            "pycodeloop.providers.generic.urllib.request.urlopen",
+            return_value=_FakeResponse(sse_body),
+        ):
+            result = provider.complete("sys", [], [], on_delta=lambda _: None)
+
+        self.assertEqual(len(result.tool_calls), 1)
+        self.assertEqual(result.tool_calls[0].arguments, {"command": "ls"})
+        self.assertEqual(
+            result.tool_calls[0].extra,
+            {"extra_content": {"google": {"thought_signature": "xyz789"}}},
+        )
+
     def test_custom_response_paths(self):
         path = self._write_config(
             {
