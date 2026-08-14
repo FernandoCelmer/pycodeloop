@@ -18,6 +18,14 @@ from pycodeloop.cli.flow import PROVIDER_HELP, _load_mcp_tools, resolve_provider
 from pycodeloop.cli.render import console
 from pycodeloop.core.codeloop import CodeLoop
 from pycodeloop.core.config import Config
+from pycodeloop.protocol.events import (
+    CHAT_ALREADY_RUNNING,
+    METHOD_NOT_FOUND,
+    SERVER_ERROR,
+    error_response,
+    notification,
+    response,
+)
 
 
 class RpcServer:
@@ -49,7 +57,13 @@ class RpcServer:
             sys.stdout.flush()
 
     def _notify(self, method: str, params: dict) -> None:
-        self._send({"jsonrpc": "2.0", "method": method, "params": params})
+        self._send(notification(method, params))
+
+    def _respond(self, request_id, result: dict) -> None:
+        self._send(response(request_id, result))
+
+    def _respond_error(self, request_id, code: int, message: str) -> None:
+        self._send(error_response(request_id, code, message))
 
     def _wire_callbacks(self) -> None:
         agent = self.flow.agent
@@ -129,28 +143,16 @@ class RpcServer:
                 images=params.get("images"),
                 cancel_event=self._cancel_event,
             )
-            self._send({"jsonrpc": "2.0", "id": request_id, "result": {"text": result}})
+            self._respond(request_id, {"text": result})
         except Exception as exc:
-            self._send(
-                {
-                    "jsonrpc": "2.0",
-                    "id": request_id,
-                    "error": {"code": -32000, "message": str(exc)},
-                }
-            )
+            self._respond_error(request_id, SERVER_ERROR, str(exc))
 
     def _run_ask(self, request_id, params: dict) -> None:
         try:
             text = self.flow.ask(params.get("prompt", ""))
-            self._send({"jsonrpc": "2.0", "id": request_id, "result": {"text": text}})
+            self._respond(request_id, {"text": text})
         except Exception as exc:
-            self._send(
-                {
-                    "jsonrpc": "2.0",
-                    "id": request_id,
-                    "error": {"code": -32000, "message": str(exc)},
-                }
-            )
+            self._respond_error(request_id, SERVER_ERROR, str(exc))
 
     def handle(self, request: dict) -> None:
         method = request.get("method")
@@ -159,15 +161,8 @@ class RpcServer:
 
         if method == "chat/send":
             if self._chat_thread is not None and self._chat_thread.is_alive():
-                self._send(
-                    {
-                        "jsonrpc": "2.0",
-                        "id": request_id,
-                        "error": {
-                            "code": -32001,
-                            "message": "A chat turn is already running.",
-                        },
-                    }
+                self._respond_error(
+                    request_id, CHAT_ALREADY_RUNNING, "A chat turn is already running."
                 )
             else:
                 self._chat_thread = threading.Thread(
@@ -192,57 +187,36 @@ class RpcServer:
             sessions = (
                 storage.list_sessions() if hasattr(storage, "list_sessions") else {}
             )
-            self._send(
-                {
-                    "jsonrpc": "2.0",
-                    "id": request_id,
-                    "result": {
-                        "sessions": [
-                            {"key": key, **meta} for key, meta in sessions.items()
-                        ]
-                    },
-                }
+            self._respond(
+                request_id,
+                {"sessions": [{"key": key, **meta} for key, meta in sessions.items()]},
             )
         elif method == "session/load":
             storage = self.flow.config.storage
             key = params.get("key")
             session = storage.get(key) if storage is not None and key else None
-            self._send(
+            self._respond(
+                request_id,
                 {
-                    "jsonrpc": "2.0",
-                    "id": request_id,
-                    "result": {
-                        "messages": [
-                            {
-                                "role": message.role,
-                                "content": message.content,
-                                "toolCallId": message.tool_call_id,
-                                "toolCalls": message.tool_calls,
-                                "images": message.images,
-                            }
-                            for message in (session.history() if session else [])
-                        ]
-                    },
-                }
+                    "messages": [
+                        {
+                            "role": message.role,
+                            "content": message.content,
+                            "toolCallId": message.tool_call_id,
+                            "toolCalls": message.tool_calls,
+                            "images": message.images,
+                        }
+                        for message in (session.history() if session else [])
+                    ]
+                },
             )
         elif method == "initialize":
-            self._send(
-                {
-                    "jsonrpc": "2.0",
-                    "id": request_id,
-                    "result": {
-                        "provider": self.provider_name,
-                        "model": self.model_name,
-                    },
-                }
+            self._respond(
+                request_id, {"provider": self.provider_name, "model": self.model_name}
             )
         elif request_id is not None:
-            self._send(
-                {
-                    "jsonrpc": "2.0",
-                    "id": request_id,
-                    "error": {"code": -32601, "message": f"Unknown method: {method}"},
-                }
+            self._respond_error(
+                request_id, METHOD_NOT_FOUND, f"Unknown method: {method}"
             )
 
     def serve_forever(self) -> None:

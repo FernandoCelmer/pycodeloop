@@ -9,7 +9,7 @@ from pathlib import Path
 from unittest import mock
 
 from pycodeloop.cli.flow import build_flow
-from pycodeloop.core.store.sqlite_sessions import SqliteSessions
+from pycodeloop.store.sqlite_sessions import SqliteSessions
 from tests.functional._fake_llm_server import (
     FakeLLMServer,
     chat_completion,

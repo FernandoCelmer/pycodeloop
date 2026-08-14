@@ -1,9 +1,9 @@
 # Skills
 
-::: pycodeloop.core.skills.Skill
+::: pycodeloop.skills.Skill
 
-::: pycodeloop.core.skills.discover_skills
+::: pycodeloop.skills.discover_skills
 
-::: pycodeloop.core.skills.render_skills_index
+::: pycodeloop.skills.render_skills_index
 
-::: pycodeloop.core.skills.ReadSkillTool
+::: pycodeloop.skills.ReadSkillTool

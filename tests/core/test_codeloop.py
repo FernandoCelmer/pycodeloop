@@ -10,10 +10,10 @@ from pycodeloop.abc.tool import Tool, ToolResult
 from pycodeloop.core import codeloop as codeloop_module
 from pycodeloop.core.codeloop import CodeLoop
 from pycodeloop.core.config import Config
-from pycodeloop.core.store import file_sessions as sessions_module
-from pycodeloop.core.store.json_store import JsonFileStore
-from pycodeloop.core.store.file_sessions import FileSessions
-from pycodeloop.core.store.usage_tracker import UsageTracker
+from pycodeloop.store import file_sessions as sessions_module
+from pycodeloop.store.json_store import JsonFileStore
+from pycodeloop.store.file_sessions import FileSessions
+from pycodeloop.store.usage_tracker import UsageTracker
 
 
 class FakeProvider(Provider):

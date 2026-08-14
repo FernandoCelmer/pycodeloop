@@ -12,7 +12,7 @@ from pycodeloop.abc.provider import Provider, ProviderResponse, ToolCall, Usage
 from pycodeloop.abc.tool import Tool
 from pycodeloop.core.context_window import context_window_for
 from pycodeloop.core.session import Message, Session
-from pycodeloop.core.tools import DEFAULT_TOOLS
+from pycodeloop.tools import DEFAULT_TOOLS
 
 _COMPACT_KEEP_RECENT_TURNS = 2
 _COMPACT_SUMMARY_PROMPT = (

@@ -23,9 +23,9 @@ from pycodeloop.cli.render import (
 )
 from pycodeloop.core.codeloop import CodeLoop
 from pycodeloop.core.config import Config
-from pycodeloop.core.mcp import MCPServer, MCPServerRegistry, load_mcp_tools
-from pycodeloop.core.store.json_store import default_store
-from pycodeloop.core.tools import DEFAULT_TOOLS
+from pycodeloop.mcp import MCPServer, MCPServerRegistry, load_mcp_tools
+from pycodeloop.store.json_store import default_store
+from pycodeloop.tools import DEFAULT_TOOLS
 from pycodeloop.providers import get_provider
 from pycodeloop.settings import Settings
 

@@ -7,7 +7,7 @@ import threading
 
 from pycodeloop.core.agent import Agent
 from pycodeloop.core.config import Config
-from pycodeloop.core.store.usage_tracker import UsageTracker
+from pycodeloop.store.usage_tracker import UsageTracker
 from pycodeloop.core.session import Message, Session
 
 _usage_tracker = UsageTracker()

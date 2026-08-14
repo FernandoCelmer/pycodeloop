@@ -11,7 +11,7 @@ CodeLoop can discover skills already sitting on disk from other tools and expose
 | `cursor-rule` | `./.cursor/rules/*.mdc`, `./.cursorrules` |
 | `agents-md` | `./AGENTS.md` |
 
-Each match becomes a `Skill` (`pycodeloop.core.skills.Skill`): a name, a short description, its source, and the full content, read lazily.
+Each match becomes a `Skill` (`pycodeloop.skills.Skill`): a name, a short description, its source, and the full content, read lazily.
 
 ## As a library
 

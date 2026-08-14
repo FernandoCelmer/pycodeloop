@@ -9,7 +9,7 @@ import unittest
 from pathlib import Path
 
 from pycodeloop.core.agent import Agent
-from pycodeloop.core.tools.filesystem import ReadFileTool, WriteFileTool
+from pycodeloop.tools.filesystem import ReadFileTool, WriteFileTool
 from pycodeloop.providers.generic import GenericProvider
 from tests.functional._fake_llm_server import (
     FakeLLMServer,

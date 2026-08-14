@@ -7,14 +7,14 @@ from pycodeloop.abc.sessions import Sessions
 from pycodeloop.abc.tool import Tool
 from pycodeloop.core.agent import DEFAULT_SYSTEM_PROMPT
 from pycodeloop.core.exception import NotProviderInstance
-from pycodeloop.core.memory import RememberTool, load_memory, render_memory_prompt
-from pycodeloop.core.store.sqlite_sessions import SqliteSessions
-from pycodeloop.core.skills import (
+from pycodeloop.memory import RememberTool, load_memory, render_memory_prompt
+from pycodeloop.store.sqlite_sessions import SqliteSessions
+from pycodeloop.skills import (
     ReadSkillTool,
     discover_skills,
     render_skills_index,
 )
-from pycodeloop.core.tools import DEFAULT_TOOLS, READ_ONLY_TOOLS, DelegateTool
+from pycodeloop.tools import DEFAULT_TOOLS, READ_ONLY_TOOLS, DelegateTool
 from pycodeloop.providers import get_provider
 from pycodeloop.settings import Settings
 

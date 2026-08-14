@@ -10,7 +10,7 @@ from pathlib import Path
 
 from pycodeloop.core.codeloop import CodeLoop
 from pycodeloop.core.config import Config
-from pycodeloop.core.store.sqlite_sessions import SqliteSessions
+from pycodeloop.store.sqlite_sessions import SqliteSessions
 from pycodeloop.providers.generic import GenericProvider
 from tests.functional._fake_llm_server import FakeLLMServer, chat_completion
 

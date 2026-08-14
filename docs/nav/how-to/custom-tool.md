@@ -44,7 +44,7 @@ See [Permission prompts](permission-prompts.md) for how `preview()` and the `con
 
 ```python
 from pycodeloop import Config
-from pycodeloop.core.tools import DEFAULT_TOOLS
+from pycodeloop.tools import DEFAULT_TOOLS
 
 config = Config(tools=DEFAULT_TOOLS + [MyTool()])
 ```

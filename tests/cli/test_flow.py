@@ -8,9 +8,9 @@ from unittest import mock
 import typer
 
 from pycodeloop.cli.flow import _load_mcp_tools, build_flow
-from pycodeloop.core.mcp import MCPServer, MCPServerRegistry
-from pycodeloop.core.store.json_store import JsonFileStore
-from pycodeloop.core.store.sqlite_sessions import SqliteSessions
+from pycodeloop.mcp import MCPServer, MCPServerRegistry
+from pycodeloop.store.json_store import JsonFileStore
+from pycodeloop.store.sqlite_sessions import SqliteSessions
 from pycodeloop.providers.generic import GenericProvider
 
 # build_flow() -> Config() defaults storage to a real SqliteSessions() at
@@ -109,7 +109,7 @@ class TestLoadMcpToolsSavedServers(unittest.TestCase):
         self.addCleanup(self._tmpdir.cleanup)
 
         store = JsonFileStore(Path(self._tmpdir.name) / "config.json")
-        patcher = mock.patch("pycodeloop.core.mcp.default_store", store)
+        patcher = mock.patch("pycodeloop.mcp.default_store", store)
         patcher.start()
         self.addCleanup(patcher.stop)
 

@@ -25,7 +25,7 @@ from pycodeloop.cli.render import (
     render_preview,
     tool_icon,
 )
-from pycodeloop.core.clipboard import read_clipboard_image_base64
+from pycodeloop.cli.clipboard import read_clipboard_image_base64
 from pycodeloop.core.codeloop import CodeLoop
 from pycodeloop.core.session import Session
 

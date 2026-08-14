@@ -38,7 +38,7 @@ class Tool(ABC):
 | `delegate` | Spawn a fresh sub-agent (same provider, read-only tools) for an independent subtask — `Config(delegation=True)` / `--delegate`, off by default | No |
 | `remember` | Save a standing correction/preference to `.pycodeloop/memory.md` — `Config(memory=True)` / `--memory`, on by default | No |
 
-`DEFAULT_TOOLS` (`pycodeloop.core.tools.DEFAULT_TOOLS`) is that list (everything above except `delegate`/`remember`, which `Config` appends conditionally), ready to pass into `Config`. `READ_ONLY_TOOLS` (`pycodeloop.core.tools.READ_ONLY_TOOLS`) is the read-only subset — `read_file`/`list_dir`/`glob`/`grep`/`web_fetch`/`git_status`/`git_diff`/`git_log` — that `delegate` hands to each sub-agent.
+`DEFAULT_TOOLS` (`pycodeloop.tools.DEFAULT_TOOLS`) is that list (everything above except `delegate`/`remember`, which `Config` appends conditionally), ready to pass into `Config`. `READ_ONLY_TOOLS` (`pycodeloop.tools.READ_ONLY_TOOLS`) is the read-only subset — `read_file`/`list_dir`/`glob`/`grep`/`web_fetch`/`git_status`/`git_diff`/`git_log` — that `delegate` hands to each sub-agent.
 
 ## Running the same tool multiple times in one turn
 
@@ -58,7 +58,7 @@ See [Permission prompts](../how-to/permission-prompts.md) for how the CLI render
 
 ## MCP tools
 
-Tools don't have to be local Python code. `pycodeloop.core.mcp.load_mcp_tools(server)` connects to a [Model Context Protocol](https://modelcontextprotocol.io/) server and returns its remote tools already wrapped as `Tool` instances — the agent can't tell an MCP tool from a local one. See [MCP servers](../how-to/mcp-servers.md).
+Tools don't have to be local Python code. `pycodeloop.mcp.load_mcp_tools(server)` connects to a [Model Context Protocol](https://modelcontextprotocol.io/) server and returns its remote tools already wrapped as `Tool` instances — the agent can't tell an MCP tool from a local one. See [MCP servers](../how-to/mcp-servers.md).
 
 ## Skills
 

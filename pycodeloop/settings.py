@@ -17,7 +17,7 @@ from pycodeloop.constants import (
     STEP_ICON,
     WARNING_ALERT,
 )
-from pycodeloop.core.store.user_settings import UserSettings
+from pycodeloop.store.user_settings import UserSettings
 
 load_dotenv()
 

@@ -10,8 +10,8 @@ Connect to any [Model Context Protocol](https://modelcontextprotocol.io/) server
 
 ```python
 from pycodeloop import CodeLoop, Config
-from pycodeloop.core.mcp import MCPServer, load_mcp_tools
-from pycodeloop.core.tools import DEFAULT_TOOLS
+from pycodeloop.mcp import MCPServer, load_mcp_tools
+from pycodeloop.tools import DEFAULT_TOOLS
 from pycodeloop.providers import GenericProvider
 
 server = MCPServer(command="npx", args=["-y", "@modelcontextprotocol/server-filesystem", "."])
@@ -34,6 +34,6 @@ pycodeloop run "list every allowed directory" \
 
 ## Lifecycle
 
-`MCPClient` (`pycodeloop.core.mcp.MCPClient`) owns the server subprocess on a dedicated background event loop for the life of the process — MCP sessions are async and expect to live inside one `async with` block for their whole lifetime, so a background loop lets a synchronous `Tool.run()` call into a long-lived subprocess without blocking `Agent`.
+`MCPClient` (`pycodeloop.mcp.MCPClient`) owns the server subprocess on a dedicated background event loop for the life of the process — MCP sessions are async and expect to live inside one `async with` block for their whole lifetime, so a background loop lets a synchronous `Tool.run()` call into a long-lived subprocess without blocking `Agent`.
 
 Every MCP tool is `dangerous = True` by default (see [Permission prompts](permission-prompts.md)) since a remote server's tools are opaque — its `preview()` renders the call as `tool_name(arg=value, ...)`.

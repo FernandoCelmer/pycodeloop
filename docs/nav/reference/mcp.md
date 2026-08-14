@@ -1,9 +1,9 @@
 # MCP
 
-::: pycodeloop.core.mcp.MCPServer
+::: pycodeloop.mcp.MCPServer
 
-::: pycodeloop.core.mcp.MCPClient
+::: pycodeloop.mcp.MCPClient
 
-::: pycodeloop.core.mcp.MCPTool
+::: pycodeloop.mcp.MCPTool
 
-::: pycodeloop.core.mcp.load_mcp_tools
+::: pycodeloop.mcp.load_mcp_tools
