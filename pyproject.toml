@@ -1,6 +1,6 @@
 [project]
 name = "pycodeloop"
-version = "0.3.0"
+version = "0.2.2"
 authors = [
   { name="Fernando Celmer", email="email@fernandocelmer.com" },
 ]
@@ -54,7 +54,7 @@ all = ["anthropic", "openai", "mcp"]
 
 [tool.poetry]
 name = "pycodeloop"
-version = "0.3.0"
+version = "0.2.2"
 description = "CodeLoop — an agentic coding assistant core and CLI, multi-provider (Anthropic, OpenAI)."
 authors = ["Fernando Celmer <email@fernandocelmer.com>"]
 readme = "README.md"

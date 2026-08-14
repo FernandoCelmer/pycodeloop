@@ -1,6 +1,6 @@
 """CodeLoop __init__ module."""
 
-__version__ = "0.3.0"
+__version__ = "0.2.2"
 __description__ = "🤖 CodeLoop drives an agent through your code."
 
 from .core.agent import Agent
