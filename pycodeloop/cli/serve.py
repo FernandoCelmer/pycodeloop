@@ -298,6 +298,15 @@ def serve(
         "-y",
         help="Auto-approve dangerous tool calls instead of round-tripping a confirmRequest.",
     ),
+    workspace: bool = typer.Option(
+        True,
+        "--workspace/--no-workspace",
+        help=(
+            "Jail read_file/write_file/edit_file/delete_file/grep/glob to "
+            "the working directory. Does NOT cover bash/git, which run "
+            "arbitrary shell commands. On by default."
+        ),
+    ),
 ) -> None:
     """Run CodeLoop as a JSON-RPC-over-stdio server for editor
     integrations — no interactive terminal output, one JSON message
@@ -314,6 +323,7 @@ def serve(
         skills_refresh=skills_refresh,
         delegation=delegate,
         memory=memory,
+        workspace=workspace,
     )
     flow = CodeLoop(config=config)
     RpcServer(
