@@ -298,27 +298,58 @@
   }
 
   let thinkingEl = null;
+  let thinkingTimer = null;
+  let thinkingStartedAt = 0;
+  let activeDelegateCount = 0;
+
+  function formatElapsed(seconds) {
+    return seconds < 60 ? seconds + "s" : Math.floor(seconds / 60) + "m " + (seconds % 60) + "s";
+  }
+
+  function thinkingLabel() {
+    return activeDelegateCount > 0
+      ? activeDelegateCount + " sub-agent" + (activeDelegateCount > 1 ? "s" : "") + " working"
+      : "Thinking";
+  }
+
+  function renderThinkingText() {
+    if (!thinkingEl) {
+      return;
+    }
+    const elapsed = Math.round((Date.now() - thinkingStartedAt) / 1000);
+    thinkingEl.querySelector(".thinking-label").textContent = thinkingLabel() + "…";
+    thinkingEl.querySelector(".thinking-elapsed").textContent = formatElapsed(elapsed);
+  }
 
   function showThinkingIndicator() {
     if (thinkingEl) {
+      renderThinkingText();
       return;
     }
-    const turn = document.createElement("div");
-    turn.className = "turn assistant";
-    const bubble = document.createElement("div");
-    bubble.className = "bubble thinking";
-    bubble.innerHTML = "<span></span><span></span><span></span>";
-    turn.appendChild(bubble);
-    messagesEl.appendChild(turn);
-    thinkingEl = turn;
+    thinkingStartedAt = Date.now();
+    const line = document.createElement("div");
+    line.className = "thinking-line";
+    line.innerHTML =
+      '<span class="thinking-glyph">●</span>' +
+      '<span class="thinking-label"></span>' +
+      '<span class="thinking-elapsed"></span>';
+    messagesEl.appendChild(line);
+    thinkingEl = line;
+    renderThinkingText();
+    thinkingTimer = setInterval(renderThinkingText, 1000);
     scrollToBottom();
   }
 
   function hideThinkingIndicator() {
+    if (thinkingTimer) {
+      clearInterval(thinkingTimer);
+      thinkingTimer = null;
+    }
     if (thinkingEl) {
       thinkingEl.remove();
       thinkingEl = null;
     }
+    activeDelegateCount = 0;
   }
 
   function ensureAssistantTurn() {
@@ -404,7 +435,12 @@
   }
 
   function renderToolCall(name, args) {
-    hideThinkingIndicator();
+    if (name === "delegate") {
+      activeDelegateCount++;
+      showThinkingIndicator();
+    } else {
+      hideThinkingIndicator();
+    }
     const card = document.createElement("div");
     card.className = "tool-card";
 
@@ -487,6 +523,11 @@
       resultPre.textContent = result.length > 4000 ? result.slice(0, 4000) + "…" : result;
       card.__body.appendChild(resultLabel);
       card.__body.appendChild(resultPre);
+    }
+
+    if (name === "delegate") {
+      activeDelegateCount = Math.max(0, activeDelegateCount - 1);
+      renderThinkingText();
     }
 
     const stillPending = [...pendingToolCards.values()].some((q) => q.length > 0);
