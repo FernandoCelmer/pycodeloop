@@ -8,9 +8,9 @@ from urllib.parse import urlparse
 import httpx
 
 from pycodeloop.abc.tool import Tool, ToolResult
-from pycodeloop.tools._net import is_blocked_host
+from pycodeloop.tools._limits import truncate
+from pycodeloop.tools._net import BlockedHostError, is_blocked_host, safe_request
 
-_MAX_CHARS = 20000
 _SKIP_TAGS = {"script", "style", "noscript"}
 
 
@@ -61,7 +61,12 @@ class WebFetchTool(Tool):
             )
 
         try:
-            response = httpx.get(url, timeout=timeout, follow_redirects=False)
+            response = safe_request("GET", url, timeout=timeout, follow_redirects=False)
+        except BlockedHostError:
+            return ToolResult(
+                output=f"Refused to fetch {url}: host is not a public address",
+                is_error=True,
+            )
         except httpx.HTTPError as exc:
             return ToolResult(output=f"Error fetching {url}: {exc}", is_error=True)
 
@@ -81,7 +86,4 @@ class WebFetchTool(Tool):
         content_type = response.headers.get("content-type", "")
         text = _html_to_text(response.text) if "html" in content_type else response.text
 
-        if len(text) > _MAX_CHARS:
-            text = text[:_MAX_CHARS] + "\n… (truncated)"
-
-        return ToolResult(output=text)
+        return ToolResult(output=truncate(text))

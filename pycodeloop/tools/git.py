@@ -5,6 +5,7 @@ from __future__ import annotations
 import subprocess
 
 from pycodeloop.abc.tool import Tool, ToolResult
+from pycodeloop.tools._limits import truncate
 
 
 def _run_git(*args: str, timeout: int = 30) -> ToolResult:
@@ -23,7 +24,7 @@ def _run_git(*args: str, timeout: int = 30) -> ToolResult:
     output = proc.stdout + proc.stderr
 
     return ToolResult(
-        output=output.strip() or "(no output)",
+        output=truncate(output.strip()) or "(no output)",
         is_error=proc.returncode != 0,
     )
 

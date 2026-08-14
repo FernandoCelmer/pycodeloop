@@ -19,6 +19,14 @@ _SKIP_DIRS = {
 }
 
 
+def _is_binary(path: Path) -> bool:
+    try:
+        with path.open("rb") as f:
+            return b"\0" in f.read(8192)
+    except OSError:
+        return True
+
+
 class GrepTool(Tool):
     name = "grep"
     description = "Search for a regex pattern across files under a path."
@@ -41,6 +49,8 @@ class GrepTool(Tool):
         matches: list[str] = []
         for file_path in Path(path).rglob("*"):
             if not file_path.is_file() or set(file_path.parts) & _SKIP_DIRS:
+                continue
+            if _is_binary(file_path):
                 continue
             try:
                 text = file_path.read_text(errors="ignore")

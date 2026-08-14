@@ -19,6 +19,14 @@ class TestEnvTool(unittest.TestCase):
 
         self.assertEqual(result.output, "MY_API_KEY=***")
 
+    def test_masks_a_credential_embedded_in_a_url_value(self):
+        with mock.patch.dict(
+            "os.environ", {"DATABASE_URL": "postgres://user:hunter2@db.internal/app"}
+        ):
+            result = EnvTool().run(name="DATABASE_URL")
+
+        self.assertEqual(result.output, "DATABASE_URL=***")
+
     def test_reports_missing_var(self):
         with mock.patch.dict("os.environ", {}, clear=True):
             result = EnvTool().run(name="NOPE")

@@ -60,6 +60,14 @@ class TestGitDiffTool(GitToolTestCase):
 
         self.assertIn("changed", result.output)
 
+    def test_caps_output_on_a_huge_diff(self):
+        (self.repo / "a.txt").write_text("x\n" * 50000)
+
+        result = GitDiffTool().run()
+
+        self.assertLessEqual(len(result.output), 20000 + len("\n… (truncated)"))
+        self.assertIn("(truncated)", result.output)
+
 
 class TestGitLogTool(GitToolTestCase):
     def test_shows_commit(self):

@@ -7,9 +7,9 @@ from urllib.parse import urlparse
 import httpx
 
 from pycodeloop.abc.tool import Tool, ToolResult
-from pycodeloop.tools._net import is_blocked_host
+from pycodeloop.tools._limits import truncate
+from pycodeloop.tools._net import BlockedHostError, is_blocked_host, safe_request
 
-_MAX_CHARS = 20000
 _METHODS = {"GET", "POST", "PUT", "PATCH", "DELETE"}
 
 
@@ -74,13 +74,18 @@ class HttpRequestTool(Tool):
             )
 
         try:
-            response = httpx.request(
+            response = safe_request(
                 method,
                 url,
                 headers=headers,
                 json=json_body,
                 timeout=timeout,
                 follow_redirects=False,
+            )
+        except BlockedHostError:
+            return ToolResult(
+                output=f"Refused to call {url}: host is not a public address",
+                is_error=True,
             )
         except httpx.HTTPError as exc:
             return ToolResult(output=f"Error calling {url}: {exc}", is_error=True)
@@ -93,11 +98,7 @@ class HttpRequestTool(Tool):
                 is_error=True,
             )
 
-        text = response.text
-
-        if len(text) > _MAX_CHARS:
-            text = text[:_MAX_CHARS] + "\n… (truncated)"
-
-        summary = f"{response.status_code} {response.reason_phrase}\n{text}"
+        summary = f"{response.status_code} {response.reason_phrase}\n{response.text}"
+        summary = truncate(summary)
 
         return ToolResult(output=summary, is_error=response.is_error)

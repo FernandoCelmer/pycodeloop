@@ -114,6 +114,15 @@ class TestGrepTool(ToolTestCase):
 
         self.assertIn("a.py:1", result.output)
 
+    def test_skips_binary_files(self):
+        (self.tmp_path / "data.bin").write_bytes(b"\x00\x01hello\x00")
+        (self.tmp_path / "a.py").write_text("hello\n")
+
+        result = GrepTool().run(pattern="hello", path=str(self.tmp_path))
+
+        self.assertIn("a.py:1", result.output)
+        self.assertNotIn("data.bin", result.output)
+
 
 if __name__ == "__main__":
     unittest.main()

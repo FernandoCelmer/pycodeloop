@@ -3,15 +3,19 @@
 from __future__ import annotations
 
 import os
+import re
 
 from pycodeloop.abc.tool import Tool, ToolResult
 
 _SENSITIVE_MARKERS = ("SECRET", "KEY", "TOKEN", "PASSWORD", "CREDENTIAL")
+_CREDENTIAL_IN_URL = re.compile(r"^\w+://[^/@\s]+:[^/@\s]+@")
 
 
 def _mask(name: str, value: str) -> str:
     upper = name.upper()
     if any(marker in upper for marker in _SENSITIVE_MARKERS):
+        return "***"
+    if _CREDENTIAL_IN_URL.match(value):
         return "***"
     return value
 
@@ -21,7 +25,8 @@ class EnvTool(Tool):
     description = (
         "Read environment variables. Pass `name` for one variable, or "
         "omit it to list every variable name (values containing SECRET, "
-        "KEY, TOKEN, PASSWORD, or CREDENTIAL are masked)."
+        "KEY, TOKEN, PASSWORD, or CREDENTIAL in the name, or a "
+        "scheme://user:pass@ credential in the value, are masked)."
     )
     parameters = {
         "type": "object",

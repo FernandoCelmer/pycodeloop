@@ -23,7 +23,10 @@ class TestWebFetchTool(unittest.TestCase):
 
         client = httpx.Client(transport=httpx.MockTransport(handler))
         with (
-            mock.patch("httpx.get", side_effect=lambda url, **_kw: client.get(url)),
+            mock.patch(
+                "httpx.request",
+                side_effect=lambda method, url, **_kw: client.request(method, url),
+            ),
             mock.patch(
                 "pycodeloop.tools._net.socket.getaddrinfo",
                 side_effect=_fake_public_dns,
@@ -45,7 +48,10 @@ class TestWebFetchTool(unittest.TestCase):
 
         client = httpx.Client(transport=httpx.MockTransport(handler))
         with (
-            mock.patch("httpx.get", side_effect=lambda url, **_kw: client.get(url)),
+            mock.patch(
+                "httpx.request",
+                side_effect=lambda method, url, **_kw: client.request(method, url),
+            ),
             mock.patch(
                 "pycodeloop.tools._net.socket.getaddrinfo",
                 side_effect=_fake_public_dns,
@@ -63,7 +69,10 @@ class TestWebFetchTool(unittest.TestCase):
 
         client = httpx.Client(transport=httpx.MockTransport(handler))
         with (
-            mock.patch("httpx.get", side_effect=lambda url, **_kw: client.get(url)),
+            mock.patch(
+                "httpx.request",
+                side_effect=lambda method, url, **_kw: client.request(method, url),
+            ),
             mock.patch(
                 "pycodeloop.tools._net.socket.getaddrinfo",
                 side_effect=_fake_public_dns,
@@ -91,7 +100,10 @@ class TestWebFetchTool(unittest.TestCase):
 
         client = httpx.Client(transport=httpx.MockTransport(handler))
         with (
-            mock.patch("httpx.get", side_effect=lambda url, **_kw: client.get(url)),
+            mock.patch(
+                "httpx.request",
+                side_effect=lambda method, url, **_kw: client.request(method, url),
+            ),
             mock.patch(
                 "pycodeloop.tools._net.socket.getaddrinfo",
                 side_effect=_fake_public_dns,
