@@ -95,6 +95,11 @@
           "default": false,
           "description": "Expose a delegate tool that spawns read-only sub-agents for independent subtasks — several delegate calls in one turn run in parallel. Off by default."
         },
+        "pycodeloop.memory": {
+          "type": "boolean",
+          "default": true,
+          "description": "Load .pycodeloop/memory.md into the system prompt and expose a remember tool so standing corrections/preferences persist across sessions instead of being repeated every time. On by default."
+        },
         "pycodeloop.autoApprove": {
           "type": "boolean",
           "default": false,

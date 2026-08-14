@@ -11,6 +11,7 @@ function baseOptions(overrides: Partial<ServeArgsOptions> = {}): ServeArgsOption
     url: "",
     skills: true,
     delegation: false,
+    memory: true,
     autoApprove: false,
     mcpServers: [],
     resolveSetting: identity,
@@ -47,6 +48,11 @@ test("adds --delegate only when delegation is enabled", () => {
   assert.deepEqual(buildServeArgs(baseOptions({ delegation: false })), ["serve"]);
 });
 
+test("adds --no-memory only when memory is disabled", () => {
+  assert.deepEqual(buildServeArgs(baseOptions({ memory: false })), ["serve", "--no-memory"]);
+  assert.deepEqual(buildServeArgs(baseOptions({ memory: true })), ["serve"]);
+});
+
 test("adds --yes only when autoApprove is enabled", () => {
   assert.deepEqual(buildServeArgs(baseOptions({ autoApprove: true })), ["serve", "--yes"]);
 });
@@ -64,6 +70,7 @@ test("combines every flag together in a stable order", () => {
       url: "http://x",
       skills: false,
       delegation: true,
+      memory: false,
       autoApprove: true,
       mcpServers: ["srv"],
     })
@@ -78,6 +85,7 @@ test("combines every flag together in a stable order", () => {
     "http://x",
     "--no-skills",
     "--delegate",
+    "--no-memory",
     "--yes",
     "--mcp",
     "srv",

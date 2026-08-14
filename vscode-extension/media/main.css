@@ -421,6 +421,29 @@ body {
   margin-top: 0;
 }
 
+.diff-block {
+  margin: 4px 0;
+  font-family: var(--vscode-editor-font-family);
+  font-size: 0.85em;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.diff-add {
+  background: color-mix(in srgb, var(--vscode-charts-green, #2ea043) 15%, transparent);
+  color: var(--vscode-charts-green, #2ea043);
+}
+
+.diff-remove {
+  background: color-mix(in srgb, var(--vscode-errorForeground) 15%, transparent);
+  color: var(--vscode-errorForeground);
+}
+
+.diff-hunk {
+  color: var(--vscode-descriptionForeground);
+  opacity: 0.7;
+}
+
 /* --- confirm / setup cards / status cards --- */
 
 .confirm-box {

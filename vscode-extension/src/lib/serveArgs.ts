@@ -4,6 +4,7 @@ export interface ServeArgsOptions {
   url: string;
   skills: boolean;
   delegation: boolean;
+  memory: boolean;
   autoApprove: boolean;
   mcpServers: string[];
   /** Resolves ${workspaceFolder} etc. in a setting value — injected so this
@@ -31,6 +32,9 @@ export function buildServeArgs(options: ServeArgsOptions): string[] {
   }
   if (options.delegation) {
     args.push("--delegate");
+  }
+  if (!options.memory) {
+    args.push("--no-memory");
   }
   if (options.autoApprove) {
     args.push("--yes");

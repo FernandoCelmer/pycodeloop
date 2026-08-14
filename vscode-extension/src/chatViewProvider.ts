@@ -13,6 +13,7 @@ import { toSessionPickItems } from "./lib/sessionList";
 import { PROVIDER_CATALOG, findProviderDef } from "./lib/providerCatalog";
 import { ADD_MCP_SERVER_LABEL, addServer, parseServerLabel, removeServer, toQuickPickLabels } from "./lib/mcpServerList";
 import { renderChatHtml } from "./webview/html";
+import { WebviewMessage } from "./webview/messages";
 
 const FORWARDED_NOTIFICATIONS = [
   "ready",
@@ -81,6 +82,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       autoApprove: settings.autoApprove,
       skills: settings.skills,
       delegation: settings.delegation,
+      memory: settings.memory,
       mcpServers: settings.mcpServers,
       hasApiKey: Boolean(apiKey),
       apiKeyEnv: auth.apiKeyEnv,
@@ -436,6 +438,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.reload();
   }
 
+  async toggleMemory(next: boolean): Promise<void> {
+    await updateSetting("memory", next);
+    await this.postSettings();
+    this.reload();
+  }
+
   async manageMcpServers(): Promise<void> {
     const servers = readSettings().mcpServers;
 
@@ -476,7 +484,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.reload();
   }
 
-  private onWebviewMessage(message: any): void {
+  private onWebviewMessage(message: WebviewMessage): void {
     switch (message.type) {
       case "sendPrompt":
         void this.ensureClient().then(() => {
@@ -550,6 +558,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       case "toggleDelegation":
         this.toggleDelegation(!!message.next);
         break;
+      case "toggleMemory":
+        this.toggleMemory(!!message.next);
+        break;
       case "manageMcpServers":
         this.manageMcpServers();
         break;
@@ -578,6 +589,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       url: settings.url,
       skills: settings.skills,
       delegation: settings.delegation,
+      memory: settings.memory,
       autoApprove: settings.autoApprove,
       mcpServers: settings.mcpServers,
       resolveSetting: (value) => this.resolveSetting(value),
@@ -640,7 +652,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.client = undefined;
   }
 
-  private post(message: any): void {
+  private post(message: { type: string } & Record<string, unknown>): void {
     this.webviewView?.webview.postMessage(message);
   }
 

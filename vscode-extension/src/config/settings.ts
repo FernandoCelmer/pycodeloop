@@ -9,6 +9,7 @@ export interface PycodeloopSettings {
   url: string;
   skills: boolean;
   delegation: boolean;
+  memory: boolean;
   autoApprove: boolean;
   mcpServers: string[];
 }
@@ -25,6 +26,7 @@ export function readSettings(): PycodeloopSettings {
     url: config.get<string>("url", ""),
     skills: config.get<boolean>("skills", true),
     delegation: config.get<boolean>("delegation", false),
+    memory: config.get<boolean>("memory", true),
     autoApprove: config.get<boolean>("autoApprove", false),
     mcpServers: config.get<string[]>("mcpServers", []),
   };

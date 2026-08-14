@@ -45,6 +45,9 @@ export function renderChatHtml(options: ChatHtmlOptions): string {
           <button id="menu-delegation" class="menu-item">
             <span id="menu-delegation-check" class="check-box"></span> Sub-agent delegation
           </button>
+          <button id="menu-memory" class="menu-item">
+            <span id="menu-memory-check" class="check-box"></span> Project memory
+          </button>
           <button id="menu-mcp" class="menu-item">MCP Servers</button>
           <button id="menu-reload" class="menu-item">Reload Connection</button>
           <button id="menu-settings" class="menu-item">Open Settings</button>

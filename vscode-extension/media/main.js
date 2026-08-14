@@ -35,6 +35,8 @@
   const menuSkillsCheck = document.getElementById("menu-skills-check");
   const menuDelegation = document.getElementById("menu-delegation");
   const menuDelegationCheck = document.getElementById("menu-delegation-check");
+  const menuMemory = document.getElementById("menu-memory");
+  const menuMemoryCheck = document.getElementById("menu-memory-check");
   const menuMcp = document.getElementById("menu-mcp");
   const menuReload = document.getElementById("menu-reload");
   const menuSettings = document.getElementById("menu-settings");
@@ -57,6 +59,7 @@
   let autoApprove = false;
   let skillsEnabled = true;
   let delegationEnabled = false;
+  let memoryEnabled = true;
   let hasApiKey = false;
   let apiKeyEnv = "";
   let authHeader = "";
@@ -444,6 +447,7 @@
 
     card.__status = status;
     card.__body = body;
+    card.__diffPreview = null;
 
     if (!pendingToolCards.has(name)) {
       pendingToolCards.set(name, []);
@@ -463,13 +467,23 @@
     card.__status.textContent = isError ? "✗" : "✓";
     card.__status.className = "tool-status " + (isError ? "error" : "ok");
 
-    const resultLabel = document.createElement("div");
-    resultLabel.className = "section-label";
-    resultLabel.textContent = isError ? "Error" : "Result";
-    const resultPre = document.createElement("pre");
-    resultPre.textContent = result.length > 4000 ? result.slice(0, 4000) + "…" : result;
-    card.__body.appendChild(resultLabel);
-    card.__body.appendChild(resultPre);
+    if (card.__diffPreview && !isError) {
+      const { el, adds, removes } = renderDiffBlock(card.__diffPreview);
+      const diffLabel = document.createElement("div");
+      diffLabel.className = "section-label";
+      diffLabel.textContent = diffSummary(adds, removes);
+      card.__body.appendChild(diffLabel);
+      card.__body.appendChild(el);
+      card.classList.add("expanded");
+    } else {
+      const resultLabel = document.createElement("div");
+      resultLabel.className = "section-label";
+      resultLabel.textContent = isError ? "Error" : "Result";
+      const resultPre = document.createElement("pre");
+      resultPre.textContent = result.length > 4000 ? result.slice(0, 4000) + "…" : result;
+      card.__body.appendChild(resultLabel);
+      card.__body.appendChild(resultPre);
+    }
 
     const stillPending = [...pendingToolCards.values()].some((q) => q.length > 0);
     if (!stillPending && isBusy) {
@@ -633,7 +647,57 @@
     return box;
   }
 
+  const DIFF_TOOLS = new Set(["write_file", "edit_file", "delete_file"]);
+
+  function renderDiffBlock(diffText) {
+    const pre = document.createElement("pre");
+    pre.className = "diff-block";
+    let adds = 0;
+    let removes = 0;
+
+    for (const line of diffText.split("\n")) {
+      if (line.startsWith("+++") || line.startsWith("---")) {
+        continue;
+      }
+      const row = document.createElement("div");
+      if (line.startsWith("@@")) {
+        row.className = "diff-hunk";
+      } else if (line.startsWith("+")) {
+        row.className = "diff-add";
+        adds++;
+      } else if (line.startsWith("-")) {
+        row.className = "diff-remove";
+        removes++;
+      }
+      row.textContent = line;
+      pre.appendChild(row);
+    }
+
+    return { el: pre, adds, removes };
+  }
+
+  function diffSummary(adds, removes) {
+    if (adds && removes) {
+      return "+" + adds + " -" + removes;
+    }
+    if (adds) {
+      return "Added " + adds + " line" + (adds === 1 ? "" : "s");
+    }
+    if (removes) {
+      return "Removed " + removes + " line" + (removes === 1 ? "" : "s");
+    }
+    return "No changes";
+  }
+
   function renderConfirmRequest(params) {
+    if (DIFF_TOOLS.has(params.name)) {
+      const queue = pendingToolCards.get(params.name);
+      const card = queue && queue[queue.length - 1];
+      if (card) {
+        card.__diffPreview = params.preview;
+      }
+    }
+
     const box = document.createElement("div");
     box.className = "confirm-box";
 
@@ -884,6 +948,11 @@
       description: "Toggle sub-agent delegation (parallel, read-only sub-agents)",
       run: () => vscode.postMessage({ type: "toggleDelegation", next: !delegationEnabled }),
     },
+    {
+      name: "memory",
+      description: "Toggle project memory (.pycodeloop/memory.md)",
+      run: () => vscode.postMessage({ type: "toggleMemory", next: !memoryEnabled }),
+    },
     { name: "mcp", description: "Add or remove MCP servers", run: () => vscode.postMessage({ type: "manageMcpServers" }) },
     { name: "reload", description: "Reload the pycodeloop connection", run: () => vscode.postMessage({ type: "reload" }) },
     { name: "settings", description: "Open CodeLoop settings", run: () => vscode.postMessage({ type: "openSettings" }) },
@@ -1026,52 +1095,31 @@
       closeMenu();
     }
   });
-  menuSessions.addEventListener("click", () => {
-    closeMenu();
-    vscode.postMessage({ type: "selectSession" });
-  });
-  menuProvider.addEventListener("click", () => {
-    closeMenu();
-    vscode.postMessage({ type: "showProviders" });
-  });
-  menuApiKey.addEventListener("click", () => {
-    closeMenu();
-    renderApiKeyCard();
-  });
-  menuModel.addEventListener("click", () => {
-    closeMenu();
-    vscode.postMessage({ type: "selectModel", current: currentModel });
-  });
-  menuAutoApprove.addEventListener("click", () => {
-    closeMenu();
-    vscode.postMessage({ type: "toggleAutoApprove", next: !autoApprove });
-  });
-  menuSkills.addEventListener("click", () => {
-    closeMenu();
-    vscode.postMessage({ type: "toggleSkills", next: !skillsEnabled });
-  });
-  menuDelegation.addEventListener("click", () => {
-    closeMenu();
-    vscode.postMessage({ type: "toggleDelegation", next: !delegationEnabled });
-  });
-  menuMcp.addEventListener("click", () => {
-    closeMenu();
-    vscode.postMessage({ type: "manageMcpServers" });
-  });
-  menuReload.addEventListener("click", () => {
-    closeMenu();
-    vscode.postMessage({ type: "reload" });
-  });
-  menuSettings.addEventListener("click", () => {
-    closeMenu();
-    vscode.postMessage({ type: "openSettings" });
-  });
+  function onMenuClick(button, action) {
+    button.addEventListener("click", () => {
+      closeMenu();
+      action();
+    });
+  }
+
+  onMenuClick(menuSessions, () => vscode.postMessage({ type: "selectSession" }));
+  onMenuClick(menuProvider, () => vscode.postMessage({ type: "showProviders" }));
+  onMenuClick(menuApiKey, () => renderApiKeyCard());
+  onMenuClick(menuModel, () => vscode.postMessage({ type: "selectModel", current: currentModel }));
+  onMenuClick(menuAutoApprove, () => vscode.postMessage({ type: "toggleAutoApprove", next: !autoApprove }));
+  onMenuClick(menuSkills, () => vscode.postMessage({ type: "toggleSkills", next: !skillsEnabled }));
+  onMenuClick(menuDelegation, () => vscode.postMessage({ type: "toggleDelegation", next: !delegationEnabled }));
+  onMenuClick(menuMemory, () => vscode.postMessage({ type: "toggleMemory", next: !memoryEnabled }));
+  onMenuClick(menuMcp, () => vscode.postMessage({ type: "manageMcpServers" }));
+  onMenuClick(menuReload, () => vscode.postMessage({ type: "reload" }));
+  onMenuClick(menuSettings, () => vscode.postMessage({ type: "openSettings" }));
 
   function applySettings(message) {
     currentModel = message.model || "";
     autoApprove = !!message.autoApprove;
     skillsEnabled = message.skills !== false;
     delegationEnabled = !!message.delegation;
+    memoryEnabled = message.memory !== false;
     hasApiKey = !!message.hasApiKey;
     apiKeyEnv = message.apiKeyEnv || "";
     authHeader = message.authHeader || "";
@@ -1080,6 +1128,7 @@
     menuAutoApproveCheck.classList.toggle("checked", autoApprove);
     menuSkillsCheck.classList.toggle("checked", skillsEnabled);
     menuDelegationCheck.classList.toggle("checked", delegationEnabled);
+    menuMemoryCheck.classList.toggle("checked", memoryEnabled);
     menuApiKeyLabel.textContent = hasApiKey
       ? "API Key (saved)"
       : apiKeyEnv
