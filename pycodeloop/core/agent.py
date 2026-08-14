@@ -61,6 +61,7 @@ class Agent:
     def __init__(
         self,
         provider: Provider,
+        fallback_providers: list[Provider] | None = None,
         tools: list[Tool] | None = None,
         system_prompt: str = DEFAULT_SYSTEM_PROMPT,
         max_turns: int = 25,
@@ -80,8 +81,15 @@ class Agent:
         on_retry: Callable[[int, float, Exception], None] | None = None,
         on_turn_end: Callable[[], None] | None = None,
         on_trace_event: Callable[[dict], None] | None = None,
+        on_provider_fallback: (
+            Callable[[Provider, Provider, Exception], None] | None
+        ) = None,
     ) -> None:
         self.provider = provider
+        self.fallback_providers = fallback_providers or []
+        self._provider_chain = [provider, *self.fallback_providers]
+        self._provider_index = 0
+        self.on_provider_fallback = on_provider_fallback
         self.tools = {tool.name: tool for tool in (tools or DEFAULT_TOOLS)}
         self.system_prompt = system_prompt
         self.max_turns = max_turns
@@ -110,24 +118,52 @@ class Agent:
 
     def _complete(self, **kwargs) -> ProviderResponse:
         """`provider.complete()` with retry + exponential backoff on
-        transient failures (rate limits, 5xx, network blips) — a real
-        error (bad request, auth) still raises immediately."""
-        delay = _RETRY_BASE_DELAY
-        for attempt in range(_MAX_RETRIES + 1):
-            try:
-                return self.provider.complete(**kwargs)
-            except Exception as exc:
-                if attempt >= _MAX_RETRIES or not _is_retryable(exc):
-                    self._trace("provider_error", error=str(exc))
-                    raise
-                self._trace(
-                    "retry", attempt=attempt + 1, delay=delay, error=str(exc)
-                )
-                if self.on_retry:
-                    self.on_retry(attempt + 1, delay, exc)
-                time.sleep(delay)
-                delay *= 2
-        raise AssertionError("unreachable")
+        transient failures (rate limits, 5xx, network blips) within a
+        provider. If `fallback_providers` were given and the active
+        provider still fails after its own retry budget (retryable or
+        not), advances to the next provider in `_provider_chain` — a
+        fixed list captured once at construction, walked by index so a
+        provider already tried this run is never retried, and one
+        earlier in the chain that recovers isn't skipped forever. A
+        real error on the last provider in the chain still raises."""
+        starting_index = self._provider_index
+        last_exc: Exception | None = None
+
+        for index in range(starting_index, len(self._provider_chain)):
+            provider = self._provider_chain[index]
+            delay = _RETRY_BASE_DELAY
+            for attempt in range(_MAX_RETRIES + 1):
+                try:
+                    response = provider.complete(**kwargs)
+                    if index != starting_index and self.on_provider_fallback:
+                        self.on_provider_fallback(
+                            self.provider, provider, last_exc
+                        )
+                    self._provider_index = index
+                    self.provider = provider
+                    return response
+                except Exception as exc:
+                    last_exc = exc
+                    if attempt >= _MAX_RETRIES or not _is_retryable(exc):
+                        self._trace("provider_error", error=str(exc))
+                        break
+                    self._trace(
+                        "retry",
+                        attempt=attempt + 1,
+                        delay=delay,
+                        error=str(exc),
+                    )
+                    if self.on_retry:
+                        self.on_retry(attempt + 1, delay, exc)
+                    time.sleep(delay)
+                    delay *= 2
+
+        if last_exc is None:
+            raise AssertionError(
+                "_complete exited the provider loop without an exception "
+                "— this is a bug"
+            )
+        raise last_exc
 
     def _notify_message(self) -> None:
         """Fired after every message is appended to the session — lets a
@@ -325,13 +361,12 @@ class Agent:
         if self.max_history_turns is not None:
             session.trim(self.max_history_turns)
 
-        context_window = context_window_for(self.provider.model)
-
         for _ in range(self.max_turns):
             if cancel_event and cancel_event.is_set():
                 self._trace("run_end", reason="cancelled")
                 return "Cancelled by user."
 
+            context_window = context_window_for(self.provider.model)
             if self.auto_compact and self._last_context_tokens >= (
                 context_window * self.compact_threshold
             ):

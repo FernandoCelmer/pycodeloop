@@ -230,6 +230,194 @@ class TestLoadProviderFromJson(GenericProviderTestCase):
             {"extra_content": {"google": {"thought_signature": "xyz789"}}},
         )
 
+    def test_streaming_cuts_a_looping_response_short(self):
+        path = self._write_config(
+            {"url": "http://fake/v1/chat/completions", "model": "my-model"}
+        )
+        provider = GenericProvider.from_json(path)
+
+        block = "The quick brown fox jumps over. "
+        chunks = [
+            {"choices": [{"delta": {"content": ch}}]} for ch in block * 6
+        ]
+        chunks.append({"choices": [{"delta": {}, "finish_reason": "stop"}]})
+        sse_body = (
+            "".join(f"data: {json.dumps(c)}\n" for c in chunks)
+            + "data: [DONE]\n"
+        ).encode()
+
+        deltas = []
+        with mock.patch(
+            "pycodeloop.providers.generic.urllib.request.urlopen",
+            return_value=_FakeResponse(sse_body),
+        ):
+            result = provider.complete("sys", [], [], on_delta=deltas.append)
+
+        self.assertEqual(result.stop_reason, "repetition")
+        self.assertLess(len(result.text), len(block * 6))
+        self.assertEqual("".join(deltas), result.text)
+
+    def test_streaming_does_not_flag_normal_prose_as_repetition(self):
+        path = self._write_config(
+            {"url": "http://fake/v1/chat/completions", "model": "my-model"}
+        )
+        provider = GenericProvider.from_json(path)
+
+        prose = (
+            "This is an ordinary, non-repeating explanation of the change "
+            "that goes on for a while without ever looping back on itself, "
+            "so it should stream through untouched by the repetition guard."
+        )
+        chunks = [{"choices": [{"delta": {"content": prose}}]}]
+        chunks.append({"choices": [{"delta": {}, "finish_reason": "stop"}]})
+        sse_body = (
+            "".join(f"data: {json.dumps(c)}\n" for c in chunks)
+            + "data: [DONE]\n"
+        ).encode()
+
+        with mock.patch(
+            "pycodeloop.providers.generic.urllib.request.urlopen",
+            return_value=_FakeResponse(sse_body),
+        ):
+            result = provider.complete("sys", [], [], on_delta=lambda _: None)
+
+        self.assertEqual(result.text, prose)
+        self.assertEqual(result.stop_reason, "stop")
+
+    def test_repetition_thresholds_are_configurable_per_provider(self):
+        path = self._write_config(
+            {"url": "http://fake/v1/chat/completions", "model": "my-model"}
+        )
+        provider = GenericProvider.from_json(path)
+        provider.repetition_min_period = 1
+        provider.repetition_max_period = 4
+        provider.repetition_repeats = 3
+
+        short_loop = "ab" * 6
+        chunks = [
+            {"choices": [{"delta": {"content": ch}}]} for ch in short_loop
+        ]
+        chunks.append({"choices": [{"delta": {}, "finish_reason": "stop"}]})
+        sse_body = (
+            "".join(f"data: {json.dumps(c)}\n" for c in chunks)
+            + "data: [DONE]\n"
+        ).encode()
+
+        with mock.patch(
+            "pycodeloop.providers.generic.urllib.request.urlopen",
+            return_value=_FakeResponse(sse_body),
+        ):
+            result = provider.complete("sys", [], [], on_delta=lambda _: None)
+
+        self.assertEqual(result.stop_reason, "repetition")
+        self.assertLess(len(result.text), len(short_loop))
+
+    def test_streaming_falls_back_to_fenced_tool_call_when_narrated_as_prose(
+        self,
+    ):
+        path = self._write_config(
+            {"url": "http://fake/v1/chat/completions", "model": "my-model"}
+        )
+        provider = GenericProvider.from_json(path)
+
+        narrated = (
+            'Sure, I will read that file:\n```json\n{"tool": "read_file", '
+            '"arguments": {"path": "a.py"}}\n```\n'
+        )
+        chunks = [
+            {"choices": [{"delta": {"content": narrated}}]},
+            {"choices": [{"delta": {}, "finish_reason": "stop"}]},
+        ]
+        sse_body = (
+            "".join(f"data: {json.dumps(c)}\n" for c in chunks)
+            + "data: [DONE]\n"
+        ).encode()
+
+        deltas = []
+        with mock.patch(
+            "pycodeloop.providers.generic.urllib.request.urlopen",
+            return_value=_FakeResponse(sse_body),
+        ):
+            result = provider.complete(
+                "sys",
+                [],
+                [{"name": "read_file", "description": "", "parameters": {}}],
+                on_delta=deltas.append,
+            )
+
+        self.assertEqual(result.text, narrated)
+        self.assertEqual("".join(deltas), result.text)
+        self.assertEqual(len(result.tool_calls), 1)
+        self.assertEqual(result.tool_calls[0].name, "read_file")
+        self.assertEqual(result.tool_calls[0].arguments, {"path": "a.py"})
+
+    def test_streaming_fenced_tool_calls_get_unique_ids_across_turns(self):
+        path = self._write_config(
+            {"url": "http://fake/v1/chat/completions", "model": "my-model"}
+        )
+        provider = GenericProvider.from_json(path)
+        tools = [{"name": "read_file", "description": "", "parameters": {}}]
+
+        def _sse(narrated: str) -> bytes:
+            chunks = [
+                {"choices": [{"delta": {"content": narrated}}]},
+                {"choices": [{"delta": {}, "finish_reason": "stop"}]},
+            ]
+            return (
+                "".join(f"data: {json.dumps(c)}\n" for c in chunks)
+                + "data: [DONE]\n"
+            ).encode()
+
+        narrated = '```json\n{"tool": "read_file", "arguments": {"path": "a.py"}}\n```'
+
+        with mock.patch(
+            "pycodeloop.providers.generic.urllib.request.urlopen",
+            side_effect=[
+                _FakeResponse(_sse(narrated)),
+                _FakeResponse(_sse(narrated)),
+            ],
+        ):
+            first = provider.complete(
+                "sys", [], tools, on_delta=lambda _: None
+            )
+            second = provider.complete(
+                "sys", [], tools, on_delta=lambda _: None
+            )
+
+        self.assertNotEqual(first.tool_calls[0].id, second.tool_calls[0].id)
+
+    def test_streaming_ignores_fenced_json_naming_an_unknown_tool(self):
+        path = self._write_config(
+            {"url": "http://fake/v1/chat/completions", "model": "my-model"}
+        )
+        provider = GenericProvider.from_json(path)
+
+        narrated = (
+            '```json\n{"tool": "delete_universe", "arguments": {}}\n```\n'
+        )
+        chunks = [
+            {"choices": [{"delta": {"content": narrated}}]},
+            {"choices": [{"delta": {}, "finish_reason": "stop"}]},
+        ]
+        sse_body = (
+            "".join(f"data: {json.dumps(c)}\n" for c in chunks)
+            + "data: [DONE]\n"
+        ).encode()
+
+        with mock.patch(
+            "pycodeloop.providers.generic.urllib.request.urlopen",
+            return_value=_FakeResponse(sse_body),
+        ):
+            result = provider.complete(
+                "sys",
+                [],
+                [{"name": "read_file", "description": "", "parameters": {}}],
+                on_delta=lambda _: None,
+            )
+
+        self.assertEqual(result.text, narrated)
+        self.assertEqual(result.tool_calls, [])
+
     def test_custom_response_paths(self):
         path = self._write_config(
             {

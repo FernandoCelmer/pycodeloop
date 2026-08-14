@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import urllib.error
 import urllib.request
+import uuid
 from collections.abc import Callable
 from pathlib import Path
 
@@ -25,6 +27,78 @@ from pycodeloop.providers._shapes import (
 )
 
 ResponseParser = Callable[[dict], ProviderResponse]
+
+_REPETITION_MIN_PERIOD = 8
+_REPETITION_MAX_PERIOD = 60
+_REPETITION_REPEATS = 3
+
+
+def _is_repeating(
+    text: str,
+    min_period: int = _REPETITION_MIN_PERIOD,
+    max_period: int = _REPETITION_MAX_PERIOD,
+    repeats: int = _REPETITION_REPEATS,
+) -> bool:
+    """True once the tail of `text` is some `period`-char block (for any
+    period between `min_period` and `max_period`) repeated `repeats`
+    times in a row — a stuck local model retyping the same block toward
+    the token cap. Checks every period in range rather than assuming one
+    fixed width, since the looping unit (a word, a line, a JSON
+    fragment) varies in length. Widen `min_period`/lower `repeats` if a
+    model legitimately emits short repeated tokens (JSON arrays,
+    markdown/CSV rows with an identical short column)."""
+    tail = text[-(max_period * repeats) :]
+    for period in range(min_period, max_period + 1):
+        span = period * repeats
+        if len(tail) < span:
+            break
+        window = tail[-span:]
+        block = window[:period]
+        if block.strip() and window == block * repeats:
+            return True
+    return False
+
+
+_FENCE = re.compile(r"```(?:\w*\n)?([\s\S]*?)```")
+
+
+def _parse_fenced_tool_call(
+    text: str, known_tools: set[str]
+) -> ToolCall | None:
+    """Some OpenAI-compatible endpoints (mainly local models) narrate a
+    tool call as a fenced JSON block instead of a proper `tool_calls`
+    delta. Recognizes `{"tool"|"name": "<known>", "arguments": {...}}`
+    and the single-key `{"<known>": {...}}` shape; returns None if no
+    fenced block matches a real tool by name, so ordinary prose
+    (including unrelated JSON) is left alone."""
+    for match in _FENCE.finditer(text):
+        try:
+            data = json.loads(match.group(1).strip())
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(data, dict):
+            continue
+
+        name = data.get("tool") or data.get("name")
+        if isinstance(name, str) and name in known_tools:
+            arguments = data.get("arguments") or data.get("args") or {}
+            if isinstance(arguments, dict):
+                return ToolCall(
+                    id=_fallback_call_id(), name=name, arguments=arguments
+                )
+
+        if len(data) == 1:
+            (only_key, value) = next(iter(data.items()))
+            if only_key in known_tools and isinstance(value, dict):
+                return ToolCall(
+                    id=_fallback_call_id(), name=only_key, arguments=value
+                )
+
+    return None
+
+
+def _fallback_call_id() -> str:
+    return f"fallback-{uuid.uuid4().hex[:8]}"
 
 
 class GenericProvider(Provider):
@@ -87,6 +161,9 @@ class GenericProvider(Provider):
         request_builder: RequestBuilder | None = None,
         response_parser: ResponseParser | None = None,
         timeout: float = 60.0,
+        repetition_min_period: int = _REPETITION_MIN_PERIOD,
+        repetition_max_period: int = _REPETITION_MAX_PERIOD,
+        repetition_repeats: int = _REPETITION_REPEATS,
         **kwargs,
     ) -> None:
         super().__init__(model=model, api_key=api_key, **kwargs)
@@ -97,6 +174,9 @@ class GenericProvider(Provider):
         self.request_builder = request_builder or self._default_request
         self.response_parser = response_parser or default_openai_response
         self.timeout = timeout
+        self.repetition_min_period = repetition_min_period
+        self.repetition_max_period = repetition_max_period
+        self.repetition_repeats = repetition_repeats
         self._uses_default_parser = response_parser is None
         self._config_path: Path | None = None
 
@@ -207,9 +287,10 @@ class GenericProvider(Provider):
         on_delta: Callable[[str], None] | None = None,
     ) -> ProviderResponse:
         body = self.request_builder(system_prompt, messages, tools, self.model)
+        known_tools = {tool["name"] for tool in tools}
 
         if on_delta is not None and self._uses_default_parser:
-            return self._stream(body, on_delta)
+            return self._stream(body, on_delta, known_tools)
 
         with self._open(body) as response:
             raw = response.read()
@@ -230,7 +311,10 @@ class GenericProvider(Provider):
         return result
 
     def _stream(
-        self, body: dict, on_delta: Callable[[str], None]
+        self,
+        body: dict,
+        on_delta: Callable[[str], None],
+        known_tools: set[str],
     ) -> ProviderResponse:
         body = {**body, "stream": True}
         text = ""
@@ -263,7 +347,16 @@ class GenericProvider(Provider):
                 delta = choice.get("delta") or {}
 
                 if delta.get("content"):
-                    text += delta["content"]
+                    candidate = text + delta["content"]
+                    if _is_repeating(
+                        candidate,
+                        self.repetition_min_period,
+                        self.repetition_max_period,
+                        self.repetition_repeats,
+                    ):
+                        stop_reason = "repetition"
+                        break
+                    text = candidate
                     on_delta(delta["content"])
 
                 for tc in delta.get("tool_calls") or []:
@@ -304,6 +397,11 @@ class GenericProvider(Provider):
             )
             for acc in pending.values()
         ]
+
+        if not tool_calls and text:
+            fallback_call = _parse_fenced_tool_call(text, known_tools)
+            if fallback_call is not None:
+                tool_calls = [fallback_call]
 
         return ProviderResponse(
             text=text,
