@@ -8,6 +8,7 @@ class Tool(ABC):
     description: str
     parameters: dict            # JSON schema
     dangerous: bool = False
+    concurrent_safe: bool = False
 
     def schema(self) -> dict: ...
     def preview(self, **kwargs) -> str: ...
@@ -34,8 +35,14 @@ class Tool(ABC):
 | `git_commit` | Stage files and create a commit | Yes |
 | `env` | Read environment variables (sensitive values masked) | No |
 | `todo` | Scratchpad checklist for multi-step tasks | No |
+| `delegate` | Spawn a fresh sub-agent (same provider, read-only tools) for an independent subtask — `Config(delegation=True)` / `--delegate`, off by default | No |
+| `remember` | Save a standing correction/preference to `.pycodeloop/memory.md` — `Config(memory=True)` / `--memory`, on by default | No |
 
-`DEFAULT_TOOLS` (`pycodeloop.core.tools.DEFAULT_TOOLS`) is that list, ready to pass into `Config`.
+`DEFAULT_TOOLS` (`pycodeloop.core.tools.DEFAULT_TOOLS`) is that list (everything above except `delegate`/`remember`, which `Config` appends conditionally), ready to pass into `Config`. `READ_ONLY_TOOLS` (`pycodeloop.core.tools.READ_ONLY_TOOLS`) is the read-only subset — `read_file`/`list_dir`/`glob`/`grep`/`web_fetch`/`git_status`/`git_diff`/`git_log` — that `delegate` hands to each sub-agent.
+
+## Running the same tool multiple times in one turn
+
+By default, if a model calls the same tool name more than once in a single turn, `Agent` runs those calls sequentially — safe for tools with any shared mutable state. Set `concurrent_safe = True` on a `Tool` subclass to opt its repeated calls into running in parallel instead (calls to *different*-named tools already run concurrently regardless of this flag, as long as none of them is `dangerous`). `delegate` sets this, which is what lets several sub-agents fan out and run at the same time.
 
 ## Dangerous tools and preview
 

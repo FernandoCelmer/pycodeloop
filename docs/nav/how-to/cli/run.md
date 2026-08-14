@@ -17,6 +17,8 @@ pycodeloop run "add a docstring to pycodeloop/core/agent.py"
 | `--mcp` | MCP server as `"command arg1 arg2"`; repeatable |
 | `--skills` / `--no-skills` | Discover Claude/Cursor/AGENTS.md skills and expose a `read_skill` tool. On by default — see [Skills](../skills.md) |
 | `--skills-refresh` | Bypass the skills cache and rescan |
+| `--delegate` / `--no-delegate` | Expose a `delegate` tool that spawns read-only sub-agents for independent subtasks, run in parallel. Off by default |
+| `--memory` / `--no-memory` | Load/save `.pycodeloop/memory.md` into the system prompt via a `remember` tool. On by default |
 | `--yes` / `-y` | Skip confirmation prompts for dangerous tools |
 
 There's no bare `anthropic`/`openai`/`ollama` provider name — every vendor is a `GenericProvider` pointed at a JSON config (see [`templates/`](https://github.com/dotflow-io/pycodeloop/tree/master/templates)) or, for an ad-hoc OpenAI-compatible endpoint, `--provider generic --url ...`.

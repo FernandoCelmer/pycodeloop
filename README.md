@@ -44,6 +44,7 @@ The key features are:
 * **Skills-aware**: auto-discovers `SKILL.md`/`CLAUDE.md`, `.cursorrules`, and `AGENTS.md` files already on disk and hands them to the agent.
 * **MCP-ready**: connect any Model Context Protocol server over stdio with one flag; its tools show up alongside the built-in ones.
 * **Sub-agent delegation** (`--delegate`, off by default): the agent can spawn read-only sub-agents for independent subtasks — several `delegate` calls in the same turn run in parallel, same as any other batch of safe tool calls.
+* **Persistent memory** (`--memory`, on by default): corrections and standing preferences get saved to `.pycodeloop/memory.md` and loaded into every future session — say it once.
 * **Sessions that persist**: conversations survive process restarts and can be resumed from a menu.
 * **Also a library**: embed the same agent loop in your own app — see the [docs](https://dotflow-io.github.io/pycodeloop/) for the `Config`, `Agent`, and `Tool` APIs.
 * **Editor integration**: a VS Code extension ([`vscode-extension/`](vscode-extension/)) puts the same agent in a sidebar panel.
@@ -121,6 +122,9 @@ pycodeloop run "..." --no-skills
 
 # Let the agent delegate independent subtasks to read-only sub-agents
 pycodeloop run "..." --delegate
+
+# Skip loading/saving .pycodeloop/memory.md for this run
+pycodeloop run "..." --no-memory
 ```
 
 The CLI streams the model's text as it arrives, reports token usage after every turn, and caches discovered skills in `~/.pycodeloop/config.json` until something changes (`--skills-refresh` bypasses that).
@@ -148,6 +152,7 @@ Ships with the actions an agent needs to actually change code:
 | `env` | Read environment variables (secrets masked) |
 | `todo` | Track a checklist across turns in a session |
 | `delegate` | Spawn a read-only sub-agent for an independent subtask (`--delegate`, off by default) |
+| `remember` | Save a standing correction/preference to `.pycodeloop/memory.md`, loaded into every future session's system prompt (`--memory`, on by default) |
 
 `write_file`, `edit_file`, `delete_file`, `bash`, `git_commit`, `http_request`, and every MCP tool are marked dangerous and gated behind confirmation. `delegate` calls run in parallel with each other in the same turn — the underlying sub-agents only get read-only tools, so there's nothing to confirm.
 

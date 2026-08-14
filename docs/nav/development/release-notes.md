@@ -1,10 +1,27 @@
 # Release Notes
 
-## Unreleased
+## v0.4.0
 
-- ⚙️ Sub-agent delegation (`--delegate`, off by default) — a `delegate` tool spawns a fresh sub-agent (same provider, read-only tools: `read_file`/`list_dir`/`glob`/`grep`/`git status`/`diff`/`log`/`web_fetch`, no write/edit/delete/bash) for an independent subtask. Several `delegate` calls in the same turn now run in parallel
-- 🪲 `Agent._can_parallelize` previously forced *any* repeated tool name in a batch to run sequentially, even for stateless tools — added `Tool.concurrent_safe` (opt-in, default `False`, preserves existing behavior for every built-in tool) so a tool like `delegate` can declare its repeated calls safe to run concurrently
-- ⚙️ VS Code extension (0.4.0): `pycodeloop.delegation` setting, ⚙ → Sub-agent delegation toggle, `/delegate` slash command
+**pycodeloop core**
+
+- ⚙️ Sub-agent delegation (`--delegate`, off by default) — a `delegate` tool spawns a fresh sub-agent (same provider, read-only tools: `read_file`/`list_dir`/`glob`/`grep`/`git status`/`diff`/`log`/`web_fetch`, no write/edit/delete/bash) for an independent subtask. Several `delegate` calls in the same turn run in parallel
+- 🪲 `Agent._can_parallelize` previously forced *any* repeated tool name in a batch to run sequentially, even for stateless tools — added `Tool.concurrent_safe` (opt-in, default `False`, preserves existing behavior for every built-in tool) so `delegate` can declare its repeated calls safe to run concurrently
+- ⚙️ Persistent project memory (`--memory`, on by default) — `.pycodeloop/memory.md` auto-loaded into the system prompt every run, plus a `remember` tool the agent calls when the user corrects its approach or states a standing rule
+- 🪲 `write_file`/`edit_file` reject content that looks like a pasted unified diff (`@@ ... @@` hunk header, or `---`/`+++` file headers) instead of writing the diff syntax itself into the file
+- ⚙️ Six more ready-made provider templates: AWS Bedrock (`aws.json`, via the bearer-token `bedrock-mantle` endpoint — no SigV4 needed), Kimi/Moonshot AI (`kimi.json`), DeepSeek (`deepseek.json`), Llama via Together AI (`llama.json` — Meta retired its own Llama API on 2026-07-06), Qwen/Alibaba DashScope (`qwen.json`), NVIDIA NIM (`nvidia.json`)
+- 🪲 Grok template was pointing at `grok-4`/`grok-4-fast`/`grok-code-fast-1` — all retired 2026-05-15. Moved to `grok-4.5`/`grok-4.3`/`grok-build-0.1`. OpenAI template's `gpt-5`/`gpt-5-mini`/`gpt-5-nano` moved to the current `gpt-5.6` family
+- 🪲 Gemini 3's thinking models attach `extra_content.google.thought_signature` to tool_calls and reject the next turn if it isn't echoed back unchanged — and thinking can't be disabled on Gemini 3 (minimum is `LOW`, which still requires the signature). Rather than staying pinned to Gemini 2.5 (itself now 404ing for new API keys), `GenericProvider` round-trips arbitrary vendor-specific tool_call fields via a new `ToolCall.extra`, so Gemini's default is `gemini-3.6-flash` again
+
+**VS Code extension (0.4.0)**
+
+- ⚙️ Provider gallery (⚙ → Select Provider…, or `/provider`): card picker for all 13 providers (Anthropic, OpenAI, Gemini, Grok, Groq, AWS Bedrock, Kimi, DeepSeek, Llama, Qwen, NVIDIA NIM, Ollama, LM Studio) with a connected/local/needs-key status per card, a per-provider model picker, and a custom-JSON/generic-URL fallback. API keys and the chosen model are remembered per provider, so switching back doesn't re-prompt
+- ⚙️ Dedicated Sessions page (Sessions toolbar button, replacing the native quickpick): cards show message count, working directory, last-updated time, and an Active badge, each with a Switch action
+- ⚙️ `pycodeloop.delegation` and `pycodeloop.memory` settings, gear-menu toggles, `/delegate` and `/memory` slash commands
+- ⚙️ Claude Code-style status line ("● Thinking… · 12s") replacing the earlier 3-dot bubble — live elapsed-time counter, and switches to "N sub-agents working…" while parallel `delegate` calls are in flight
+- ⚙️ Completed write_file/edit_file/delete_file tool cards now render the diff computed for the confirmation prompt (colored +/- lines, "Added N lines" summary) instead of discarding it for a bare "Edited path" string
+- 🎨 Panel reworked to an owline-style visual language: thin 1px borders, sharp corners, monospace uppercase for buttons/labels, SVG line icons instead of emoji, no VS Code default rounded-button chrome — all still on `var(--vscode-*)` tokens so it follows the user's editor theme
+- 📘 `WebviewMessage` discriminated union replaces `onWebviewMessage(message: any)`; 11 near-identical gear-menu handlers deduplicated into one `onMenuClick(button, action)` helper
+- 📘 `AGENTS.md` added at the repo root capturing standing rules (provider JSONs synced across all three template dirs, verify model IDs against current vendor docs, no emoji icons, rebuild+reinstall the `.vsix` after every extension change) for skills discovery to pick up automatically
 
 ## v0.3.0
 

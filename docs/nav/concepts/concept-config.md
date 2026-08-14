@@ -21,6 +21,8 @@ config = Config(
 | `skills` | `False` | Discover Claude Code/Cursor/`AGENTS.md` skills on disk, expose a `read_skill` tool, and list them in the system prompt |
 | `skill_sources` | all sources | Limit discovery to a subset (`"claude-skill"`, `"claude-memory"`, `"cursor-rule"`, `"agents-md"`) |
 | `skills_refresh` | `False` | Skip the skills cache and force a full rescan |
+| `delegation` | `False` | Expose a `delegate` tool that spawns a fresh sub-agent (same provider, read-only tools) for an independent subtask. Several `delegate` calls in the same turn run in parallel |
+| `memory` | `True` | Load `.pycodeloop/memory.md` into the system prompt and expose a `remember` tool the agent uses to save standing corrections/preferences across sessions |
 | `storage` | `SqliteSessions()` (`~/.pycodeloop/pycodeloop.db`) | Persists sessions so `CodeLoop.run(prompt, session_key=...)` can resume across restarts; pass `False` for in-memory only |
 
 `Config.__init__` validates that `provider` is an instance of the `Provider` ABC and raises `NotProviderInstance` immediately if not — a wrong object fails at construction time, not three tool calls into a run.
