@@ -230,6 +230,75 @@ class TestLoadProviderFromJson(GenericProviderTestCase):
             {"extra_content": {"google": {"thought_signature": "xyz789"}}},
         )
 
+    def test_streaming_falls_back_to_fenced_tool_call_when_narrated_as_prose(
+        self,
+    ):
+        path = self._write_config(
+            {"url": "http://fake/v1/chat/completions", "model": "my-model"}
+        )
+        provider = GenericProvider.from_json(path)
+
+        narrated = (
+            'Sure, I will read that file:\n```json\n{"tool": "read_file", '
+            '"arguments": {"path": "a.py"}}\n```\n'
+        )
+        chunks = [
+            {"choices": [{"delta": {"content": narrated}}]},
+            {"choices": [{"delta": {}, "finish_reason": "stop"}]},
+        ]
+        sse_body = (
+            "".join(f"data: {json.dumps(c)}\n" for c in chunks)
+            + "data: [DONE]\n"
+        ).encode()
+
+        with mock.patch(
+            "pycodeloop.providers.generic.urllib.request.urlopen",
+            return_value=_FakeResponse(sse_body),
+        ):
+            result = provider.complete(
+                "sys",
+                [],
+                [{"name": "read_file", "description": "", "parameters": {}}],
+                on_delta=lambda _: None,
+            )
+
+        self.assertEqual(result.text, "")
+        self.assertEqual(len(result.tool_calls), 1)
+        self.assertEqual(result.tool_calls[0].name, "read_file")
+        self.assertEqual(result.tool_calls[0].arguments, {"path": "a.py"})
+
+    def test_streaming_ignores_fenced_json_naming_an_unknown_tool(self):
+        path = self._write_config(
+            {"url": "http://fake/v1/chat/completions", "model": "my-model"}
+        )
+        provider = GenericProvider.from_json(path)
+
+        narrated = (
+            '```json\n{"tool": "delete_universe", "arguments": {}}\n```\n'
+        )
+        chunks = [
+            {"choices": [{"delta": {"content": narrated}}]},
+            {"choices": [{"delta": {}, "finish_reason": "stop"}]},
+        ]
+        sse_body = (
+            "".join(f"data: {json.dumps(c)}\n" for c in chunks)
+            + "data: [DONE]\n"
+        ).encode()
+
+        with mock.patch(
+            "pycodeloop.providers.generic.urllib.request.urlopen",
+            return_value=_FakeResponse(sse_body),
+        ):
+            result = provider.complete(
+                "sys",
+                [],
+                [{"name": "read_file", "description": "", "parameters": {}}],
+                on_delta=lambda _: None,
+            )
+
+        self.assertEqual(result.text, narrated)
+        self.assertEqual(result.tool_calls, [])
+
     def test_custom_response_paths(self):
         path = self._write_config(
             {

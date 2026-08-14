@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import urllib.error
 import urllib.request
 from collections.abc import Callable
@@ -25,6 +26,43 @@ from pycodeloop.providers._shapes import (
 )
 
 ResponseParser = Callable[[dict], ProviderResponse]
+
+_FENCE = re.compile(r"```(?:\w*\n)?([\s\S]*?)```")
+
+
+def _parse_fenced_tool_call(
+    text: str, known_tools: set[str]
+) -> ToolCall | None:
+    """Some OpenAI-compatible endpoints (mainly local models) narrate a
+    tool call as a fenced JSON block instead of a proper `tool_calls`
+    delta. Recognizes `{"tool"|"name": "<known>", "arguments": {...}}`
+    and the single-key `{"<known>": {...}}` shape; returns None if no
+    fenced block matches a real tool by name, so ordinary prose
+    (including unrelated JSON) is left alone."""
+    for match in _FENCE.finditer(text):
+        try:
+            data = json.loads(match.group(1).strip())
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(data, dict):
+            continue
+
+        name = data.get("tool") or data.get("name")
+        if isinstance(name, str) and name in known_tools:
+            arguments = data.get("arguments") or data.get("args") or {}
+            if isinstance(arguments, dict):
+                return ToolCall(
+                    id="fallback-1", name=name, arguments=arguments
+                )
+
+        if len(data) == 1:
+            (only_key, value) = next(iter(data.items()))
+            if only_key in known_tools and isinstance(value, dict):
+                return ToolCall(
+                    id="fallback-1", name=only_key, arguments=value
+                )
+
+    return None
 
 
 class GenericProvider(Provider):
@@ -207,9 +245,10 @@ class GenericProvider(Provider):
         on_delta: Callable[[str], None] | None = None,
     ) -> ProviderResponse:
         body = self.request_builder(system_prompt, messages, tools, self.model)
+        known_tools = {tool["name"] for tool in tools}
 
         if on_delta is not None and self._uses_default_parser:
-            return self._stream(body, on_delta)
+            return self._stream(body, on_delta, known_tools)
 
         with self._open(body) as response:
             raw = response.read()
@@ -230,7 +269,10 @@ class GenericProvider(Provider):
         return result
 
     def _stream(
-        self, body: dict, on_delta: Callable[[str], None]
+        self,
+        body: dict,
+        on_delta: Callable[[str], None],
+        known_tools: set[str],
     ) -> ProviderResponse:
         body = {**body, "stream": True}
         text = ""
@@ -304,6 +346,12 @@ class GenericProvider(Provider):
             )
             for acc in pending.values()
         ]
+
+        if not tool_calls and text:
+            fallback_call = _parse_fenced_tool_call(text, known_tools)
+            if fallback_call is not None:
+                tool_calls = [fallback_call]
+                text = ""
 
         return ProviderResponse(
             text=text,
