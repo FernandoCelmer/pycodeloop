@@ -14,7 +14,11 @@ import uuid
 import typer
 
 from pycodeloop.abc.provider import Usage
-from pycodeloop.cli.flow import PROVIDER_HELP, _load_mcp_tools, resolve_provider
+from pycodeloop.cli.flow import (
+    PROVIDER_HELP,
+    _load_mcp_tools,
+    resolve_provider,
+)
 from pycodeloop.cli.render import console
 from pycodeloop.core.codeloop import CodeLoop
 from pycodeloop.core.config import Config
@@ -71,6 +75,9 @@ class RpcServer:
         def on_text_delta(delta: str) -> None:
             self._notify("chat/textDelta", {"delta": delta})
 
+        def on_turn_end() -> None:
+            self._notify("chat/turnEnd", {})
+
         def on_tool_call(name: str, args: dict) -> None:
             self._notify("chat/toolCall", {"name": name, "arguments": args})
 
@@ -93,7 +100,9 @@ class RpcServer:
             )
 
         def on_context(used_tokens: int, limit_tokens: int) -> None:
-            self._notify("chat/context", {"used": used_tokens, "limit": limit_tokens})
+            self._notify(
+                "chat/context", {"used": used_tokens, "limit": limit_tokens}
+            )
 
         def on_retry(attempt: int, delay: float, exc: Exception) -> None:
             self._notify(
@@ -125,6 +134,7 @@ class RpcServer:
                 self._confirm_waiters.pop(request_id, None)
 
         agent.on_text_delta = on_text_delta
+        agent.on_turn_end = on_turn_end
         agent.on_tool_call = on_tool_call
         agent.on_tool_result = on_tool_result
         agent.on_usage = on_usage
@@ -162,11 +172,15 @@ class RpcServer:
         if method == "chat/send":
             if self._chat_thread is not None and self._chat_thread.is_alive():
                 self._respond_error(
-                    request_id, CHAT_ALREADY_RUNNING, "A chat turn is already running."
+                    request_id,
+                    CHAT_ALREADY_RUNNING,
+                    "A chat turn is already running.",
                 )
             else:
                 self._chat_thread = threading.Thread(
-                    target=self._run_chat, args=(request_id, params), daemon=True
+                    target=self._run_chat,
+                    args=(request_id, params),
+                    daemon=True,
                 )
                 self._chat_thread.start()
         elif method == "chat/ask":
@@ -185,11 +199,17 @@ class RpcServer:
         elif method == "session/list":
             storage = self.flow.config.storage
             sessions = (
-                storage.list_sessions() if hasattr(storage, "list_sessions") else {}
+                storage.list_sessions()
+                if hasattr(storage, "list_sessions")
+                else {}
             )
             self._respond(
                 request_id,
-                {"sessions": [{"key": key, **meta} for key, meta in sessions.items()]},
+                {
+                    "sessions": [
+                        {"key": key, **meta} for key, meta in sessions.items()
+                    ]
+                },
             )
         elif method == "session/load":
             storage = self.flow.config.storage
@@ -212,7 +232,8 @@ class RpcServer:
             )
         elif method == "initialize":
             self._respond(
-                request_id, {"provider": self.provider_name, "model": self.model_name}
+                request_id,
+                {"provider": self.provider_name, "model": self.model_name},
             )
         elif request_id is not None:
             self._respond_error(
@@ -283,7 +304,9 @@ def serve(
     per line on stdin/stdout."""
     console.file = sys.stderr
 
-    provider_instance, provider_name = resolve_provider(provider, model, base_url, url)
+    provider_instance, provider_name = resolve_provider(
+        provider, model, base_url, url
+    )
     config = Config(
         provider=provider_instance,
         tools=_load_mcp_tools(mcp),
