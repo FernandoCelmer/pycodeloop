@@ -5,7 +5,7 @@
   <strong>CodeLoop</strong>
 </p>
 <p align="center">
-    <em>Provider-agnostic terminal coding agent — point it at a JSON file, not a vendor SDK.</em>
+    <em>Multi-provider coding agent — terminal or VS Code, point it at a JSON file, not a vendor SDK.</em>
 </p>
 <p align="center">
 <a href="https://pypi.org/project/pycodeloop/" target="_blank">
@@ -23,6 +23,9 @@
 <a href="https://github.com/dotflow-io/pycodeloop" target="_blank">
     <img src="https://img.shields.io/github/stars/dotflow-io/pycodeloop?label=Stars&style=flat-square" alt="Stars">
 </a>
+<a href="https://marketplace.visualstudio.com/items?itemName=fernandocelmer.pycodeloop" target="_blank">
+    <img src="https://img.shields.io/visual-studio-marketplace/v/fernandocelmer.pycodeloop?label=VS%20Marketplace&style=flat-square" alt="VS Marketplace">
+</a>
 </p>
 
 ---
@@ -37,7 +40,7 @@ CodeLoop is a terminal coding agent, in the shape of Claude Code, Codex, or Gemi
 
 The key features are:
 
-* **Provider-agnostic**: Anthropic, OpenAI, Gemini, Grok (xAI), Groq, AWS Bedrock, Kimi (Moonshot AI), DeepSeek, Llama (Together AI), Qwen (Alibaba), NVIDIA NIM, Ollama, LM Studio, or any OpenAI-compatible endpoint — swapping models means swapping a JSON file, never touching code. `GenericProvider` talks HTTP directly, no vendor SDK required.
+* **Multi-provider**: Anthropic, OpenAI, Gemini, Grok (xAI), Groq, AWS Bedrock, Kimi (Moonshot AI), DeepSeek, Llama (Together AI), Qwen (Alibaba), NVIDIA NIM, Ollama, LM Studio, or any OpenAI-compatible endpoint — swapping models means swapping a JSON file, never touching code. `GenericProvider` talks HTTP directly, no vendor SDK required.
 * **Fast to start**: one `pip install`, one JSON file, one prompt. No boilerplate, no framework to learn first.
 * **Safe by default**: every write, edit, delete, shell command, commit, or HTTP call shows a diff or command preview and waits for your OK before running.
 * **Full-screen chat**: bare `pycodeloop` drops you into a Textual-based terminal UI; `pycodeloop run` stays scriptable for CI and one-shot use.

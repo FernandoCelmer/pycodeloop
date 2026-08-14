@@ -5,7 +5,7 @@ authors = [
   { name="Fernando Celmer", email="email@fernandocelmer.com" },
 ]
 license = {file = "LICENSE"}
-description = "CodeLoop — an agentic coding assistant core and CLI, multi-provider (Anthropic, OpenAI)."
+description = "CodeLoop — a multi-provider agentic coding assistant, terminal or VS Code."
 readme = "README.md"
 requires-python = ">=3.10,<4.0"
 dependencies = [
@@ -52,7 +52,7 @@ mcp = ["mcp"]
 [tool.poetry]
 name = "pycodeloop"
 version = "0.5.0"
-description = "CodeLoop — an agentic coding assistant core and CLI, multi-provider (Anthropic, OpenAI)."
+description = "CodeLoop — a multi-provider agentic coding assistant, terminal or VS Code."
 authors = ["Fernando Celmer <email@fernandocelmer.com>"]
 readme = "README.md"
 license = "MIT"
