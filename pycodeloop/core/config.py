@@ -137,6 +137,12 @@ class Config:
 
         self._validate()
 
+    def _append_to_system_prompt(self, text: str) -> None:
+        base_prompt = (
+            self.system_prompt if self.system_prompt is not None else DEFAULT_SYSTEM_PROMPT
+        )
+        self.system_prompt = f"{base_prompt}\n\n{text}"
+
     def _discover_skills(
         self, enabled: bool, sources: set[str] | None, refresh: bool
     ) -> list:
@@ -149,12 +155,7 @@ class Config:
             return found
 
         self.tools = [*self.tools, ReadSkillTool(found)]
-        base_prompt = (
-            self.system_prompt
-            if self.system_prompt is not None
-            else DEFAULT_SYSTEM_PROMPT
-        )
-        self.system_prompt = f"{base_prompt}\n\n{render_skills_index(found)}"
+        self._append_to_system_prompt(render_skills_index(found))
         return found
 
     def _load_memory(self) -> None:
@@ -164,12 +165,7 @@ class Config:
         if not content:
             return
 
-        base_prompt = (
-            self.system_prompt
-            if self.system_prompt is not None
-            else DEFAULT_SYSTEM_PROMPT
-        )
-        self.system_prompt = f"{base_prompt}\n\n{render_memory_prompt(content)}"
+        self._append_to_system_prompt(render_memory_prompt(content))
 
     def _validate(self) -> None:
         for name, abc in self._PROVIDERS.items():
