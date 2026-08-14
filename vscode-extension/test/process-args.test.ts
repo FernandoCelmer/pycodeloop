@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { buildServeArgs, ServeArgsOptions } from "../lib/serveArgs";
+import { buildServeArgs, ServeArgsOptions } from "../src/core-client/process-args";
 
 const identity = (value: string) => value;
 

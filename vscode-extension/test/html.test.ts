@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { renderChatHtml } from "../webview/html";
+import { renderChatHtml } from "../src/vscode/webview/html";
 
 const OPTIONS = {
   cspSource: "vscode-webview://abc",
-  scriptUri: "vscode-webview://abc/main.js",
+  scriptUris: ["vscode-webview://abc/dom.js", "vscode-webview://abc/app.js"],
   styleUri: "vscode-webview://abc/main.css",
   nonce: "test-nonce",
 };
@@ -12,9 +12,15 @@ const OPTIONS = {
 test("wires the script/style URIs and nonce into the markup", () => {
   const html = renderChatHtml(OPTIONS);
   assert.ok(html.includes('href="vscode-webview://abc/main.css"'));
-  assert.ok(html.includes('src="vscode-webview://abc/main.js"'));
+  assert.ok(html.includes('src="vscode-webview://abc/dom.js"'));
+  assert.ok(html.includes('src="vscode-webview://abc/app.js"'));
   assert.ok(html.includes("nonce-test-nonce"));
   assert.ok(html.includes("script-src 'nonce-test-nonce'"));
+});
+
+test("keeps script tags in the given order so shared globals are defined before use", () => {
+  const html = renderChatHtml(OPTIONS);
+  assert.ok(html.indexOf("dom.js") < html.indexOf("app.js"));
 });
 
 test("CSP restricts style-src and img-src to the given cspSource", () => {

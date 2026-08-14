@@ -1,3 +1,6 @@
+import * as fs from "fs";
+import * as path from "path";
+
 export const API_KEY_SECRET = "pycodeloop.apiKey";
 export const API_KEY_ENV = "PYCODELOOP_API_KEY";
 
@@ -30,6 +33,26 @@ export function providerAuthFromJson(jsonText: string): ProviderAuth {
 
 export function apiKeyEnvFromProviderJson(jsonText: string): string | undefined {
   return providerAuthFromJson(jsonText).apiKeyEnv;
+}
+
+export interface ResolvedProviderAuth extends ProviderAuth {
+  providerFile?: string;
+}
+
+export function readResolvedProviderAuth(resolvedPath: string): ResolvedProviderAuth {
+  if (!resolvedPath.endsWith(".json")) {
+    return {};
+  }
+  const providerFile = path.basename(resolvedPath);
+  try {
+    return { ...providerAuthFromJson(fs.readFileSync(resolvedPath, "utf8")), providerFile };
+  } catch {
+    return { providerFile };
+  }
+}
+
+export function providerApiKeyEnvNames(auth: ProviderAuth): string[] {
+  return auth.apiKeyEnv ? [auth.apiKeyEnv] : [];
 }
 
 export function spawnEnvForApiKey(

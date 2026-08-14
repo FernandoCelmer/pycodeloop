@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { ChatViewProvider } from "./chatViewProvider";
+import { ChatViewProvider } from "./vscode/sidebar/chatSidebarProvider";
 
 export function activate(context: vscode.ExtensionContext): void {
   const provider = new ChatViewProvider(context);

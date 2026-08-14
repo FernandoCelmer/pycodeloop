@@ -1,12 +1,15 @@
 export interface ChatHtmlOptions {
   cspSource: string;
-  scriptUri: string;
+  scriptUris: string[];
   styleUri: string;
   nonce: string;
 }
 
 export function renderChatHtml(options: ChatHtmlOptions): string {
-  const { cspSource, scriptUri, styleUri, nonce } = options;
+  const { cspSource, scriptUris, styleUri, nonce } = options;
+  const scriptTags = scriptUris
+    .map((uri) => `  <script nonce="${nonce}" src="${uri}"></script>`)
+    .join("\n");
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -86,7 +89,7 @@ export function renderChatHtml(options: ChatHtmlOptions): string {
       <button id="cancel" disabled>Cancel</button>
     </div>
   </div>
-  <script nonce="${nonce}" src="${scriptUri}"></script>
+${scriptTags}
 </body>
 </html>`;
 }

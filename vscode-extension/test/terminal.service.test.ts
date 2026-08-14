@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { buildInstallCommand } from "../lib/installCommand";
+import { buildInstallCommand } from "../src/services/terminal.service";
 
 test("uses python3 on non-Windows platforms", () => {
   assert.equal(buildInstallCommand("darwin"), "python3 -m pip install --user pycodeloop");

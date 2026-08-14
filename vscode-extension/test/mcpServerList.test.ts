@@ -6,7 +6,7 @@ import {
   parseServerLabel,
   removeServer,
   toQuickPickLabels,
-} from "../lib/mcpServerList";
+} from "../src/features/settings/mcpServerList";
 
 test("toQuickPickLabels pins the Add entry first", () => {
   assert.deepEqual(toQuickPickLabels([]), [ADD_MCP_SERVER_LABEL]);

@@ -32,7 +32,7 @@ export const PROVIDER_CATALOG: ProviderDef[] = [
     label: "Gemini",
     description: "Google Gemini models",
     file: "gemini.json",
-    models: ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-2.5-pro", "gemini-2.5-flash"],
+    models: ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-2.5-pro"],
     defaultModel: "gemini-3.6-flash",
     local: false,
   },

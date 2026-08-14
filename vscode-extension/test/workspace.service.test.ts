@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { resolveWorkspacePath } from "../lib/resolveSetting";
+import { resolveWorkspacePath } from "../src/services/workspace.service";
 
 test("leaves a value with no placeholder untouched", () => {
   assert.equal(resolveWorkspacePath("templates/anthropic.json", "/repo"), "templates/anthropic.json");

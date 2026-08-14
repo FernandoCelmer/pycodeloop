@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { API_KEY_ENV, providerAuthFromJson, spawnEnvForApiKey } from "../lib/apiKey";
+import { API_KEY_ENV, providerAuthFromJson, spawnEnvForApiKey } from "../src/services/credentials.service";
 
 test("spawnEnvForApiKey omits env when the key is missing or blank", () => {
   assert.equal(spawnEnvForApiKey(undefined), undefined);

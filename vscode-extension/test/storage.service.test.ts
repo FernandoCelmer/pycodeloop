@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { sortByRecency } from "../lib/sessionList";
+import { sortByRecency } from "../src/services/storage.service";
 
 const SESSIONS = [
   { key: "old", updated_at: 100, message_count: 2, cwd: "/repo" },
