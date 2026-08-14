@@ -9,7 +9,8 @@ export type WebviewMessage =
   | { type: "connectProvider"; id: string }
   | { type: "changeProviderModel"; id: string }
   | { type: "disconnectProvider"; id: string }
-  | { type: "selectSession" }
+  | { type: "showSessions" }
+  | { type: "switchSession"; key: string }
   | { type: "selectModel"; current?: string }
   | { type: "setApiKey"; value?: string; clear?: boolean }
   | { type: "toggleAutoApprove"; next: boolean }

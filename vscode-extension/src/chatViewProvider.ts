@@ -9,7 +9,7 @@ import { resolveWorkspacePath } from "./lib/resolveSetting";
 import { buildServeArgs } from "./lib/serveArgs";
 import { buildInstallCommand } from "./lib/installCommand";
 import { API_KEY_SECRET, providerAuthFromJson, providerKeySecret, spawnEnvForApiKey } from "./lib/apiKey";
-import { toSessionPickItems } from "./lib/sessionList";
+import { sortByRecency } from "./lib/sessionList";
 import { PROVIDER_CATALOG, findProviderDef } from "./lib/providerCatalog";
 import { ADD_MCP_SERVER_LABEL, addServer, parseServerLabel, removeServer, toQuickPickLabels } from "./lib/mcpServerList";
 import { renderChatHtml } from "./webview/html";
@@ -97,29 +97,35 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.post({ type: "sessionReset" });
   }
 
-  async selectSession(): Promise<void> {
+  async showSessionGallery(): Promise<void> {
     await this.ensureClient();
     if (!this.client) {
       return;
     }
 
     const response = await this.client.request("session/list");
-    const sessions = response.result?.sessions ?? [];
+    const sessions = sortByRecency(response.result?.sessions ?? []);
 
-    if (!sessions.length) {
-      vscode.window.showInformationMessage("No saved CodeLoop sessions yet.");
-      return;
-    }
-
-    const picked = await vscode.window.showQuickPick(toSessionPickItems(sessions, this.sessionKey), {
-      title: "CodeLoop sessions",
-      placeHolder: "Switch to a saved session",
+    this.post({
+      type: "sessions",
+      items: sessions.map((session) => ({
+        key: session.key,
+        active: session.key === this.sessionKey,
+        messageCount: session.message_count ?? 0,
+        cwd: session.cwd,
+        updatedAt: session.updated_at
+          ? new Date(session.updated_at * 1000).toLocaleString()
+          : undefined,
+      })),
     });
-    if (!picked || picked.key === this.sessionKey) {
+  }
+
+  async switchSession(key: string): Promise<void> {
+    if (!key || key === this.sessionKey) {
       return;
     }
 
-    this.sessionKey = picked.key;
+    this.sessionKey = key;
     await this.context.workspaceState.update(SESSION_KEY_STATE, this.sessionKey);
     this.post({ type: "sessionReset" });
     await this.loadHistory();
@@ -540,8 +546,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       case "disconnectProvider":
         this.disconnectProvider(String(message.id ?? ""));
         break;
-      case "selectSession":
-        this.selectSession();
+      case "showSessions":
+        this.showSessionGallery();
+        break;
+      case "switchSession":
+        this.switchSession(message.key);
         break;
       case "selectModel":
         this.selectModel(message.current ?? "");

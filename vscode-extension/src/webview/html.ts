@@ -26,7 +26,9 @@ export function renderChatHtml(options: ChatHtmlOptions): string {
       <span id="status-text">Not connected</span>
     </div>
     <div id="toolbar-actions">
-      <button id="new-session" class="secondary" title="New session">New</button>
+      <button id="new-session" class="secondary icon-btn" title="New session">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
       <button id="menu-sessions" class="secondary" title="Sessions">Sessions</button>
       <button id="menu-provider" class="secondary" title="Select provider">Provider</button>
       <div id="menu-anchor">
@@ -64,6 +66,16 @@ export function renderChatHtml(options: ChatHtmlOptions): string {
     <div id="gallery-list" class="gallery-list"></div>
     <div class="gallery-footer">
       <button id="gallery-custom">Custom provider (URL or JSON)</button>
+    </div>
+  </div>
+  <div id="session-gallery" hidden>
+    <div class="gallery-header">
+      <button id="session-gallery-back" class="gallery-back">Back to chat</button>
+      <h2 class="gallery-title">Sessions.</h2>
+    </div>
+    <div id="session-list" class="gallery-list"></div>
+    <div class="gallery-footer">
+      <button id="session-gallery-new">New session</button>
     </div>
   </div>
   <div id="composer">

@@ -21,7 +21,7 @@ export function activate(context: vscode.ExtensionContext): void {
       provider.selectConfig();
     }),
     vscode.commands.registerCommand("pycodeloop.selectSession", () => {
-      provider.selectSession();
+      provider.showSessionGallery();
     })
   );
 }

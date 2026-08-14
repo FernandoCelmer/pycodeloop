@@ -50,6 +50,10 @@
   const galleryBack = document.getElementById("gallery-back");
   const galleryList = document.getElementById("gallery-list");
   const galleryCustom = document.getElementById("gallery-custom");
+  const sessionGallery = document.getElementById("session-gallery");
+  const sessionGalleryBack = document.getElementById("session-gallery-back");
+  const sessionList = document.getElementById("session-list");
+  const sessionGalleryNew = document.getElementById("session-gallery-new");
 
   let assistantTurn = null;
   let pendingAssistantText = "";
@@ -929,7 +933,7 @@
 
   const SLASH_COMMANDS = [
     { name: "new", description: "Start a new session", run: () => vscode.postMessage({ type: "newSession" }) },
-    { name: "sessions", description: "Switch to a saved session", run: () => vscode.postMessage({ type: "selectSession" }) },
+    { name: "sessions", description: "Switch to a saved session", run: () => vscode.postMessage({ type: "showSessions" }) },
     { name: "provider", description: "Select a provider (Anthropic, OpenAI, Gemini, Grok, …)", run: () => vscode.postMessage({ type: "showProviders" }) },
     { name: "key", description: "Set or update the API key", run: () => renderApiKeyCard() },
     { name: "model", description: "Set a model override", run: () => vscode.postMessage({ type: "selectModel", current: currentModel }) },
@@ -1102,7 +1106,7 @@
     });
   }
 
-  onMenuClick(menuSessions, () => vscode.postMessage({ type: "selectSession" }));
+  onMenuClick(menuSessions, () => vscode.postMessage({ type: "showSessions" }));
   onMenuClick(menuProvider, () => vscode.postMessage({ type: "showProviders" }));
   onMenuClick(menuApiKey, () => renderApiKeyCard());
   onMenuClick(menuModel, () => vscode.postMessage({ type: "selectModel", current: currentModel }));
@@ -1140,6 +1144,7 @@
   }
 
   function showProviderGallery() {
+    hideSessionGallery();
     providerGallery.hidden = false;
   }
 
@@ -1151,6 +1156,85 @@
   galleryCustom.addEventListener("click", () => {
     vscode.postMessage({ type: "connectProvider", id: "custom" });
   });
+
+  function showSessionGallery() {
+    hideProviderGallery();
+    sessionGallery.hidden = false;
+  }
+
+  function hideSessionGallery() {
+    sessionGallery.hidden = true;
+  }
+
+  sessionGalleryBack.addEventListener("click", hideSessionGallery);
+  sessionGalleryNew.addEventListener("click", () => {
+    vscode.postMessage({ type: "newSession" });
+  });
+
+  function renderSessionGallery(items) {
+    showSessionGallery();
+    sessionList.textContent = "";
+
+    if (!items.length) {
+      const empty = document.createElement("p");
+      empty.className = "provider-desc";
+      empty.textContent = "No saved sessions yet.";
+      sessionList.appendChild(empty);
+      return;
+    }
+
+    for (const item of items) {
+      const card = document.createElement("div");
+      card.className = "provider-card";
+      if (item.active) {
+        card.classList.add("active");
+      }
+
+      const head = document.createElement("div");
+      head.className = "provider-card-head";
+
+      const nameRow = document.createElement("div");
+      nameRow.className = "provider-name-row";
+      const dot = document.createElement("span");
+      dot.className = "provider-dot";
+      const name = document.createElement("span");
+      name.className = "provider-name";
+      name.textContent = item.key;
+      nameRow.append(dot, name);
+
+      const chip = document.createElement("span");
+      chip.className = "provider-chip " + (item.active ? "connected" : "");
+      chip.textContent = item.active ? "Active" : item.messageCount + " msgs";
+
+      head.append(nameRow, chip);
+
+      const body = document.createElement("div");
+      body.className = "provider-card-body";
+
+      const desc = document.createElement("p");
+      desc.className = "provider-desc";
+      desc.textContent =
+        item.messageCount +
+        " messages" +
+        (item.cwd ? " · " + item.cwd : "") +
+        (item.updatedAt ? " · " + item.updatedAt : "");
+
+      const action = document.createElement("button");
+      if (item.active) {
+        action.className = "secondary";
+        action.textContent = "Active";
+      } else {
+        action.textContent = "Switch";
+        action.addEventListener("click", () => {
+          vscode.postMessage({ type: "switchSession", key: item.key });
+        });
+      }
+
+      body.append(desc, action);
+      card.append(head, body);
+      sessionList.appendChild(card);
+    }
+  }
 
   function renderProviderGallery(items) {
     showProviderGallery();
@@ -1228,6 +1312,9 @@
         break;
       case "providers":
         renderProviderGallery(message.items);
+        break;
+      case "sessions":
+        renderSessionGallery(message.items);
         break;
       case "cliMissing":
         clearStatusCards();
@@ -1316,6 +1403,7 @@
         setBusy(false);
         break;
       case "sessionReset":
+        hideSessionGallery();
         messagesEl.innerHTML = "";
         assistantTurn = null;
         apiKeyCard = null;

@@ -60,7 +60,7 @@ class TestLoadProviderFromJson(GenericProviderTestCase):
             }
         )
 
-        with mock.patch.dict("os.environ", {"MY_FAKE_KEY": "from-env"}):
+        with mock.patch.dict("os.environ", {"MY_FAKE_KEY": "from-env", "PYCODELOOP_API_KEY": ""}):
             provider = GenericProvider.from_json(path)
 
         self.assertEqual(provider.api_key, "from-env")
