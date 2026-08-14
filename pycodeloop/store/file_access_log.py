@@ -11,6 +11,7 @@ from pathlib import Path
 
 from sqlalchemy import create_engine, desc
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import NullPool
 
 from pycodeloop.store.models.base import Base
 from pycodeloop.store.models.file_access_record import FileAccessRecord
@@ -50,9 +51,13 @@ class FileAccessLog:
         self.path = Path(path or Path.home() / ".pycodeloop" / "pycodeloop.db")
         self.path.parent.mkdir(parents=True, exist_ok=True)
 
-        self._engine = create_engine(f"sqlite:///{self.path}")
+        self._engine = create_engine(
+            f"sqlite:///{self.path}", poolclass=NullPool
+        )
         Base.metadata.create_all(self._engine)
-        self._session_factory = sessionmaker(bind=self._engine)
+        self._session_factory = sessionmaker(
+            bind=self._engine, expire_on_commit=False
+        )
 
     def record(
         self,
@@ -94,7 +99,9 @@ class FileAccessLog:
                 .first()
             )
 
-    def history(self, session_key: str, limit: int = 100) -> list[FileAccessRecord]:
+    def history(
+        self, session_key: str, limit: int = 100
+    ) -> list[FileAccessRecord]:
         with self._session_factory() as db:
             return (
                 db.query(FileAccessRecord)
@@ -103,6 +110,14 @@ class FileAccessLog:
                 .limit(limit)
                 .all()
             )
+
+    def close(self) -> None:
+        self._engine.dispose()
+
+    def __del__(self) -> None:
+        engine = getattr(self, "_engine", None)
+        if engine is not None:
+            engine.dispose()
 
 
 default_log = FileAccessLog()

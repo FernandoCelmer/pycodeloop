@@ -9,12 +9,13 @@ from pathlib import Path
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session as OrmSession
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import NullPool
 
 from pycodeloop.abc.sessions import Sessions
+from pycodeloop.core.session import Message, Session
 from pycodeloop.store.models.base import Base
 from pycodeloop.store.models.message_record import MessageRecord
 from pycodeloop.store.models.session_record import SessionRecord
-from pycodeloop.core.session import Message, Session
 
 
 class SqliteSessions(Sessions):
@@ -27,9 +28,13 @@ class SqliteSessions(Sessions):
         self.path = Path(path or Path.home() / ".pycodeloop" / "pycodeloop.db")
         self.path.parent.mkdir(parents=True, exist_ok=True)
 
-        self._engine = create_engine(f"sqlite:///{self.path}")
+        self._engine = create_engine(
+            f"sqlite:///{self.path}", poolclass=NullPool
+        )
         Base.metadata.create_all(self._engine)
-        self._session_factory = sessionmaker(bind=self._engine)
+        self._session_factory = sessionmaker(
+            bind=self._engine, expire_on_commit=False
+        )
         self._migrate_legacy_messages()
         self._migrate_images_column()
 
@@ -42,13 +47,16 @@ class SqliteSessions(Sessions):
         before message attachments existed."""
         with self._engine.connect() as conn:
             columns = {
-                row[1] for row in conn.execute(text("PRAGMA table_info(messages)"))
+                row[1]
+                for row in conn.execute(text("PRAGMA table_info(messages)"))
             }
         if "images" in columns:
             return
 
         with self._engine.begin() as conn:
-            conn.execute(text("ALTER TABLE messages ADD COLUMN images VARCHAR"))
+            conn.execute(
+                text("ALTER TABLE messages ADD COLUMN images VARCHAR")
+            )
 
     def _migrate_legacy_messages(self) -> None:
         """One-time backfill from the old single-blob `sessions.messages`
@@ -57,14 +65,17 @@ class SqliteSessions(Sessions):
         behind would break every future insert."""
         with self._engine.connect() as conn:
             columns = {
-                row[1] for row in conn.execute(text("PRAGMA table_info(sessions)"))
+                row[1]
+                for row in conn.execute(text("PRAGMA table_info(sessions)"))
             }
         if "messages" not in columns:
             return
 
         with self._engine.connect() as conn:
             rows = conn.execute(
-                text("SELECT key, messages FROM sessions WHERE messages IS NOT NULL")
+                text(
+                    "SELECT key, messages FROM sessions WHERE messages IS NOT NULL"
+                )
             ).fetchall()
 
         if rows:
@@ -104,6 +115,9 @@ class SqliteSessions(Sessions):
         with self._engine.begin() as conn:
             conn.execute(text("ALTER TABLE sessions DROP COLUMN messages"))
 
+    def close(self) -> None:
+        self._engine.dispose()
+
     def post(self, key: str, session: Session) -> None:
         with self._db() as db:
             record = db.get(SessionRecord, key)
@@ -117,7 +131,9 @@ class SqliteSessions(Sessions):
             record.updated_at = time.time()
             record.message_count = len(session.messages)
 
-            db.query(MessageRecord).filter(MessageRecord.session_key == key).delete()
+            db.query(MessageRecord).filter(
+                MessageRecord.session_key == key
+            ).delete()
             for position, message in enumerate(session.messages):
                 db.add(
                     MessageRecord(
@@ -131,7 +147,11 @@ class SqliteSessions(Sessions):
                             if message.tool_calls
                             else None
                         ),
-                        images=(json.dumps(message.images) if message.images else None),
+                        images=(
+                            json.dumps(message.images)
+                            if message.images
+                            else None
+                        ),
                     )
                 )
 
@@ -160,7 +180,9 @@ class SqliteSessions(Sessions):
                         content=row.content,
                         tool_call_id=row.tool_call_id,
                         tool_calls=(
-                            json.loads(row.tool_calls) if row.tool_calls else None
+                            json.loads(row.tool_calls)
+                            if row.tool_calls
+                            else None
                         ),
                         images=json.loads(row.images) if row.images else None,
                     )
@@ -175,7 +197,9 @@ class SqliteSessions(Sessions):
             if record is not None:
                 db.delete(record)
 
-            db.query(MessageRecord).filter(MessageRecord.session_key == key).delete()
+            db.query(MessageRecord).filter(
+                MessageRecord.session_key == key
+            ).delete()
             db.commit()
 
     def list_sessions(self) -> dict:
