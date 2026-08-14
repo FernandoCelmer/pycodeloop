@@ -25,7 +25,9 @@ class TestWebFetchTool(unittest.TestCase):
         with (
             mock.patch(
                 "httpx.request",
-                side_effect=lambda method, url, **_kw: client.request(method, url),
+                side_effect=lambda method, url, **_kw: client.request(
+                    method, url
+                ),
             ),
             mock.patch(
                 "pycodeloop.tools._net.socket.getaddrinfo",
@@ -44,13 +46,17 @@ class TestWebFetchTool(unittest.TestCase):
         )
 
         def handler(request: httpx.Request) -> httpx.Response:
-            return httpx.Response(200, text=html, headers={"content-type": "text/html"})
+            return httpx.Response(
+                200, text=html, headers={"content-type": "text/html"}
+            )
 
         client = httpx.Client(transport=httpx.MockTransport(handler))
         with (
             mock.patch(
                 "httpx.request",
-                side_effect=lambda method, url, **_kw: client.request(method, url),
+                side_effect=lambda method, url, **_kw: client.request(
+                    method, url
+                ),
             ),
             mock.patch(
                 "pycodeloop.tools._net.socket.getaddrinfo",
@@ -71,7 +77,9 @@ class TestWebFetchTool(unittest.TestCase):
         with (
             mock.patch(
                 "httpx.request",
-                side_effect=lambda method, url, **_kw: client.request(method, url),
+                side_effect=lambda method, url, **_kw: client.request(
+                    method, url
+                ),
             ),
             mock.patch(
                 "pycodeloop.tools._net.socket.getaddrinfo",
@@ -96,13 +104,17 @@ class TestWebFetchTool(unittest.TestCase):
 
     def test_does_not_follow_redirects(self):
         def handler(request: httpx.Request) -> httpx.Response:
-            return httpx.Response(302, headers={"location": "http://internal/secret"})
+            return httpx.Response(
+                302, headers={"location": "http://internal/secret"}
+            )
 
         client = httpx.Client(transport=httpx.MockTransport(handler))
         with (
             mock.patch(
                 "httpx.request",
-                side_effect=lambda method, url, **_kw: client.request(method, url),
+                side_effect=lambda method, url, **_kw: client.request(
+                    method, url
+                ),
             ),
             mock.patch(
                 "pycodeloop.tools._net.socket.getaddrinfo",

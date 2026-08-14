@@ -38,7 +38,9 @@ class FakeLLMServer:
                     self.send_header("Content-Type", "text/event-stream")
                     self.end_headers()
                     for chunk in _to_sse_chunks(response):
-                        self.wfile.write(f"data: {json.dumps(chunk)}\n\n".encode())
+                        self.wfile.write(
+                            f"data: {json.dumps(chunk)}\n\n".encode()
+                        )
                     self.wfile.write(b"data: [DONE]\n\n")
                 else:
                     payload = json.dumps(response).encode()
@@ -52,7 +54,9 @@ class FakeLLMServer:
                 pass
 
         self._httpd = HTTPServer(("127.0.0.1", 0), Handler)
-        self._thread = threading.Thread(target=self._httpd.serve_forever, daemon=True)
+        self._thread = threading.Thread(
+            target=self._httpd.serve_forever, daemon=True
+        )
         self._thread.start()
 
     @property
@@ -101,7 +105,9 @@ def _to_sse_chunks(response: dict) -> list[dict]:
                                 "id": tc["id"],
                                 "function": tc["function"],
                             }
-                            for i, tc in enumerate(message.get("tool_calls") or [])
+                            for i, tc in enumerate(
+                                message.get("tool_calls") or []
+                            )
                         ]
                         or None,
                     },

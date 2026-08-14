@@ -78,7 +78,10 @@ class TestLoadProviderFromJson(GenericProviderTestCase):
 
         with mock.patch.dict(
             "os.environ",
-            {"PYCODELOOP_API_KEY": "from-extension", "MY_FAKE_KEY": "from-named"},
+            {
+                "PYCODELOOP_API_KEY": "from-extension",
+                "MY_FAKE_KEY": "from-named",
+            },
         ):
             provider = GenericProvider.from_json(path)
 
@@ -92,7 +95,9 @@ class TestLoadProviderFromJson(GenericProviderTestCase):
 
         response_body = json.dumps(
             {
-                "choices": [{"message": {"content": "hi"}, "finish_reason": "stop"}],
+                "choices": [
+                    {"message": {"content": "hi"}, "finish_reason": "stop"}
+                ],
                 "usage": {"prompt_tokens": 1, "completion_tokens": 1},
             }
         ).encode()
@@ -129,7 +134,9 @@ class TestLoadProviderFromJson(GenericProviderTestCase):
                                         "arguments": '{"path": "a.py"}',
                                     },
                                     "extra_content": {
-                                        "google": {"thought_signature": "abc123"}
+                                        "google": {
+                                            "thought_signature": "abc123"
+                                        }
                                     },
                                 }
                             ]
@@ -172,7 +179,10 @@ class TestLoadProviderFromJson(GenericProviderTestCase):
                                     "index": 0,
                                     "id": "call_1",
                                     "type": "function",
-                                    "function": {"name": "bash", "arguments": ""},
+                                    "function": {
+                                        "name": "bash",
+                                        "arguments": "",
+                                    },
                                 }
                             ]
                         }
@@ -186,9 +196,13 @@ class TestLoadProviderFromJson(GenericProviderTestCase):
                             "tool_calls": [
                                 {
                                     "index": 0,
-                                    "function": {"arguments": '{"command": "ls"}'},
+                                    "function": {
+                                        "arguments": '{"command": "ls"}'
+                                    },
                                     "extra_content": {
-                                        "google": {"thought_signature": "xyz789"}
+                                        "google": {
+                                            "thought_signature": "xyz789"
+                                        }
                                     },
                                 }
                             ]
@@ -199,7 +213,8 @@ class TestLoadProviderFromJson(GenericProviderTestCase):
             {"choices": [{"delta": {}, "finish_reason": "tool_calls"}]},
         ]
         sse_body = (
-            "".join(f"data: {json.dumps(c)}\n" for c in chunks) + "data: [DONE]\n"
+            "".join(f"data: {json.dumps(c)}\n" for c in chunks)
+            + "data: [DONE]\n"
         ).encode()
 
         with mock.patch(

@@ -6,12 +6,12 @@ from pathlib import Path
 from unittest import mock
 
 import pycodeloop.skills as skills_module
-from pycodeloop.store.json_store import JsonFileStore
 from pycodeloop.skills import (
     ReadSkillTool,
     discover_skills,
     render_skills_index,
 )
+from pycodeloop.store.json_store import JsonFileStore
 
 
 class SkillsTestCase(unittest.TestCase):

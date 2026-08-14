@@ -10,9 +10,9 @@ from pathlib import Path
 from unittest import mock
 
 from pycodeloop.core.agent import Agent
+from pycodeloop.providers.generic import GenericProvider
 from pycodeloop.store.file_access_log import FileAccessLog
 from pycodeloop.tools.filesystem import ReadFileTool, WriteFileTool
-from pycodeloop.providers.generic import GenericProvider
 from tests.functional._fake_llm_server import (
     FakeLLMServer,
     chat_completion,
@@ -60,7 +60,10 @@ class TestToolUseLoop(AgentEndToEndTestCase):
                         tool_call(
                             "call-1",
                             "write_file",
-                            {"path": "note.txt", "content": "hello from the model"},
+                            {
+                                "path": "note.txt",
+                                "content": "hello from the model",
+                            },
                         )
                     ]
                 ),
@@ -87,7 +90,9 @@ class TestToolUseLoop(AgentEndToEndTestCase):
             [
                 chat_completion(
                     tool_calls=[
-                        tool_call("call-1", "read_file", {"path": "existing.txt"})
+                        tool_call(
+                            "call-1", "read_file", {"path": "existing.txt"}
+                        )
                     ]
                 ),
                 chat_completion(text="The file contains 42."),
@@ -103,7 +108,9 @@ class TestToolUseLoop(AgentEndToEndTestCase):
 
         self.assertEqual(result, "The file contains 42.")
         second_request = self.server.requests[1]
-        tool_messages = [m for m in second_request["messages"] if m["role"] == "tool"]
+        tool_messages = [
+            m for m in second_request["messages"] if m["role"] == "tool"
+        ]
         self.assertEqual(len(tool_messages), 1)
         self.assertIn("42", tool_messages[0]["content"])
 
@@ -113,7 +120,9 @@ class TestToolUseLoop(AgentEndToEndTestCase):
                 chat_completion(
                     tool_calls=[
                         tool_call(
-                            "call-1", "write_file", {"path": "x.txt", "content": "x"}
+                            "call-1",
+                            "write_file",
+                            {"path": "x.txt", "content": "x"},
                         )
                     ]
                 ),

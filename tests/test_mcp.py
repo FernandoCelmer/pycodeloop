@@ -52,7 +52,9 @@ class TestMCPTool(unittest.TestCase):
 
     def test_run_reports_remote_error(self):
         client = FakeMCPClient()
-        tool = MCPTool(client, {"name": "boom", "description": "", "input_schema": {}})
+        tool = MCPTool(
+            client, {"name": "boom", "description": "", "input_schema": {}}
+        )
 
         result = tool.run()
 
@@ -69,7 +71,9 @@ class TestSavedMCPServers(unittest.TestCase):
         self.registry = MCPServerRegistry(store=store)
 
     def test_save_then_load_roundtrips(self):
-        server = MCPServer(command="npx", args=["-y", "server-filesystem", "."])
+        server = MCPServer(
+            command="npx", args=["-y", "server-filesystem", "."]
+        )
 
         self.registry.save("fs", server)
         loaded = self.registry.load("fs")

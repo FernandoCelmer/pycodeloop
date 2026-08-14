@@ -18,7 +18,9 @@ class Session:
     def add_user(self, text: str, images: list[str] | None = None) -> None:
         self.messages.append(Message(role="user", content=text, images=images))
 
-    def add_assistant(self, text: str, tool_calls: list[dict] | None = None) -> None:
+    def add_assistant(
+        self, text: str, tool_calls: list[dict] | None = None
+    ) -> None:
         self.messages.append(
             Message(role="assistant", content=text, tool_calls=tool_calls)
         )
@@ -49,7 +51,9 @@ class Session:
                 j += 1
 
             missing = [
-                call for call in msg.tool_calls if call["id"] not in satisfied_ids
+                call
+                for call in msg.tool_calls
+                if call["id"] not in satisfied_ids
             ]
             for offset, call in enumerate(missing):
                 self.messages.insert(
@@ -67,7 +71,9 @@ class Session:
         dropping older ones as a whole unit — trimming mid-turn would
         split an assistant tool_calls message from its tool_result
         replies, which every provider rejects."""
-        turn_starts = [i for i, m in enumerate(self.messages) if m.role == "user"]
+        turn_starts = [
+            i for i, m in enumerate(self.messages) if m.role == "user"
+        ]
 
         if len(turn_starts) <= max_turns:
             return

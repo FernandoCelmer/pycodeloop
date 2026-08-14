@@ -68,7 +68,9 @@ class RememberTool(Tool):
     def run(self, note: str) -> ToolResult:
         note = note.strip()
         if not note:
-            return ToolResult(output="Empty note, nothing saved.", is_error=True)
+            return ToolResult(
+                output="Empty note, nothing saved.", is_error=True
+            )
 
         try:
             self._path.parent.mkdir(parents=True, exist_ok=True)
@@ -76,6 +78,8 @@ class RememberTool(Tool):
             with self._path.open("a") as f:
                 f.write(f"- ({timestamp}) {note}\n")
         except OSError as exc:
-            return ToolResult(output=f"Error writing memory: {exc}", is_error=True)
+            return ToolResult(
+                output=f"Error writing memory: {exc}", is_error=True
+            )
 
         return ToolResult(output=f"Saved to {self._path}")

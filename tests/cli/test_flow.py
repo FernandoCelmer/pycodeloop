@@ -9,9 +9,9 @@ import typer
 
 from pycodeloop.cli.flow import _load_mcp_tools, build_flow
 from pycodeloop.mcp import MCPServer, MCPServerRegistry
+from pycodeloop.providers.generic import GenericProvider
 from pycodeloop.store.json_store import JsonFileStore
 from pycodeloop.store.sqlite_sessions import SqliteSessions
-from pycodeloop.providers.generic import GenericProvider
 
 # build_flow() -> Config() defaults storage to a real SqliteSessions() at
 # ~/.pycodeloop/pycodeloop.db when not given one explicitly — every test
@@ -45,7 +45,9 @@ class TestBuildFlowGenericProvider(unittest.TestCase):
         )
 
         self.assertIsInstance(flow.agent.provider, GenericProvider)
-        self.assertEqual(flow.agent.provider.url, "http://fake/v1/chat/completions")
+        self.assertEqual(
+            flow.agent.provider.url, "http://fake/v1/chat/completions"
+        )
         self.assertEqual(name, "generic")
         self.assertEqual(model, "my-model")
 

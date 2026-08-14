@@ -24,7 +24,9 @@ load_dotenv()
 _saved = UserSettings().get_settings()
 
 _PROVIDER = (
-    os.environ.get(ENV_PROVIDER) or _saved.get("provider") or DEFAULT_PROVIDER_TEMPLATE
+    os.environ.get(ENV_PROVIDER)
+    or _saved.get("provider")
+    or DEFAULT_PROVIDER_TEMPLATE
 )
 _MODEL = os.environ.get(ENV_MODEL) or _saved.get("model")
 
@@ -46,7 +48,9 @@ class Settings:
     API_KEY = None
 
     MAX_TURNS = int(
-        os.environ.get(ENV_MAX_TURNS) or _saved.get("max_turns") or DEFAULT_MAX_TURNS
+        os.environ.get(ENV_MAX_TURNS)
+        or _saved.get("max_turns")
+        or DEFAULT_MAX_TURNS
     )
 
     ICON = ICON

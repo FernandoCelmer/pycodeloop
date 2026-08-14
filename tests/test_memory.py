@@ -41,11 +41,15 @@ class TestRememberTool(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             tool = RememberTool(cwd=tmp)
 
-            result = tool.run(note="user wants sharp corners, no border-radius")
+            result = tool.run(
+                note="user wants sharp corners, no border-radius"
+            )
 
             self.assertFalse(result.is_error)
             content = load_memory(tmp)
-            self.assertIn("user wants sharp corners, no border-radius", content)
+            self.assertIn(
+                "user wants sharp corners, no border-radius", content
+            )
             self.assertTrue(content.startswith("- ("))
 
     def test_appending_twice_keeps_both_notes(self):
@@ -105,7 +109,9 @@ class TestConfigMemoryWiring(unittest.TestCase):
             finally:
                 os.chdir(previous_cwd)
 
-            self.assertIn("prefers terse commit messages", config.system_prompt)
+            self.assertIn(
+                "prefers terse commit messages", config.system_prompt
+            )
 
 
 if __name__ == "__main__":

@@ -131,7 +131,9 @@ class TestServeEndToEnd(unittest.TestCase):
 
         self.assertIn("chat/toolCall", methods)
         self.assertIn("chat/toolResult", methods)
-        self.assertEqual(response["result"]["text"], "Here's the directory listing.")
+        self.assertEqual(
+            response["result"]["text"], "Here's the directory listing."
+        )
 
     def test_dangerous_tool_blocks_on_confirm_round_trip(self):
         self.server = FakeLLMServer(
@@ -172,7 +174,10 @@ class TestServeEndToEnd(unittest.TestCase):
             {
                 "jsonrpc": "2.0",
                 "method": "chat/confirmResponse",
-                "params": {"id": confirm_request["params"]["id"], "answer": True},
+                "params": {
+                    "id": confirm_request["params"]["id"],
+                    "answer": True,
+                },
             }
         )
 

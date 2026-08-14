@@ -18,7 +18,9 @@ class TestConfigDelegation(unittest.TestCase):
         self.assertNotIn("delegate", [t.name for t in config.tools])
 
     def test_delegation_true_adds_the_delegate_tool(self):
-        config = Config(provider=self._provider(), delegation=True, storage=False)
+        config = Config(
+            provider=self._provider(), delegation=True, storage=False
+        )
 
         self.assertIn("delegate", [t.name for t in config.tools])
 

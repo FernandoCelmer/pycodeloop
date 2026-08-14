@@ -18,7 +18,9 @@ _cwd = str(Path.cwd())
 if _cwd not in sys.path:
     sys.path.insert(0, _cwd)
 
-app = typer.Typer(add_completion=False, help="CodeLoop — an agentic coding assistant.")
+app = typer.Typer(
+    add_completion=False, help="CodeLoop — an agentic coding assistant."
+)
 app.command()(run)
 app.command(name="chat")(chat)
 app.command(name="serve")(serve)

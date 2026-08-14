@@ -16,7 +16,9 @@ class UsageTracker:
     def __init__(self, store: Settings | None = None) -> None:
         self.store = store or default_store
 
-    def record_usage(self, key: str, input_tokens: int, output_tokens: int) -> None:
+    def record_usage(
+        self, key: str, input_tokens: int, output_tokens: int
+    ) -> None:
         usage = self.store.get_section(_SECTION)
         entry = usage.get(key, dict(_EMPTY_ENTRY))
         entry["input_tokens"] += input_tokens

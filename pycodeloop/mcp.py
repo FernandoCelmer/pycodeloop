@@ -52,7 +52,9 @@ class MCPClient:
     def __init__(self, server: MCPServer) -> None:
         self.server = server
         self._loop = asyncio.new_event_loop()
-        self._thread = threading.Thread(target=self._loop.run_forever, daemon=True)
+        self._thread = threading.Thread(
+            target=self._loop.run_forever, daemon=True
+        )
         self._thread.start()
         self._exit_stack = None
         self._session = None
@@ -74,8 +76,12 @@ class MCPClient:
             env=self.server.env,
         )
 
-        read, write = await self._exit_stack.enter_async_context(stdio_client(params))
-        session = await self._exit_stack.enter_async_context(ClientSession(read, write))
+        read, write = await self._exit_stack.enter_async_context(
+            stdio_client(params)
+        )
+        session = await self._exit_stack.enter_async_context(
+            ClientSession(read, write)
+        )
         await session.initialize()
 
         self._session = session
@@ -103,7 +109,11 @@ class MCPClient:
 
     async def _call_tool(self, name: str, arguments: dict) -> str:
         result = await self._session.call_tool(name, arguments)
-        parts = [block.text for block in result.content if getattr(block, "text", None)]
+        parts = [
+            block.text
+            for block in result.content
+            if getattr(block, "text", None)
+        ]
         return "\n".join(parts) if parts else str(result.content)
 
     def close(self) -> None:
@@ -178,7 +188,9 @@ class MCPServerRegistry:
             return None
 
         return MCPServer(
-            command=data["command"], args=data.get("args", []), env=data.get("env")
+            command=data["command"],
+            args=data.get("args", []),
+            env=data.get("env"),
         )
 
     def list(self) -> dict:

@@ -14,7 +14,9 @@ class MessageRecord(Base):
     __tablename__ = "messages"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    session_key = Column(String, ForeignKey("sessions.key"), nullable=False, index=True)
+    session_key = Column(
+        String, ForeignKey("sessions.key"), nullable=False, index=True
+    )
     position = Column(Integer, nullable=False)
     role = Column(String, nullable=False)
     content = Column(String, nullable=False)

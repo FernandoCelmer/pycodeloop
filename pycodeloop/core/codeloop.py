@@ -7,9 +7,9 @@ import threading
 
 from pycodeloop.core.agent import Agent
 from pycodeloop.core.config import Config
+from pycodeloop.core.session import Message, Session
 from pycodeloop.store.file_access_log import session_scope
 from pycodeloop.store.usage_tracker import UsageTracker
-from pycodeloop.core.session import Message, Session
 
 _usage_tracker = UsageTracker()
 
@@ -59,7 +59,9 @@ class CodeLoop:
             **agent_kwargs,
         )
 
-        self.session = Session(system_prompt=self.agent.system_prompt, cwd=os.getcwd())
+        self.session = Session(
+            system_prompt=self.agent.system_prompt, cwd=os.getcwd()
+        )
 
     def run(
         self,
@@ -75,7 +77,9 @@ class CodeLoop:
         storage before the run (falling back to the in-memory session
         on a cache miss) and saved back after.
         """
-        can_persist = session_key is not None and self.config.storage is not None
+        can_persist = (
+            session_key is not None and self.config.storage is not None
+        )
         if can_persist:
             stored = self.config.storage.get(session_key)
             self.session = stored or Session(
@@ -90,7 +94,10 @@ class CodeLoop:
         usage_before = self.agent.usage
         with session_scope(session_key or "global"):
             result = self.agent.run(
-                prompt, session=self.session, images=images, cancel_event=cancel_event
+                prompt,
+                session=self.session,
+                images=images,
+                cancel_event=cancel_event,
             )
         usage_after = self.agent.usage
 

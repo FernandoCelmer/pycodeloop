@@ -8,8 +8,8 @@ from dataclasses import asdict
 from pathlib import Path
 
 from pycodeloop.abc.sessions import Sessions
-from pycodeloop.store.json_store import default_store
 from pycodeloop.core.session import Message, Session
+from pycodeloop.store.json_store import default_store
 
 _SESSIONS_SECTION = "sessions"
 
@@ -31,7 +31,9 @@ class FileSessions(Sessions):
     """
 
     def __init__(self, directory: str | Path | None = None) -> None:
-        self.directory = Path(directory or Path.home() / ".pycodeloop" / "sessions")
+        self.directory = Path(
+            directory or Path.home() / ".pycodeloop" / "sessions"
+        )
 
     def _path(self, key: str) -> Path:
         return self.directory / f"{key}.json"

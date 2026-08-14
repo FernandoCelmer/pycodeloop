@@ -5,10 +5,10 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from pycodeloop.store import file_sessions as sessions_module
-from pycodeloop.store.json_store import JsonFileStore
-from pycodeloop.store.file_sessions import FileSessions
 from pycodeloop.core.session import Message, Session
+from pycodeloop.store import file_sessions as sessions_module
+from pycodeloop.store.file_sessions import FileSessions
+from pycodeloop.store.json_store import JsonFileStore
 
 
 class TestFileSessions(unittest.TestCase):
@@ -37,7 +37,9 @@ class TestFileSessions(unittest.TestCase):
         self.assertEqual(restored.system_prompt, "sys")
         self.assertEqual(restored.cwd, "/tmp")
         self.assertEqual(len(restored.messages), 3)
-        self.assertEqual(restored.messages[0], Message(role="user", content="hi"))
+        self.assertEqual(
+            restored.messages[0], Message(role="user", content="hi")
+        )
 
     def test_get_missing_key_returns_none(self):
         self.assertIsNone(self.sessions.get("nope"))

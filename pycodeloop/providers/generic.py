@@ -123,7 +123,9 @@ class GenericProvider(Provider):
         if data.get("response_shape") == "anthropic":
             response_parser = anthropic_response
         elif "response_paths" in data:
-            response_parser = response_parser_from_paths(data["response_paths"])
+            response_parser = response_parser_from_paths(
+                data["response_paths"]
+            )
 
         request_builder = None
         if "request" in data:
@@ -190,7 +192,11 @@ class GenericProvider(Provider):
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode(errors="replace")
             raise urllib.error.HTTPError(
-                exc.url, exc.code, f"{exc.reason}: {detail}", exc.headers, exc.fp
+                exc.url,
+                exc.code,
+                f"{exc.reason}: {detail}",
+                exc.headers,
+                exc.fp,
             ) from None
 
     def complete(
@@ -223,7 +229,9 @@ class GenericProvider(Provider):
 
         return result
 
-    def _stream(self, body: dict, on_delta: Callable[[str], None]) -> ProviderResponse:
+    def _stream(
+        self, body: dict, on_delta: Callable[[str], None]
+    ) -> ProviderResponse:
         body = {**body, "stream": True}
         text = ""
         pending: dict[int, dict] = {}
@@ -243,7 +251,9 @@ class GenericProvider(Provider):
                 if chunk.get("usage"):
                     usage = Usage(
                         input_tokens=chunk["usage"].get("prompt_tokens", 0),
-                        output_tokens=chunk["usage"].get("completion_tokens", 0),
+                        output_tokens=chunk["usage"].get(
+                            "completion_tokens", 0
+                        ),
                     )
 
                 choices = chunk.get("choices") or []
@@ -259,7 +269,13 @@ class GenericProvider(Provider):
                 for tc in delta.get("tool_calls") or []:
                     index = tc.get("index", 0)
                     acc = pending.setdefault(
-                        index, {"id": None, "name": None, "arguments": "", "extra": {}}
+                        index,
+                        {
+                            "id": None,
+                            "name": None,
+                            "arguments": "",
+                            "extra": {},
+                        },
                     )
                     if tc.get("id"):
                         acc["id"] = tc["id"]

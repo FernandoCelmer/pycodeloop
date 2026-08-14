@@ -11,8 +11,8 @@ from pycodeloop.core import codeloop as codeloop_module
 from pycodeloop.core.codeloop import CodeLoop
 from pycodeloop.core.config import Config
 from pycodeloop.store import file_sessions as sessions_module
-from pycodeloop.store.json_store import JsonFileStore
 from pycodeloop.store.file_sessions import FileSessions
+from pycodeloop.store.json_store import JsonFileStore
 from pycodeloop.store.usage_tracker import UsageTracker
 
 
@@ -49,7 +49,9 @@ class TestCodeLoopSessionStorage(unittest.TestCase):
         # tests never touch the real user config.
         store = JsonFileStore(Path(self._tmpdir.name) / "config.json")
 
-        sessions_patcher = mock.patch.object(sessions_module, "default_store", store)
+        sessions_patcher = mock.patch.object(
+            sessions_module, "default_store", store
+        )
         sessions_patcher.start()
         self.addCleanup(sessions_patcher.stop)
 
@@ -112,12 +114,16 @@ class TestCodeLoopSessionStorage(unittest.TestCase):
             [
                 ProviderResponse(
                     text="",
-                    tool_calls=[ToolCall(id="1", name="echo", arguments={"x": "a"})],
+                    tool_calls=[
+                        ToolCall(id="1", name="echo", arguments={"x": "a"})
+                    ],
                 ),
                 ProviderResponse(text="all done"),
             ]
         )
-        config = Config(provider=provider, storage=self.storage, tools=[EchoTool()])
+        config = Config(
+            provider=provider, storage=self.storage, tools=[EchoTool()]
+        )
         flow = CodeLoop(config=config)
 
         seen_counts = []

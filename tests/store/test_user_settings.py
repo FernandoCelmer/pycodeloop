@@ -29,7 +29,8 @@ class TestUserSettings(unittest.TestCase):
         self.settings.set_setting("model", "gpt-5")
 
         self.assertEqual(
-            self.settings.get_settings(), {"provider": "openai", "model": "gpt-5"}
+            self.settings.get_settings(),
+            {"provider": "openai", "model": "gpt-5"},
         )
 
     def test_clear_setting_removes_only_that_key(self):

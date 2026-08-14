@@ -13,14 +13,20 @@ from pycodeloop.providers import GenericProvider, get_provider
 
 class TestGetProvider(unittest.TestCase):
     def test_generic_requires_url(self):
-        provider = get_provider("generic", model="llama3.1", url="http://x/chat")
+        provider = get_provider(
+            "generic", model="llama3.1", url="http://x/chat"
+        )
 
         self.assertIsInstance(provider, GenericProvider)
         self.assertEqual(provider.url, "http://x/chat")
 
     def test_generic_reads_pycodeloop_api_key_env(self):
-        with mock.patch.dict("os.environ", {"PYCODELOOP_API_KEY": "from-extension"}):
-            provider = get_provider("generic", model="llama3.1", url="http://x/chat")
+        with mock.patch.dict(
+            "os.environ", {"PYCODELOOP_API_KEY": "from-extension"}
+        ):
+            provider = get_provider(
+                "generic", model="llama3.1", url="http://x/chat"
+            )
 
         self.assertEqual(provider.api_key, "from-extension")
 
@@ -64,7 +70,9 @@ class TestGetProvider(unittest.TestCase):
         sys.modules.pop("my_custom_provider", None)
         self.addCleanup(sys.modules.pop, "my_custom_provider", None)
 
-        provider = get_provider("my_custom_provider:MyProvider", model="local-model")
+        provider = get_provider(
+            "my_custom_provider:MyProvider", model="local-model"
+        )
 
         self.assertIsInstance(provider, Provider)
         result = provider.complete("sys", [], [])

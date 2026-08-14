@@ -18,6 +18,7 @@ from textual.widgets import Header, OptionList, Static, TextArea
 from textual.widgets.option_list import Option
 
 from pycodeloop.abc.provider import Usage
+from pycodeloop.cli.clipboard import read_clipboard_image_base64
 from pycodeloop.cli.flow import default_session_key, new_session_key
 from pycodeloop.cli.render import (
     format_tokens,
@@ -25,7 +26,6 @@ from pycodeloop.cli.render import (
     render_preview,
     tool_icon,
 )
-from pycodeloop.cli.clipboard import read_clipboard_image_base64
 from pycodeloop.core.codeloop import CodeLoop
 from pycodeloop.core.session import Session
 
@@ -155,7 +155,9 @@ class CodeLoopApp(App):
     BINDINGS = [("ctrl+c", "quit", "Quit")]
     ENABLE_COMMAND_PALETTE = False
 
-    def __init__(self, flow: CodeLoop, provider_name: str, model_name: str) -> None:
+    def __init__(
+        self, flow: CodeLoop, provider_name: str, model_name: str
+    ) -> None:
         super().__init__(ansi_color=True)
         self.flow = flow
         self.provider_name = provider_name
@@ -191,14 +193,17 @@ class CodeLoopApp(App):
             menu.display = False
             return
 
-        matches = [(name, desc) for name, desc in _COMMANDS if name.startswith(text)]
+        matches = [
+            (name, desc) for name, desc in _COMMANDS if name.startswith(text)
+        ]
         if not matches:
             menu.display = False
             return
 
         menu.clear_options()
         menu.add_options(
-            Option(f"{name}  [dim]{desc}[/dim]", id=name) for name, desc in matches
+            Option(f"{name}  [dim]{desc}[/dim]", id=name)
+            for name, desc in matches
         )
         menu.highlighted = 0
         menu.display = True
@@ -289,7 +294,9 @@ class CodeLoopApp(App):
         if text == "/model":
             self._log(
                 self._styled(
-                    "[dim]current model: ", self.flow.agent.provider.model, "dim"
+                    "[dim]current model: ",
+                    self.flow.agent.provider.model,
+                    "dim",
                 )
             )
             return True
@@ -298,7 +305,11 @@ class CodeLoopApp(App):
             self.flow.agent.provider.model = text[len("/model ") :].strip()
             self.model_name = self.flow.agent.provider.model
             self._update_subtitle()
-            self._log(self._styled("[dim]switched to model: ", self.model_name, "dim"))
+            self._log(
+                self._styled(
+                    "[dim]switched to model: ", self.model_name, "dim"
+                )
+            )
             return True
 
         if text == "/new":
@@ -328,7 +339,9 @@ class CodeLoopApp(App):
             reload()
             self.model_name = self.flow.agent.provider.model
             self._update_subtitle()
-            self._log(self._styled("[dim]reloaded — model: ", self.model_name, "dim"))
+            self._log(
+                self._styled("[dim]reloaded — model: ", self.model_name, "dim")
+            )
             return True
 
         return False
@@ -371,12 +384,16 @@ class CodeLoopApp(App):
 
     def attach_image(self, image: str) -> None:
         self._pending_images.append(image)
-        self._log(f"[dim]📎 image attached ({len(self._pending_images)} pending)[/dim]")
+        self._log(
+            f"[dim]📎 image attached ({len(self._pending_images)} pending)[/dim]"
+        )
 
     async def _paste_from_command(self) -> None:
         image = await asyncio.to_thread(read_clipboard_image_base64)
         if image is None:
-            self.call_from_thread(self._log, "[dim]⊘ no image on the clipboard[/dim]")
+            self.call_from_thread(
+                self._log, "[dim]⊘ no image on the clipboard[/dim]"
+            )
             return
         self.call_from_thread(self.attach_image, image)
 
@@ -392,7 +409,9 @@ class CodeLoopApp(App):
         self._stop_thinking()
         self._log("[dim]⊘ cancelling…[/dim]")
 
-    async def _run_turn(self, text: str, images: list[str] | None = None) -> None:
+    async def _run_turn(
+        self, text: str, images: list[str] | None = None
+    ) -> None:
         try:
             self.flow.run(
                 text,
@@ -403,7 +422,8 @@ class CodeLoopApp(App):
         except Exception as exc:
             self.call_from_thread(self._stop_thinking)
             self.call_from_thread(
-                self._log, self._styled("[bold white]✗ Error:[/bold white] ", str(exc))
+                self._log,
+                self._styled("[bold white]✗ Error:[/bold white] ", str(exc)),
             )
         finally:
             self.call_from_thread(self._finish_turn)
@@ -435,7 +455,9 @@ class CodeLoopApp(App):
         self._thinking_frame += 1
         message_count, tool_count = self._thinking_meta
         pct = (
-            f" · {self._context_pct}% context" if self._context_pct is not None else ""
+            f" · {self._context_pct}% context"
+            if self._context_pct is not None
+            else ""
         )
         self._thinking_static.update(
             f"[dim]{frame} thinking — {self.provider_name}/{self.model_name} · "
@@ -470,14 +492,17 @@ class CodeLoopApp(App):
 
     def _on_compact_end(self, before: int, after: int) -> None:
         self.call_from_thread(
-            self._log, f"[dim]✓ compacted context — {before} → {after} messages[/dim]"
+            self._log,
+            f"[dim]✓ compacted context — {before} → {after} messages[/dim]",
         )
 
     def _on_retry(self, attempt: int, delay: float, exc: Exception) -> None:
         self.call_from_thread(
             self._log,
             self._styled(
-                f"[dim]⚠ retrying ({attempt}/3) in {delay:.0f}s — ", str(exc), "dim"
+                f"[dim]⚠ retrying ({attempt}/3) in {delay:.0f}s — ",
+                str(exc),
+                "dim",
             ),
         )
 
@@ -500,7 +525,9 @@ class CodeLoopApp(App):
             said = result[len("User declined and said: ") :]
             self.call_from_thread(
                 self._log,
-                self._styled("  [bold white]↪ redirected:[/bold white] ", said),
+                self._styled(
+                    "  [bold white]↪ redirected:[/bold white] ", said
+                ),
             )
         elif is_error:
             self.call_from_thread(
@@ -537,7 +564,9 @@ class CodeLoopApp(App):
             + format_tokens(total.output_tokens)
             + " out"
         )
-        self.call_from_thread(self._log, f"[dim]🤖 {tokens} · {elapsed:.1f}s[/dim]")
+        self.call_from_thread(
+            self._log, f"[dim]🤖 {tokens} · {elapsed:.1f}s[/dim]"
+        )
 
     def _show_confirm_prompt(self, name: str, preview: str) -> None:
         self._log(
@@ -577,7 +606,9 @@ class CodeLoopApp(App):
         except queue.Empty:
             self._awaiting_confirm = False
             self._stale_confirm_answer = True
-            self._stale_expires_at = time.monotonic() + self._STALE_ANSWER_GRACE
+            self._stale_expires_at = (
+                time.monotonic() + self._STALE_ANSWER_GRACE
+            )
             self.call_from_thread(
                 self._log,
                 "[dim]⏱ no response — running automatically[/dim]",

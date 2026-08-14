@@ -8,15 +8,15 @@ from pycodeloop.abc.tool import Tool
 from pycodeloop.core.agent import DEFAULT_SYSTEM_PROMPT
 from pycodeloop.core.exception import NotProviderInstance
 from pycodeloop.memory import RememberTool, load_memory, render_memory_prompt
-from pycodeloop.store.sqlite_sessions import SqliteSessions
+from pycodeloop.providers import get_provider
+from pycodeloop.settings import Settings
 from pycodeloop.skills import (
     ReadSkillTool,
     discover_skills,
     render_skills_index,
 )
+from pycodeloop.store.sqlite_sessions import SqliteSessions
 from pycodeloop.tools import DEFAULT_TOOLS, READ_ONLY_TOOLS, DelegateTool
-from pycodeloop.providers import get_provider
-from pycodeloop.settings import Settings
 
 
 def _default_provider() -> Provider:
@@ -120,20 +120,28 @@ class Config:
         memory: bool = True,
         storage: Sessions | bool | None = None,
     ) -> None:
-        self.provider = provider if provider is not None else _default_provider()
+        self.provider = (
+            provider if provider is not None else _default_provider()
+        )
         self.tools = list(tools) if tools is not None else list(DEFAULT_TOOLS)
         self.system_prompt = system_prompt
         self.max_turns = max_turns
         self.max_history_turns = max_history_turns
-        self.skills = self._discover_skills(skills, skill_sources, skills_refresh)
+        self.skills = self._discover_skills(
+            skills, skill_sources, skills_refresh
+        )
         if delegation:
             self.tools = [
                 *self.tools,
-                DelegateTool(provider=self.provider, tools=list(READ_ONLY_TOOLS)),
+                DelegateTool(
+                    provider=self.provider, tools=list(READ_ONLY_TOOLS)
+                ),
             ]
         if memory:
             self._load_memory()
-        self.storage = None if storage is False else storage or _default_storage()
+        self.storage = (
+            None if storage is False else storage or _default_storage()
+        )
 
         self._validate()
 

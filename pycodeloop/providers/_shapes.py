@@ -28,7 +28,9 @@ def openai_tool_schema(tools: list[dict]) -> list[dict]:
     ]
 
 
-def to_openai_messages(system_prompt: str, messages: list[Message]) -> list[dict]:
+def to_openai_messages(
+    system_prompt: str, messages: list[Message]
+) -> list[dict]:
     out: list[dict] = [{"role": "system", "content": system_prompt}]
     for msg in messages:
         if msg.role == "user":
@@ -78,7 +80,9 @@ def to_openai_messages(system_prompt: str, messages: list[Message]) -> list[dict
     return out
 
 
-def anthropic_tool_schema(tools: list[dict], cache: bool = False) -> list[dict]:
+def anthropic_tool_schema(
+    tools: list[dict], cache: bool = False
+) -> list[dict]:
     schema = [
         {
             "name": tool["name"],
@@ -162,7 +166,9 @@ def request_builder_from_config(request_cfg: dict) -> RequestBuilder:
 
     message_shape = request_cfg.get("message_shape", "openai")
     tool_schema = request_cfg.get("tool_schema", "openai")
-    prompt_cache = bool(request_cfg.get("prompt_cache")) and tool_schema == "anthropic"
+    prompt_cache = (
+        bool(request_cfg.get("prompt_cache")) and tool_schema == "anthropic"
+    )
 
     system_key = body_paths.get("system")
     if system_key is None and message_shape == "anthropic":

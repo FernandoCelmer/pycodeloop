@@ -47,7 +47,9 @@ def _load_skill_md(path: Path, source: str) -> Skill | None:
 
     meta, body = _parse_frontmatter(text)
     name = meta.get("name") or path.stem
-    description = meta.get("description") or (body.splitlines()[0] if body else "")
+    description = meta.get("description") or (
+        body.splitlines()[0] if body else ""
+    )
     description = " ".join(description.split())
     if len(description) > _MAX_DESCRIPTION:
         description = description[:_MAX_DESCRIPTION] + "…"
@@ -70,7 +72,11 @@ def _load_plain_doc(path: Path, source: str, name: str) -> Skill | None:
         return None
 
     first_line = next(
-        (line.strip("# ").strip() for line in text.splitlines() if line.strip()),
+        (
+            line.strip("# ").strip()
+            for line in text.splitlines()
+            if line.strip()
+        ),
         name,
     )
     description = (
@@ -117,7 +123,9 @@ def _jobs(
             (p, "cursor-rule", "skill_md", None)
             for p in sorted((cwd / ".cursor" / "rules").glob("*.mdc"))
         )
-        jobs.append((cwd / ".cursorrules", "cursor-rule", "plain_doc", ".cursorrules"))
+        jobs.append(
+            (cwd / ".cursorrules", "cursor-rule", "plain_doc", ".cursorrules")
+        )
 
     if wanted("agents-md"):
         jobs.append((cwd / "AGENTS.md", "agents-md", "plain_doc", "AGENTS.md"))
@@ -141,7 +149,9 @@ def _load_jobs(jobs: list[tuple[Path, str, str, str | None]]) -> list[Skill]:
 def _fingerprint(
     jobs: list[tuple[Path, str, str, str | None]],
 ) -> dict[str, float]:
-    return {str(path): path.stat().st_mtime for path, *_ in jobs if path.exists()}
+    return {
+        str(path): path.stat().st_mtime for path, *_ in jobs if path.exists()
+    }
 
 
 def _cache_key(cwd: Path, home: Path, sources: set[str] | None) -> str:
@@ -197,7 +207,11 @@ def discover_skills(
     cache = default_store.get_section(_CACHE_SECTION)
     cached_entry = cache.get(key)
 
-    if use_cache and cached_entry and cached_entry.get("fingerprint") == fingerprint:
+    if (
+        use_cache
+        and cached_entry
+        and cached_entry.get("fingerprint") == fingerprint
+    ):
         return [_skill_from_dict(item) for item in cached_entry["skills"]]
 
     skills = _load_jobs(jobs)
@@ -224,7 +238,8 @@ def render_skills_index(skills: list[Skill]) -> str:
         "",
     ]
     lines.extend(
-        f"- **{skill.name}** ({skill.source}): {skill.description}" for skill in skills
+        f"- **{skill.name}** ({skill.source}): {skill.description}"
+        for skill in skills
     )
     return "\n".join(lines)
 

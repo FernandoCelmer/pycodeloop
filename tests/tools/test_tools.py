@@ -29,8 +29,12 @@ class ToolTestCase(unittest.TestCase):
 
         self._logdir = tempfile.TemporaryDirectory()
         self.addCleanup(self._logdir.cleanup)
-        self.access_log = FileAccessLog(path=Path(self._logdir.name) / "access.db")
-        patcher = mock.patch("pycodeloop.tools.filesystem.default_log", self.access_log)
+        self.access_log = FileAccessLog(
+            path=Path(self._logdir.name) / "access.db"
+        )
+        patcher = mock.patch(
+            "pycodeloop.tools.filesystem.default_log", self.access_log
+        )
         patcher.start()
         self.addCleanup(patcher.stop)
 
@@ -73,7 +77,9 @@ class TestReadFileTool(ToolTestCase):
         read_tool = ReadFileTool()
         read_tool.run(path=str(target))
 
-        EditFileTool().run(path=str(target), old_string="line1", new_string="line2")
+        EditFileTool().run(
+            path=str(target), old_string="line1", new_string="line2"
+        )
         result = read_tool.run(path=str(target))
 
         self.assertIn("1\tline2", result.output)

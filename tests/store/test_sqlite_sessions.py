@@ -4,15 +4,17 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from pycodeloop.store.sqlite_sessions import SqliteSessions
 from pycodeloop.core.session import Message, Session
+from pycodeloop.store.sqlite_sessions import SqliteSessions
 
 
 class TestSqliteSessions(unittest.TestCase):
     def setUp(self):
         self._tmpdir = tempfile.TemporaryDirectory()
         self.addCleanup(self._tmpdir.cleanup)
-        self.sessions = SqliteSessions(path=Path(self._tmpdir.name) / "sessions.db")
+        self.sessions = SqliteSessions(
+            path=Path(self._tmpdir.name) / "sessions.db"
+        )
 
     def test_post_then_get_roundtrips_session(self):
         session = Session(system_prompt="sys", cwd="/tmp")
@@ -27,7 +29,9 @@ class TestSqliteSessions(unittest.TestCase):
         self.assertEqual(restored.system_prompt, "sys")
         self.assertEqual(restored.cwd, "/tmp")
         self.assertEqual(len(restored.messages), 3)
-        self.assertEqual(restored.messages[0], Message(role="user", content="hi"))
+        self.assertEqual(
+            restored.messages[0], Message(role="user", content="hi")
+        )
 
     def test_get_missing_key_returns_none(self):
         self.assertIsNone(self.sessions.get("nope"))

@@ -20,7 +20,11 @@ def default_openai_response(data: dict) -> ProviderResponse:
             id=call["id"],
             name=call["function"]["name"],
             arguments=json.loads(call["function"].get("arguments") or "{}"),
-            extra={k: v for k, v in call.items() if k not in ("id", "type", "function")}
+            extra={
+                k: v
+                for k, v in call.items()
+                if k not in ("id", "type", "function")
+            }
             or None,
         )
         for call in (message.get("tool_calls") or [])
@@ -95,7 +99,9 @@ def response_parser_from_paths(
     output_tokens_path = paths.get("output_tokens", "usage.completion_tokens")
     tool_call_id_path = paths.get("tool_call_id", "id")
     tool_call_name_path = paths.get("tool_call_name", "function.name")
-    tool_call_arguments_path = paths.get("tool_call_arguments", "function.arguments")
+    tool_call_arguments_path = paths.get(
+        "tool_call_arguments", "function.arguments"
+    )
 
     def parser(data: dict) -> ProviderResponse:
         raw_tool_calls = get_path(data, tool_calls_path, []) or []

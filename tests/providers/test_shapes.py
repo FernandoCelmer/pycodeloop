@@ -60,7 +60,11 @@ class TestOpenAIMessageBuilding(unittest.TestCase):
     def test_user_message_with_images_becomes_content_blocks(self):
         out = to_openai_messages(
             "sys",
-            [Message(role="user", content="what is this?", images=["b64data"])],
+            [
+                Message(
+                    role="user", content="what is this?", images=["b64data"]
+                )
+            ],
         )
 
         self.assertEqual(
@@ -155,10 +159,15 @@ class TestPromptCacheRequestBuilder(unittest.TestCase):
         builder = request_builder_from_config(self._cfg(True))
 
         body = builder(
-            "sys", [], [{"name": "read_file"}, {"name": "write_file"}], "claude-x"
+            "sys",
+            [],
+            [{"name": "read_file"}, {"name": "write_file"}],
+            "claude-x",
         )
 
-        self.assertEqual(body["tools"][-1]["cache_control"], {"type": "ephemeral"})
+        self.assertEqual(
+            body["tools"][-1]["cache_control"], {"type": "ephemeral"}
+        )
         self.assertNotIn("cache_control", body["tools"][0])
 
     def test_disabled_by_default_system_stays_a_plain_string(self):
@@ -169,7 +178,11 @@ class TestPromptCacheRequestBuilder(unittest.TestCase):
         self.assertEqual(body["system"], "sys")
 
     def test_only_applies_to_the_anthropic_tool_schema(self):
-        cfg = {"message_shape": "openai", "tool_schema": "openai", "prompt_cache": True}
+        cfg = {
+            "message_shape": "openai",
+            "tool_schema": "openai",
+            "prompt_cache": True,
+        }
         builder = request_builder_from_config(cfg)
 
         body = builder("sys", [], [{"name": "read_file"}], "gpt-x")

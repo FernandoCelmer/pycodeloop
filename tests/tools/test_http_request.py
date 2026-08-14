@@ -21,7 +21,9 @@ class TestHttpRequestTool(unittest.TestCase):
         with (
             mock.patch(
                 "httpx.request",
-                side_effect=lambda method, url, **kw: client.request(method, url),
+                side_effect=lambda method, url, **kw: client.request(
+                    method, url
+                ),
             ),
             mock.patch(
                 "pycodeloop.tools._net.socket.getaddrinfo",
@@ -41,7 +43,9 @@ class TestHttpRequestTool(unittest.TestCase):
         with (
             mock.patch(
                 "httpx.request",
-                side_effect=lambda method, url, **kw: client.request(method, url),
+                side_effect=lambda method, url, **kw: client.request(
+                    method, url
+                ),
             ),
             mock.patch(
                 "pycodeloop.tools._net.socket.getaddrinfo",

@@ -10,8 +10,8 @@ from pathlib import Path
 
 from pycodeloop.core.codeloop import CodeLoop
 from pycodeloop.core.config import Config
-from pycodeloop.store.sqlite_sessions import SqliteSessions
 from pycodeloop.providers.generic import GenericProvider
+from pycodeloop.store.sqlite_sessions import SqliteSessions
 from tests.functional._fake_llm_server import FakeLLMServer, chat_completion
 
 
@@ -21,7 +21,9 @@ class TestCodeLoopPersistenceEndToEnd(unittest.TestCase):
         self.addCleanup(tmpdir.cleanup)
         self.db_path = Path(tmpdir.name) / "sessions.db"
 
-    def _codeloop(self, responses: list[dict]) -> tuple[CodeLoop, FakeLLMServer]:
+    def _codeloop(
+        self, responses: list[dict]
+    ) -> tuple[CodeLoop, FakeLLMServer]:
         server = FakeLLMServer(responses)
         self.addCleanup(server.close)
         provider = GenericProvider(url=server.url, model="test-model")
@@ -33,14 +35,20 @@ class TestCodeLoopPersistenceEndToEnd(unittest.TestCase):
         return CodeLoop(config=config), server
 
     def test_second_process_resumes_history_from_the_first(self):
-        flow_one, _server_one = self._codeloop([chat_completion(text="hi there")])
+        flow_one, _server_one = self._codeloop(
+            [chat_completion(text="hi there")]
+        )
         flow_one.run("hello", session_key="conversation-1")
 
-        flow_two, server_two = self._codeloop([chat_completion(text="I remember you")])
+        flow_two, server_two = self._codeloop(
+            [chat_completion(text="I remember you")]
+        )
         flow_two.run("do you remember me?", session_key="conversation-1")
 
         sent_messages = server_two.requests[0]["messages"]
-        user_turns = [m["content"] for m in sent_messages if m["role"] == "user"]
+        user_turns = [
+            m["content"] for m in sent_messages if m["role"] == "user"
+        ]
         self.assertIn("hello", user_turns)
         self.assertIn("do you remember me?", user_turns)
 
@@ -54,7 +62,9 @@ class TestCodeLoopPersistenceEndToEnd(unittest.TestCase):
 
         second_request_messages = server.requests[1]["messages"]
         user_turns = [
-            m["content"] for m in second_request_messages if m["role"] == "user"
+            m["content"]
+            for m in second_request_messages
+            if m["role"] == "user"
         ]
         self.assertEqual(user_turns, ["message for b"])
 
