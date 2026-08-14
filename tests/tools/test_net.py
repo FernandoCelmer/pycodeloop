@@ -39,7 +39,8 @@ class TestResolveSafeIp(unittest.TestCase):
         import socket
 
         with mock.patch(
-            "pycodeloop.tools._net.socket.getaddrinfo", side_effect=socket.gaierror
+            "pycodeloop.tools._net.socket.getaddrinfo",
+            side_effect=socket.gaierror,
         ):
             self.assertIsNone(resolve_safe_ip("does-not-resolve.invalid"))
 
@@ -77,7 +78,9 @@ class TestSafeRequest(unittest.TestCase):
         with (
             mock.patch(
                 "httpx.request",
-                side_effect=lambda method, url, **kw: client.request(method, url, **kw),
+                side_effect=lambda method, url, **kw: client.request(
+                    method, url, **kw
+                ),
             ),
             mock.patch(
                 "pycodeloop.tools._net.socket.getaddrinfo",

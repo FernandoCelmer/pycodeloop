@@ -8,6 +8,8 @@ from urllib.parse import urlparse, urlunparse
 
 import httpx
 
+_ALLOWED_SCHEMES = frozenset({"http", "https"})
+
 
 class BlockedHostError(Exception):
     pass
@@ -15,7 +17,14 @@ class BlockedHostError(Exception):
 
 def _is_blocked_ip(addr: str) -> bool:
     ip = ipaddress.ip_address(addr)
-    return ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved
+    return (
+        ip.is_private
+        or ip.is_loopback
+        or ip.is_link_local
+        or ip.is_reserved
+        or ip.is_multicast
+        or ip.is_unspecified
+    )
 
 
 def resolve_safe_ip(hostname: str) -> str | None:
@@ -37,13 +46,17 @@ def is_blocked_host(hostname: str) -> bool:
 
 
 def safe_request(method: str, url: str, **kwargs) -> httpx.Response:
-    """SSRF-safe `httpx.request`: resolves `url`'s host once and connects
-    directly to that pinned address instead of the hostname, so a second,
-    attacker-controlled DNS answer (rebinding) between the safety check
-    and the actual connection can't hand the request to a private/internal
-    address. The original hostname is still sent via the `Host` header and
-    TLS SNI, so routing and certificate validation work as normal."""
+    """SSRF-safe `httpx.request`: only http(s), resolves `url`'s host once
+    and connects directly to that pinned address instead of the hostname,
+    so a second, attacker-controlled DNS answer (rebinding) between the
+    safety check and the actual connection can't hand the request to a
+    private/internal address. The original hostname is still sent via the
+    `Host` header and TLS SNI, so routing and certificate validation work
+    as normal."""
     parsed = urlparse(url)
+    if parsed.scheme.lower() not in _ALLOWED_SCHEMES:
+        raise BlockedHostError(parsed.scheme or "")
+
     hostname = parsed.hostname
     if not hostname:
         raise BlockedHostError(hostname or "")
