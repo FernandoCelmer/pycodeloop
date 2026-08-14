@@ -26,11 +26,11 @@ export function renderChatHtml(options: ChatHtmlOptions): string {
       <span id="status-text">Not connected</span>
     </div>
     <div id="toolbar-actions">
+      <button id="menu-sessions" class="secondary" title="Sessions">Sessions</button>
+      <button id="menu-provider" class="secondary" title="Select provider">Provider</button>
       <button id="new-session" class="secondary icon-btn" title="New session">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       </button>
-      <button id="menu-sessions" class="secondary" title="Sessions">Sessions</button>
-      <button id="menu-provider" class="secondary" title="Select provider">Provider</button>
       <div id="menu-anchor">
         <button id="menu-toggle" class="secondary icon-btn" title="Settings">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="21" x2="5" y2="14"/><line x1="5" y1="10" x2="5" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="19" y1="21" x2="19" y2="16"/><line x1="19" y1="12" x2="19" y2="3"/><line x1="2" y1="14" x2="8" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="16" y1="16" x2="22" y2="16"/></svg>
