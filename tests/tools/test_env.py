@@ -21,7 +21,8 @@ class TestEnvTool(unittest.TestCase):
 
     def test_masks_a_credential_embedded_in_a_url_value(self):
         with mock.patch.dict(
-            "os.environ", {"DATABASE_URL": "postgres://user:hunter2@db.internal/app"}
+            "os.environ",
+            {"DATABASE_URL": "postgres://user:hunter2@db.internal/app"},
         ):
             result = EnvTool().run(name="DATABASE_URL")
 
@@ -42,6 +43,23 @@ class TestEnvTool(unittest.TestCase):
         self.assertIn("PLAIN=1", result.output)
         self.assertIn("SECRET_TOKEN=***", result.output)
         self.assertNotIn("shh", result.output)
+
+    def test_masks_pass_variants_and_auth(self):
+        env = {
+            "MY_PASS": "secret",
+            "DB_PASSWD": "x",
+            "AUTH": "bearer xxx",
+            "SESSION_ID": "abc",
+            "HOME": "/tmp",
+        }
+        with mock.patch.dict("os.environ", env, clear=True):
+            result = EnvTool().run()
+
+        self.assertIn("MY_PASS=***", result.output)
+        self.assertIn("DB_PASSWD=***", result.output)
+        self.assertIn("AUTH=***", result.output)
+        self.assertIn("SESSION_ID=***", result.output)
+        self.assertIn("HOME=/tmp", result.output)
 
 
 if __name__ == "__main__":

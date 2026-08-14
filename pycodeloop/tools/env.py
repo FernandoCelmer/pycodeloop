@@ -7,13 +7,33 @@ import re
 
 from pycodeloop.abc.tool import Tool, ToolResult
 
-_SENSITIVE_MARKERS = ("SECRET", "KEY", "TOKEN", "PASSWORD", "CREDENTIAL")
+_SENSITIVE_WORDS = frozenset(
+    {
+        "SECRET",
+        "KEY",
+        "TOKEN",
+        "PASSWORD",
+        "PASSWD",
+        "PASSPHRASE",
+        "PASS",
+        "CREDENTIAL",
+        "CREDENTIALS",
+        "PRIVATE",
+        "AUTH",
+        "AUTHORIZATION",
+        "BEARER",
+        "COOKIE",
+        "SESSION",
+        "APIKEY",
+    }
+)
 _CREDENTIAL_IN_URL = re.compile(r"^\w+://[^/@\s]+:[^/@\s]+@")
+_SPLIT = re.compile(r"[^A-Z0-9]+")
 
 
 def _mask(name: str, value: str) -> str:
-    upper = name.upper()
-    if any(marker in upper for marker in _SENSITIVE_MARKERS):
+    parts = [p for p in _SPLIT.split(name.upper()) if p]
+    if any(part in _SENSITIVE_WORDS for part in parts):
         return "***"
     if _CREDENTIAL_IN_URL.match(value):
         return "***"
@@ -24,9 +44,10 @@ class EnvTool(Tool):
     name = "env"
     description = (
         "Read environment variables. Pass `name` for one variable, or "
-        "omit it to list every variable name (values containing SECRET, "
-        "KEY, TOKEN, PASSWORD, or CREDENTIAL in the name, or a "
-        "scheme://user:pass@ credential in the value, are masked)."
+        "omit it to list every variable name (values whose name looks "
+        "sensitive — SECRET, KEY, TOKEN, PASS/PASSWORD, AUTH, COOKIE, "
+        "SESSION, CREDENTIAL, … — or a scheme://user:pass@ credential in "
+        "the value, are masked)."
     )
     parameters = {
         "type": "object",
@@ -45,7 +66,8 @@ class EnvTool(Tool):
             return ToolResult(output=f"{name}={_mask(name, value)}")
 
         lines = [
-            f"{key}={_mask(key, value)}" for key, value in sorted(os.environ.items())
+            f"{key}={_mask(key, value)}"
+            for key, value in sorted(os.environ.items())
         ]
 
         return ToolResult(output="\n".join(lines))
