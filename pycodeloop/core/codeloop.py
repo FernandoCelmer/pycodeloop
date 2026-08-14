@@ -8,6 +8,7 @@ import threading
 from pycodeloop.core.agent import Agent
 from pycodeloop.core.config import Config
 from pycodeloop.core.session import Message, Session
+from pycodeloop.store.execution_trace import JsonlTracer
 from pycodeloop.store.file_access_log import session_scope
 from pycodeloop.store.usage_tracker import UsageTracker
 
@@ -90,6 +91,10 @@ class CodeLoop:
             )
         else:
             self.agent.on_message = None
+
+        self.agent.on_trace_event = (
+            JsonlTracer(session_key or "global") if self.config.trace else None
+        )
 
         usage_before = self.agent.usage
         with session_scope(session_key or "global"):

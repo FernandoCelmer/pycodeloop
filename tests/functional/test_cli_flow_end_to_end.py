@@ -9,6 +9,7 @@ from pathlib import Path
 from unittest import mock
 
 from pycodeloop.cli.flow import build_flow
+from pycodeloop.store.execution_trace import JsonlTracer
 from pycodeloop.store.sqlite_sessions import SqliteSessions
 from tests.functional._fake_llm_server import (
     FakeLLMServer,
@@ -17,21 +18,30 @@ from tests.functional._fake_llm_server import (
 )
 
 # build_flow() -> Config() defaults storage to a real SqliteSessions() at
-# ~/.pycodeloop/pycodeloop.db when not given one explicitly — every test
-# in this module would otherwise write to the real user's database.
+# ~/.pycodeloop/pycodeloop.db, and trace defaults to a real JsonlTracer at
+# ~/.pycodeloop/logs/, when not given explicitly — every test in this
+# module would otherwise write to the real user's files.
 _tmpdir = tempfile.TemporaryDirectory()
 _default_storage_patcher = mock.patch(
     "pycodeloop.core.config._default_storage",
     lambda: SqliteSessions(path=Path(_tmpdir.name) / "pycodeloop.db"),
 )
+_trace_patcher = mock.patch(
+    "pycodeloop.core.codeloop.JsonlTracer",
+    lambda session_key: JsonlTracer(
+        session_key, directory=Path(_tmpdir.name) / "logs"
+    ),
+)
 
 
 def setUpModule():
     _default_storage_patcher.start()
+    _trace_patcher.start()
 
 
 def tearDownModule():
     _default_storage_patcher.stop()
+    _trace_patcher.stop()
     _tmpdir.cleanup()
 
 

@@ -31,6 +31,7 @@ class TestCodeLoopPersistenceEndToEnd(unittest.TestCase):
             provider=provider,
             tools=[],
             storage=SqliteSessions(path=self.db_path),
+            trace=False,
         )
         return CodeLoop(config=config), server
 

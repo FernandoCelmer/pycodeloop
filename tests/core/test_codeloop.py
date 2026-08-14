@@ -1,5 +1,6 @@
 """Test CodeLoop's session_key/storage wiring"""
 
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -11,6 +12,7 @@ from pycodeloop.core import codeloop as codeloop_module
 from pycodeloop.core.codeloop import CodeLoop
 from pycodeloop.core.config import Config
 from pycodeloop.store import file_sessions as sessions_module
+from pycodeloop.store.execution_trace import JsonlTracer
 from pycodeloop.store.file_sessions import FileSessions
 from pycodeloop.store.json_store import JsonFileStore
 from pycodeloop.store.usage_tracker import UsageTracker
@@ -65,6 +67,7 @@ class TestCodeLoopSessionStorage(unittest.TestCase):
         config = Config(
             provider=FakeProvider([ProviderResponse(text="hi")]),
             storage=self.storage,
+            trace=False,
         )
         flow = CodeLoop(config=config)
 
@@ -76,6 +79,7 @@ class TestCodeLoopSessionStorage(unittest.TestCase):
         config = Config(
             provider=FakeProvider([ProviderResponse(text="hi")]),
             storage=self.storage,
+            trace=False,
         )
         flow = CodeLoop(config=config)
 
@@ -89,6 +93,7 @@ class TestCodeLoopSessionStorage(unittest.TestCase):
         config = Config(
             provider=FakeProvider([ProviderResponse(text="first")]),
             storage=self.storage,
+            trace=False,
         )
         flow = CodeLoop(config=config)
         flow.run("hello", session_key="s1")
@@ -98,6 +103,7 @@ class TestCodeLoopSessionStorage(unittest.TestCase):
         config2 = Config(
             provider=FakeProvider([ProviderResponse(text="second")]),
             storage=self.storage,
+            trace=False,
         )
         flow2 = CodeLoop(config=config2)
         flow2.run("again", session_key="s1")
@@ -122,7 +128,10 @@ class TestCodeLoopSessionStorage(unittest.TestCase):
             ]
         )
         config = Config(
-            provider=provider, storage=self.storage, tools=[EchoTool()]
+            provider=provider,
+            storage=self.storage,
+            tools=[EchoTool()],
+            trace=False,
         )
         flow = CodeLoop(config=config)
 
@@ -141,6 +150,59 @@ class TestCodeLoopSessionStorage(unittest.TestCase):
         # save sees one more message than the last, not a single jump
         # straight to the final count.
         self.assertEqual(seen_counts, [1, 2, 3, 4, 4])
+
+
+class TestCodeLoopTrace(unittest.TestCase):
+    def setUp(self):
+        self._tmpdir = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmpdir.cleanup)
+        self.logs_dir = Path(self._tmpdir.name) / "logs"
+
+        patcher = mock.patch.object(
+            codeloop_module,
+            "JsonlTracer",
+            side_effect=lambda session_key: JsonlTracer(
+                session_key, directory=self.logs_dir
+            ),
+        )
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_trace_on_by_default_writes_run_and_turn_events(self):
+        config = Config(
+            provider=FakeProvider([ProviderResponse(text="hi")]),
+            storage=False,
+        )
+        flow = CodeLoop(config=config)
+
+        flow.run("hello", session_key="s1")
+
+        lines = (self.logs_dir / "s1.jsonl").read_text().splitlines()
+        types = [json.loads(line)["type"] for line in lines]
+        self.assertEqual(types, ["run_start", "turn", "run_end"])
+
+    def test_trace_false_writes_nothing(self):
+        config = Config(
+            provider=FakeProvider([ProviderResponse(text="hi")]),
+            storage=False,
+            trace=False,
+        )
+        flow = CodeLoop(config=config)
+
+        flow.run("hello", session_key="s1")
+
+        self.assertFalse((self.logs_dir / "s1.jsonl").exists())
+
+    def test_trace_without_session_key_uses_global_file(self):
+        config = Config(
+            provider=FakeProvider([ProviderResponse(text="hi")]),
+            storage=False,
+        )
+        flow = CodeLoop(config=config)
+
+        flow.run("hello")
+
+        self.assertTrue((self.logs_dir / "global.jsonl").exists())
 
 
 if __name__ == "__main__":
