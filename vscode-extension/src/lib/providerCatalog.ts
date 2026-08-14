@@ -2,17 +2,12 @@ export interface ProviderDef {
   id: string;
   label: string;
   description: string;
-  /** Filename under the extension's bundled providers/ dir. */
   file: string;
   models: string[];
   defaultModel: string;
   local: boolean;
 }
 
-/** Ready-to-use provider configs bundled with the extension — pick one
- * and go, no hand-written JSON needed. Mirrors pycodeloop/providers/
- * templates/ but shipped inside the extension so it works regardless of
- * how the pycodeloop CLI was installed. */
 export const PROVIDER_CATALOG: ProviderDef[] = [
   {
     id: "anthropic",
@@ -37,11 +32,6 @@ export const PROVIDER_CATALOG: ProviderDef[] = [
     label: "Gemini",
     description: "Google Gemini models — needs GEMINI_API_KEY",
     file: "gemini.json",
-    // Deliberately pinned to 2.5, not the "-latest" aliases: those now
-    // resolve to Gemini 3.x, whose "thinking" models attach a
-    // thought_signature to function calls that the OpenAI-compatible
-    // endpoint doesn't round-trip — the 2nd tool call in a turn 400s.
-    // https://github.com/openai/codex/issues/7519
     models: ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.5-flash-lite"],
     defaultModel: "gemini-2.5-flash",
     local: false,
@@ -60,8 +50,6 @@ export const PROVIDER_CATALOG: ProviderDef[] = [
     label: "Groq",
     description: "Fast open-weight inference — needs GROQ_API_KEY",
     file: "groq.json",
-    // llama-3.3-70b-versatile is deprecated on Groq; gpt-oss is the
-    // recommended general-purpose replacement.
     models: ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "moonshotai/kimi-k2-instruct"],
     defaultModel: "openai/gpt-oss-120b",
     local: false,

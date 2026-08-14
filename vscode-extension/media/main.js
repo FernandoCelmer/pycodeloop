@@ -1090,9 +1090,13 @@
       const desc = document.createElement("p");
       desc.className = "provider-desc";
       desc.textContent = item.description;
-      const model = document.createElement("span");
+      const model = document.createElement("button");
       model.className = "provider-model";
       model.textContent = item.model;
+      model.title = "Change model";
+      model.addEventListener("click", () => {
+        vscode.postMessage({ type: "changeProviderModel", id: item.id });
+      });
       info.append(desc, model);
 
       const action = document.createElement("button");

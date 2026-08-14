@@ -593,10 +593,17 @@ body {
 }
 
 .provider-model {
+  all: unset;
+  cursor: pointer;
   font-family: var(--vscode-editor-font-family);
   font-size: 0.78em;
   color: var(--vscode-descriptionForeground);
   opacity: 0.8;
+}
+
+.provider-model:hover {
+  opacity: 1;
+  text-decoration: underline;
 }
 
 .provider-model::before {

@@ -197,8 +197,36 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     return vscode.Uri.joinPath(this.context.extensionUri, "providers").fsPath;
   }
 
-  /** Which catalog entry (if any) the current provider setting resolves to —
-   * drives the "Active"/"Connected" state shown on each gallery card. */
+  private providerModelKey(id: string): string {
+    return `pycodeloop.providerModel.${id}`;
+  }
+
+  private storedModelFor(def: (typeof PROVIDER_CATALOG)[number]): string {
+    return this.context.globalState.get<string>(this.providerModelKey(def.id)) ?? def.defaultModel;
+  }
+
+  private async pickModelFor(def: (typeof PROVIDER_CATALOG)[number]): Promise<string | undefined> {
+    const current = this.storedModelFor(def);
+    const modelItems = [...def.models.map((m) => ({ label: m })), { label: "Custom…" }];
+    const modelPick = await vscode.window.showQuickPick(modelItems, {
+      title: `${def.label} model`,
+      placeHolder: `Current: ${current}`,
+    });
+    if (!modelPick) {
+      return undefined;
+    }
+    if (modelPick.label !== "Custom…") {
+      return modelPick.label;
+    }
+    return (
+      (await vscode.window.showInputBox({
+        title: `${def.label} model`,
+        value: current,
+        ignoreFocusOut: true,
+      })) ?? undefined
+    );
+  }
+
   private activeProviderId(providerSetting: string): string {
     if (!providerSetting) {
       return "";
@@ -216,15 +244,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     return "custom";
   }
 
-  /** Opens the chat view and shows the provider gallery in it — the
-   * entry point for the "Select Provider…" command/menu/slash-command. */
   async openProviderGallery(): Promise<void> {
     await vscode.commands.executeCommand("pycodeloop.chat.focus");
     await this.showProviderGallery();
   }
 
-  /** Pushes the provider catalog plus each entry's live connection state to
-   * the webview, which renders it as a card gallery. */
   async showProviderGallery(): Promise<void> {
     const settings = readSettings();
     const activeId = this.activeProviderId(settings.provider);
@@ -242,7 +266,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           id: def.id,
           label: def.label,
           description: def.description,
-          model: isActive && settings.model ? settings.model : def.defaultModel,
+          model: isActive && settings.model ? settings.model : this.storedModelFor(def),
           local: def.local,
           active: isActive,
           connected: hasKey,
@@ -253,9 +277,6 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.post({ type: "providers", items, activeId });
   }
 
-  /** Connects a ready-made provider (or the "generic"/"custom" fallback
-   * actions) — picks a model, reuses a remembered key or prompts for one,
-   * then reloads the connection and re-renders the gallery. */
   async connectProvider(id: string): Promise<void> {
     if (id === "custom") {
       await this.selectConfig();
@@ -287,25 +308,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       return;
     }
 
-    const modelItems = [...def.models.map((m) => ({ label: m })), { label: "Custom…" }];
-    const modelPick = await vscode.window.showQuickPick(modelItems, {
-      title: `${def.label} model`,
-      placeHolder: `Default: ${def.defaultModel}`,
-    });
-    if (!modelPick) {
+    const model = await this.pickModelFor(def);
+    if (!model) {
       return;
     }
-
-    let model = def.defaultModel;
-    if (modelPick.label === "Custom…") {
-      model = (await vscode.window.showInputBox({
-        title: `${def.label} model`,
-        value: def.defaultModel,
-        ignoreFocusOut: true,
-      })) ?? def.defaultModel;
-    } else {
-      model = modelPick.label;
-    }
+    await this.context.globalState.update(this.providerModelKey(def.id), model);
 
     if (!def.local) {
       const remembered = await this.context.secrets.get(providerKeySecret(def.id));
@@ -337,8 +344,25 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.reload();
   }
 
-  /** Forgets the remembered key for one catalog provider (gallery "Sign
-   * out" action) without touching whichever provider is currently active. */
+  async changeProviderModel(id: string): Promise<void> {
+    const def = findProviderDef(id);
+    if (!def) {
+      return;
+    }
+    const model = await this.pickModelFor(def);
+    if (!model) {
+      return;
+    }
+    await this.context.globalState.update(this.providerModelKey(def.id), model);
+
+    if (this.activeProviderId(readSettings().provider) === id) {
+      await updateSetting("model", model);
+      await this.postSettings();
+      this.reload();
+    }
+    await this.showProviderGallery();
+  }
+
   async disconnectProvider(id: string): Promise<void> {
     const def = findProviderDef(id);
     if (!def || def.local) {
@@ -494,6 +518,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         break;
       case "connectProvider":
         this.connectProvider(String(message.id ?? ""));
+        break;
+      case "changeProviderModel":
+        this.changeProviderModel(String(message.id ?? ""));
         break;
       case "disconnectProvider":
         this.disconnectProvider(String(message.id ?? ""));
