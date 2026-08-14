@@ -7,6 +7,7 @@ from pycodeloop.abc.sessions import Sessions
 from pycodeloop.abc.tool import Tool
 from pycodeloop.core.agent import DEFAULT_SYSTEM_PROMPT
 from pycodeloop.core.exception import NotProviderInstance
+from pycodeloop.core.memory import RememberTool, load_memory, render_memory_prompt
 from pycodeloop.core.store.sqlite_sessions import SqliteSessions
 from pycodeloop.core.skills import (
     ReadSkillTool,
@@ -81,6 +82,12 @@ class Config:
             calls in one turn run in parallel, same as any other
             same-name, non-dangerous tool calls. Off by default.
 
+        memory (bool): Load `.pycodeloop/memory.md` (if present) into the
+            system prompt and expose a `remember` tool the agent uses to
+            save standing corrections/preferences there — so a rule given
+            in one session is still followed in the next, instead of the
+            user repeating it every time. On by default.
+
         storage (Optional[Sessions]): Persists the session so
             `CodeLoop.run(prompt, session_key=...)` can resume a
             conversation across process restarts. Defaults to
@@ -110,6 +117,7 @@ class Config:
         skill_sources: set[str] | None = None,
         skills_refresh: bool = False,
         delegation: bool = False,
+        memory: bool = True,
         storage: Sessions | bool | None = None,
     ) -> None:
         self.provider = provider if provider is not None else _default_provider()
@@ -123,6 +131,8 @@ class Config:
                 *self.tools,
                 DelegateTool(provider=self.provider, tools=list(READ_ONLY_TOOLS)),
             ]
+        if memory:
+            self._load_memory()
         self.storage = None if storage is False else storage or _default_storage()
 
         self._validate()
@@ -146,6 +156,20 @@ class Config:
         )
         self.system_prompt = f"{base_prompt}\n\n{render_skills_index(found)}"
         return found
+
+    def _load_memory(self) -> None:
+        self.tools = [*self.tools, RememberTool()]
+
+        content = load_memory()
+        if not content:
+            return
+
+        base_prompt = (
+            self.system_prompt
+            if self.system_prompt is not None
+            else DEFAULT_SYSTEM_PROMPT
+        )
+        self.system_prompt = f"{base_prompt}\n\n{render_memory_prompt(content)}"
 
     def _validate(self) -> None:
         for name, abc in self._PROVIDERS.items():

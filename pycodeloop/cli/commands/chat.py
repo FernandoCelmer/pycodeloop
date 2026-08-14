@@ -39,6 +39,15 @@ def chat(
             "independent subtasks, run in parallel. Off by default."
         ),
     ),
+    memory: bool = typer.Option(
+        True,
+        "--memory/--no-memory",
+        help=(
+            "Load .pycodeloop/memory.md into the system prompt and expose "
+            "a remember tool so standing corrections persist across "
+            "sessions. On by default."
+        ),
+    ),
     yes: bool = typer.Option(
         False,
         "--yes",
@@ -58,5 +67,6 @@ def chat(
         skills=skills,
         skills_refresh=skills_refresh,
         delegation=delegate,
+        memory=memory,
     )
     CodeLoopApp(flow, provider_name, model_name).run()

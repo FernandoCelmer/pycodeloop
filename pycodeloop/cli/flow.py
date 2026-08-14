@@ -132,6 +132,7 @@ def build_flow(
     skills: bool = False,
     skills_refresh: bool = False,
     delegation: bool = False,
+    memory: bool = True,
 ) -> tuple[CodeLoop, str, str]:
     provider, provider_name = resolve_provider(provider_name, model, base_url, url)
 
@@ -253,6 +254,7 @@ def build_flow(
         skills=skills,
         skills_refresh=skills_refresh,
         delegation=delegation,
+        memory=memory,
     )
     if config.skills:
         console.print(f"{Settings.INFO_ALERT} loaded {len(config.skills)} skill(s)")

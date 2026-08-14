@@ -56,6 +56,15 @@ def default(
             "independent subtasks, run in parallel. Off by default."
         ),
     ),
+    memory: bool = typer.Option(
+        True,
+        "--memory/--no-memory",
+        help=(
+            "Load .pycodeloop/memory.md into the system prompt and expose "
+            "a remember tool so standing corrections persist across "
+            "sessions. On by default."
+        ),
+    ),
     yes: bool = typer.Option(
         False,
         "--yes",
