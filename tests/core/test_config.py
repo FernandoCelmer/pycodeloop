@@ -4,6 +4,10 @@ import unittest
 
 from pycodeloop.core.config import Config
 from pycodeloop.providers import GenericProvider
+from pycodeloop.tools._workspace import (
+    is_workspace_enabled,
+    set_workspace_enabled,
+)
 
 
 class TestConfigDelegation(unittest.TestCase):
@@ -31,6 +35,26 @@ class TestConfigDelegation(unittest.TestCase):
         delegate = next(t for t in config.tools if t.name == "delegate")
 
         self.assertIs(delegate.provider, provider)
+
+
+class TestConfigWorkspace(unittest.TestCase):
+    def _provider(self) -> GenericProvider:
+        return GenericProvider(
+            url="http://fake/v1/chat/completions", model="fake-model"
+        )
+
+    def setUp(self):
+        self.addCleanup(set_workspace_enabled, True)
+
+    def test_workspace_on_by_default(self):
+        Config(provider=self._provider(), storage=False)
+
+        self.assertTrue(is_workspace_enabled())
+
+    def test_workspace_false_disables_the_jail(self):
+        Config(provider=self._provider(), storage=False, workspace=False)
+
+        self.assertFalse(is_workspace_enabled())
 
 
 if __name__ == "__main__":

@@ -17,6 +17,7 @@ from pycodeloop.skills import (
 )
 from pycodeloop.store.sqlite_sessions import SqliteSessions
 from pycodeloop.tools import DEFAULT_TOOLS, READ_ONLY_TOOLS, DelegateTool
+from pycodeloop.tools._workspace import set_workspace_enabled
 
 
 def _default_provider() -> Provider:
@@ -95,6 +96,16 @@ class Config:
             to keep sessions in memory only, for the life of the
             `CodeLoop` instance.
 
+        workspace (bool): Jail read_file/write_file/edit_file/
+            delete_file/grep/glob to the process's working directory —
+            an absolute path or `..` escape outside it is refused. Does
+            NOT cover `bash`/`git`, which run arbitrary shell/subprocess
+            commands with no path parsing; their only guardrail is the
+            `dangerous` confirm gate. On by default; set `False` only
+            for a trusted, single-project setup that needs tools to
+            read/write outside the workspace (e.g. a shared config
+            directory).
+
     Attributes:
         provider (Provider):
         tools (List[Tool]):
@@ -119,6 +130,7 @@ class Config:
         delegation: bool = False,
         memory: bool = True,
         storage: Sessions | bool | None = None,
+        workspace: bool = True,
     ) -> None:
         self.provider = (
             provider if provider is not None else _default_provider()
@@ -127,6 +139,8 @@ class Config:
         self.system_prompt = system_prompt
         self.max_turns = max_turns
         self.max_history_turns = max_history_turns
+        self.workspace = workspace
+        set_workspace_enabled(workspace)
         self.skills = self._discover_skills(
             skills, skill_sources, skills_refresh
         )

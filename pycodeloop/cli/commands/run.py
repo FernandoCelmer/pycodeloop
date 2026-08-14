@@ -55,6 +55,15 @@ def run(
         "-y",
         help="Skip confirmation prompts for dangerous tools.",
     ),
+    workspace: bool = typer.Option(
+        True,
+        "--workspace/--no-workspace",
+        help=(
+            "Jail read_file/write_file/edit_file/delete_file/grep/glob to "
+            "the working directory. Does NOT cover bash/git, which run "
+            "arbitrary shell commands. On by default."
+        ),
+    ),
 ) -> None:
     """Run a single prompt to completion, non-interactively."""
     flow, _provider_name, _model = build_flow(
@@ -68,6 +77,7 @@ def run(
         skills_refresh=skills_refresh,
         delegation=delegate,
         memory=memory,
+        workspace=workspace,
     )
     flow.run(prompt, session_key=default_session_key())
     console.print()

@@ -137,6 +137,7 @@ def build_flow(
     skills_refresh: bool = False,
     delegation: bool = False,
     memory: bool = True,
+    workspace: bool = True,
 ) -> tuple[CodeLoop, str, str]:
     provider, provider_name = resolve_provider(
         provider_name, model, base_url, url
@@ -275,6 +276,7 @@ def build_flow(
         skills_refresh=skills_refresh,
         delegation=delegation,
         memory=memory,
+        workspace=workspace,
     )
     if config.skills:
         console.print(

@@ -54,6 +54,15 @@ def chat(
         "-y",
         help="Skip confirmation prompts for dangerous tools.",
     ),
+    workspace: bool = typer.Option(
+        True,
+        "--workspace/--no-workspace",
+        help=(
+            "Jail read_file/write_file/edit_file/delete_file/grep/glob to "
+            "the working directory. Does NOT cover bash/git, which run "
+            "arbitrary shell commands. On by default."
+        ),
+    ),
 ) -> None:
     """Start the full-screen interactive chat — real live redraw, no
     readline quirks, since Textual owns the whole terminal."""
@@ -68,5 +77,6 @@ def chat(
         skills_refresh=skills_refresh,
         delegation=delegate,
         memory=memory,
+        workspace=workspace,
     )
     CodeLoopApp(flow, provider_name, model_name).run()

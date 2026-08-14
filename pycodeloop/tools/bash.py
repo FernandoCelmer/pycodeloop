@@ -10,7 +10,13 @@ from pycodeloop.tools._limits import truncate
 
 class BashTool(Tool):
     name = "bash"
-    description = "Run a shell command and return its stdout/stderr."
+    description = (
+        "Run a shell command and return its stdout/stderr. Not limited to "
+        "the workspace root — unlike read_file/write_file/grep/etc, this "
+        "runs an arbitrary command with full filesystem access, so use it "
+        "for paths outside the project only when the user actually asked "
+        "for that."
+    )
     parameters = {
         "type": "object",
         "properties": {
