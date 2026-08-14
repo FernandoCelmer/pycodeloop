@@ -564,7 +564,7 @@
     actions.className = "confirm-actions";
 
     const configure = document.createElement("button");
-    configure.textContent = "Select Provider…";
+    configure.textContent = "🔌 Select Provider";
     configure.addEventListener("click", () => {
       vscode.postMessage({ type: "showProviders" });
     });
@@ -1080,10 +1080,10 @@
     menuSkillsCheck.classList.toggle("checked", skillsEnabled);
     menuDelegationCheck.classList.toggle("checked", delegationEnabled);
     menuApiKey.textContent = hasApiKey
-      ? "API Key (saved)…"
+      ? "🔑 API Key (saved)"
       : apiKeyEnv
-        ? "API Key… (" + apiKeyEnv + ")"
-        : "API Key…";
+        ? "🔑 API Key (" + apiKeyEnv + ")"
+        : "🔑 API Key";
     if (!hasApiKey && apiKeyEnv && !apiKeyCard && !apiKeyPromptHidden) {
       renderApiKeyCard();
     }

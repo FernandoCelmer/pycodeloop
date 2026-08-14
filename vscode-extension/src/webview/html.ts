@@ -27,13 +27,13 @@ export function renderChatHtml(options: ChatHtmlOptions): string {
     </div>
     <div id="toolbar-actions">
       <button id="new-session" class="secondary" title="New session">New</button>
+      <button id="menu-sessions" class="secondary icon-btn" title="Sessions">🗂</button>
+      <button id="menu-provider" class="secondary icon-btn" title="Select provider">🔌</button>
       <div id="menu-anchor">
-        <button id="menu-toggle" class="secondary" title="Configure">⚙</button>
+        <button id="menu-toggle" class="secondary icon-btn" title="Configure">⚙</button>
         <div id="menu" hidden>
-          <button id="menu-sessions" class="menu-item">Sessions…</button>
-          <button id="menu-provider" class="menu-item">Select Provider…</button>
-          <button id="menu-api-key" class="menu-item">API Key…</button>
-          <button id="menu-model" class="menu-item">Model…</button>
+          <button id="menu-api-key" class="menu-item">🔑 API Key</button>
+          <button id="menu-model" class="menu-item">🧠 Model</button>
           <button id="menu-auto-approve" class="menu-item">
             <span id="menu-auto-approve-check" class="check-box"></span> Auto-approve tools
           </button>
@@ -43,9 +43,9 @@ export function renderChatHtml(options: ChatHtmlOptions): string {
           <button id="menu-delegation" class="menu-item">
             <span id="menu-delegation-check" class="check-box"></span> Sub-agent delegation
           </button>
-          <button id="menu-mcp" class="menu-item">MCP Servers…</button>
-          <button id="menu-reload" class="menu-item">Reload Connection</button>
-          <button id="menu-settings" class="menu-item">Open Settings</button>
+          <button id="menu-mcp" class="menu-item">🧩 MCP Servers</button>
+          <button id="menu-reload" class="menu-item">↻ Reload Connection</button>
+          <button id="menu-settings" class="menu-item">⚙ Open Settings</button>
         </div>
       </div>
     </div>

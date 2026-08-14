@@ -876,3 +876,10 @@ button.secondary:hover:not(:disabled) {
   background: var(--vscode-list-hoverBackground);
   border-color: var(--vscode-focusBorder);
 }
+
+.icon-btn {
+  padding: 5px 9px;
+  font-size: 1em;
+  line-height: 1;
+  letter-spacing: normal;
+}
