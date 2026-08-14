@@ -1,5 +1,27 @@
 # Release Notes
 
+## v0.6.0
+
+**Security hardening — tools**
+
+- ⚠️ `sql_query`/`sql_schema` are now `dangerous` (require confirm) and open the connection read-only at the driver level (`PRAGMA query_only`/`SET TRANSACTION READ ONLY`) instead of trusting a regex alone. The regex itself got stricter too: a `_FORBIDDEN` list blocks `INTO OUTFILE`/`INTO DUMPFILE`/`LOAD_FILE()`/`pg_read_file()`/`COPY ... TO`/`ATTACH DATABASE`, and `PRAGMA` is now checked against an explicit safe-list instead of being allowed wholesale. Connection URLs are validated against an allowlist of SQLAlchemy schemes (sqlite/postgresql/mysql/mariadb variants) before a connection is even attempted
+- ⚠️ `git_commit` now requires an explicit `paths` list and refuses `-A`/`-u`/`--all` — it could previously default to `git add -A`, contradicting this repo's own "never git add -A" rule
+- ⚠️ Filesystem tools (`read_file`, `write_file`, `edit_file`, `delete_file`, `grep`, `glob`) are jailed to the workspace root (`pycodeloop/tools/_workspace.py`) — an absolute path or a `..` escape outside the process cwd is now refused instead of silently followed
+- ⚠️ `http_request`/`web_fetch`/`safe_request` reject any URL whose scheme isn't `http`/`https` before the SSRF host check runs, and `is_blocked_host` now also blocks multicast and unspecified addresses
+- ⚠️ `env`'s sensitive-name matching widened (`AUTH`, `BEARER`, `COOKIE`, `SESSION`, `PASSWD`, `PASSPHRASE`, `APIKEY`, …) and now matches whole name segments instead of a raw substring, so it also masks more accurately
+
+**Reliability**
+
+- 🪲 `Agent` refuses to run a `dangerous` tool when no `confirm` callback is set instead of running it unconfirmed — closes a fail-open gap when `Agent` is used as a library without wiring a confirm handler
+- 🪲 `pycodeloop serve` now emits a `chat/turnEnd` notification after each provider turn, so an editor client can end the current text bubble at the right point instead of concatenating text from before and after a tool call into one run-on message
+- 🪲 `FileAccessLog`/`SqliteSessions` dispose their SQLite engine (`NullPool` + explicit `close()`/`__del__`) instead of leaking connections/`ResourceWarning`s across the process lifetime
+- 🪲 The interactive input-reader thread no longer raises when stdin closes out from under it mid-read
+
+**CI / quality gates**
+
+- ⬆️ `mypy` now runs with the correct config path in CI; `.pre-commit-config.yaml`'s file glob pointed at the pre-rename `codeloop/` package instead of `pycodeloop/`; CI now diffs `templates/` against `pycodeloop/providers/templates/` to catch the two going out of sync
+- 📝 `ruff` target-version bumped to `py310` (matches `requires-python`) and the full tree reformatted to it — full `ruff check`/`ruff format --check` pass
+
 ## v0.5.0
 
 - ⚙️ `pycodeloop --version`/`-V` prints the installed version and exits — nothing previously let a caller check it without importing the package; the VS Code extension uses this to detect an outdated CLI and offer to update it
