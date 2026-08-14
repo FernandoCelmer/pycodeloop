@@ -55,7 +55,9 @@ class Session:
                 satisfied_ids.add(self.messages[j].tool_call_id)
                 j += 1
 
-            missing = [call for call in msg.tool_calls if call["id"] not in satisfied_ids]
+            missing = [
+                call for call in msg.tool_calls if call["id"] not in satisfied_ids
+            ]
             for offset, call in enumerate(missing):
                 self.messages.insert(
                     j + offset,
