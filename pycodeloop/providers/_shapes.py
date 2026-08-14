@@ -5,8 +5,11 @@ Anthropic messages)."""
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 
 from pycodeloop.core.session import Message
+
+RequestBuilder = Callable[[str, "list[Message]", "list[dict]", str], dict]
 
 
 def openai_tool_schema(tools: list[dict]) -> list[dict]:
@@ -140,3 +143,63 @@ def to_anthropic_messages(messages: list[Message]) -> list[dict]:
                 }
             )
     return out
+
+
+def request_builder_from_config(request_cfg: dict) -> RequestBuilder:
+    body_paths = request_cfg.get("body_paths", {})
+    model_key = body_paths.get("model", "model")
+    messages_key = body_paths.get("messages", "messages")
+    tools_key = body_paths.get("tools", "tools")
+    role_key = body_paths.get("message_role", "role")
+    content_key = body_paths.get("message_content", "content")
+
+    params = request_cfg.get("params") or {}
+    params_key = request_cfg.get("params_key")
+    extra_body = request_cfg.get("extra_body") or {}
+
+    message_shape = request_cfg.get("message_shape", "openai")
+    tool_schema = request_cfg.get("tool_schema", "openai")
+
+    system_key = body_paths.get("system")
+    if system_key is None and message_shape == "anthropic":
+        system_key = "system"
+
+    build_tools = (
+        anthropic_tool_schema if tool_schema == "anthropic" else openai_tool_schema
+    )
+
+    def builder(
+        system_prompt: str, messages: list, tools: list[dict], model: str
+    ) -> dict:
+        if message_shape == "anthropic":
+            out_messages = to_anthropic_messages(messages)
+        else:
+            out_messages = to_openai_messages(system_prompt, messages)
+            if system_key:
+                out_messages = out_messages[1:]
+
+            if role_key != "role" or content_key != "content":
+                renamed = []
+                for msg in out_messages:
+                    new_msg = dict(msg)
+                    if "role" in new_msg:
+                        new_msg[role_key] = new_msg.pop("role")
+                    if "content" in new_msg:
+                        new_msg[content_key] = new_msg.pop("content")
+                    renamed.append(new_msg)
+                out_messages = renamed
+
+        body: dict = {model_key: model, messages_key: out_messages}
+        if system_key:
+            body[system_key] = system_prompt
+        if tools:
+            body[tools_key] = build_tools(tools)
+
+        if params_key:
+            body[params_key] = params
+        else:
+            body.update(params)
+        body.update(extra_body)
+        return body
+
+    return builder

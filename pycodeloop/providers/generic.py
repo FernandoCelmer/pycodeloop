@@ -8,19 +8,22 @@ import urllib.error
 import urllib.request
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any
 
 from pycodeloop.abc.provider import Provider, ProviderResponse, ToolCall, Usage
 from pycodeloop.constants import ENV_API_KEY
 from pycodeloop.core.session import Message
+from pycodeloop.providers._responses import (
+    anthropic_response,
+    default_openai_response,
+    response_parser_from_paths,
+)
 from pycodeloop.providers._shapes import (
-    anthropic_tool_schema,
+    RequestBuilder,
     openai_tool_schema,
-    to_anthropic_messages,
+    request_builder_from_config,
     to_openai_messages,
 )
 
-RequestBuilder = Callable[[str, "list[Message]", "list[dict]", str], dict]
 ResponseParser = Callable[[dict], ProviderResponse]
 
 
@@ -92,7 +95,7 @@ class GenericProvider(Provider):
         self.auth_header = auth_header
         self.auth_prefix = auth_prefix
         self.request_builder = request_builder or self._default_request
-        self.response_parser = response_parser or self._default_response
+        self.response_parser = response_parser or default_openai_response
         self.timeout = timeout
         self._uses_default_parser = response_parser is None
         self._config_path: Path | None = None
@@ -118,13 +121,13 @@ class GenericProvider(Provider):
 
         response_parser = None
         if data.get("response_shape") == "anthropic":
-            response_parser = cls._anthropic_response
+            response_parser = anthropic_response
         elif "response_paths" in data:
-            response_parser = cls._response_parser_from_paths(data["response_paths"])
+            response_parser = response_parser_from_paths(data["response_paths"])
 
         request_builder = None
         if "request" in data:
-            request_builder = cls._request_builder_from_config(data["request"])
+            request_builder = request_builder_from_config(data["request"])
 
         return cls(
             url=data["url"],
@@ -170,183 +173,6 @@ class GenericProvider(Provider):
             "messages": to_openai_messages(system_prompt, messages),
             "tools": openai_tool_schema(tools) if tools else None,
         }
-
-    @staticmethod
-    def _default_response(data: dict) -> ProviderResponse:
-        choice = data["choices"][0]
-        message = choice["message"]
-
-        tool_calls = [
-            ToolCall(
-                id=call["id"],
-                name=call["function"]["name"],
-                arguments=json.loads(call["function"].get("arguments") or "{}"),
-                extra={
-                    k: v for k, v in call.items() if k not in ("id", "type", "function")
-                }
-                or None,
-            )
-            for call in (message.get("tool_calls") or [])
-        ]
-
-        usage = data.get("usage") or {}
-        return ProviderResponse(
-            text=message.get("content") or "",
-            tool_calls=tool_calls,
-            stop_reason=choice.get("finish_reason") or "stop",
-            usage=Usage(
-                input_tokens=usage.get("prompt_tokens", 0),
-                output_tokens=usage.get("completion_tokens", 0),
-            ),
-            raw=data,
-        )
-
-    @staticmethod
-    def _anthropic_response(data: dict) -> ProviderResponse:
-        text = ""
-        tool_calls = []
-        for block in data.get("content") or []:
-            if block.get("type") == "text":
-                text += block.get("text") or ""
-            elif block.get("type") == "tool_use":
-                tool_calls.append(
-                    ToolCall(
-                        id=block["id"],
-                        name=block["name"],
-                        arguments=block.get("input") or {},
-                    )
-                )
-
-        usage = data.get("usage") or {}
-        return ProviderResponse(
-            text=text,
-            tool_calls=tool_calls,
-            stop_reason=data.get("stop_reason") or "end_turn",
-            usage=Usage(
-                input_tokens=usage.get("input_tokens", 0),
-                output_tokens=usage.get("output_tokens", 0),
-            ),
-            raw=data,
-        )
-
-    @staticmethod
-    def _get_path(data: Any, path: str, default: Any = None) -> Any:
-        """Dot-path lookup, e.g. 'choices.0.message.content'."""
-        current = data
-        for part in path.split("."):
-            if current is None:
-                return default
-            if isinstance(current, list):
-                try:
-                    current = current[int(part)]
-                except (ValueError, IndexError):
-                    return default
-            elif isinstance(current, dict):
-                current = current.get(part)
-            else:
-                return default
-        return current if current is not None else default
-
-    @classmethod
-    def _response_parser_from_paths(cls, paths: dict) -> ResponseParser:
-        text_path = paths.get("text", "choices.0.message.content")
-        tool_calls_path = paths.get("tool_calls", "choices.0.message.tool_calls")
-        stop_reason_path = paths.get("stop_reason", "choices.0.finish_reason")
-        input_tokens_path = paths.get("input_tokens", "usage.prompt_tokens")
-        output_tokens_path = paths.get("output_tokens", "usage.completion_tokens")
-        tool_call_id_path = paths.get("tool_call_id", "id")
-        tool_call_name_path = paths.get("tool_call_name", "function.name")
-        tool_call_arguments_path = paths.get(
-            "tool_call_arguments", "function.arguments"
-        )
-
-        def parser(data: dict) -> ProviderResponse:
-            raw_tool_calls = cls._get_path(data, tool_calls_path, []) or []
-            tool_calls = []
-            for call in raw_tool_calls:
-                arguments = cls._get_path(call, tool_call_arguments_path, "{}")
-                if isinstance(arguments, str):
-                    arguments = json.loads(arguments or "{}")
-                tool_calls.append(
-                    ToolCall(
-                        id=cls._get_path(call, tool_call_id_path, ""),
-                        name=cls._get_path(call, tool_call_name_path, ""),
-                        arguments=arguments or {},
-                    )
-                )
-
-            return ProviderResponse(
-                text=cls._get_path(data, text_path, "") or "",
-                tool_calls=tool_calls,
-                stop_reason=cls._get_path(data, stop_reason_path, "stop") or "stop",
-                usage=Usage(
-                    input_tokens=cls._get_path(data, input_tokens_path, 0) or 0,
-                    output_tokens=cls._get_path(data, output_tokens_path, 0) or 0,
-                ),
-                raw=data,
-            )
-
-        return parser
-
-    @classmethod
-    def _request_builder_from_config(cls, request_cfg: dict) -> RequestBuilder:
-        body_paths = request_cfg.get("body_paths", {})
-        model_key = body_paths.get("model", "model")
-        messages_key = body_paths.get("messages", "messages")
-        tools_key = body_paths.get("tools", "tools")
-        role_key = body_paths.get("message_role", "role")
-        content_key = body_paths.get("message_content", "content")
-
-        params = request_cfg.get("params") or {}
-        params_key = request_cfg.get("params_key")
-        extra_body = request_cfg.get("extra_body") or {}
-
-        message_shape = request_cfg.get("message_shape", "openai")
-        tool_schema = request_cfg.get("tool_schema", "openai")
-
-        system_key = body_paths.get("system")
-        if system_key is None and message_shape == "anthropic":
-            system_key = "system"
-
-        build_tools = (
-            anthropic_tool_schema if tool_schema == "anthropic" else openai_tool_schema
-        )
-
-        def builder(
-            system_prompt: str, messages: list, tools: list[dict], model: str
-        ) -> dict:
-            if message_shape == "anthropic":
-                out_messages = to_anthropic_messages(messages)
-            else:
-                out_messages = to_openai_messages(system_prompt, messages)
-                if system_key:
-                    out_messages = out_messages[1:]
-
-                if role_key != "role" or content_key != "content":
-                    renamed = []
-                    for msg in out_messages:
-                        new_msg = dict(msg)
-                        if "role" in new_msg:
-                            new_msg[role_key] = new_msg.pop("role")
-                        if "content" in new_msg:
-                            new_msg[content_key] = new_msg.pop("content")
-                        renamed.append(new_msg)
-                    out_messages = renamed
-
-            body: dict = {model_key: model, messages_key: out_messages}
-            if system_key:
-                body[system_key] = system_prompt
-            if tools:
-                body[tools_key] = build_tools(tools)
-
-            if params_key:
-                body[params_key] = params
-            else:
-                body.update(params)
-            body.update(extra_body)
-            return body
-
-        return builder
 
     def _headers(self) -> dict[str, str]:
         headers = {"Content-Type": "application/json", **self.headers}
