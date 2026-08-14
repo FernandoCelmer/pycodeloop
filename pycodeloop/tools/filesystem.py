@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import difflib
+import hashlib
 import re
 from pathlib import Path
 
 from pycodeloop.abc.tool import Tool, ToolResult
+from pycodeloop.store.file_access_log import FileAccessLog, default_log
 from pycodeloop.tools._limits import truncate
 
 _HUNK_HEADER = re.compile(r"^@@ -?\d+(,\d+)? \+?\d+(,\d+)? @@", re.MULTILINE)
@@ -29,7 +31,14 @@ def _looks_like_diff(text: str) -> bool:
 
 class ReadFileTool(Tool):
     name = "read_file"
-    description = "Read a text file's contents, optionally a line range."
+    description = (
+        "Read a text file's contents, optionally a line range. If you "
+        "already read the exact same path and range in this session and "
+        "it hasn't changed on disk since, this returns a short notice "
+        "instead of repeating the content, to save tokens — pass "
+        "force=true to get the full content again (e.g. if it scrolled "
+        "out of your context after compaction)."
+    )
     parameters = {
         "type": "object",
         "properties": {
@@ -39,11 +48,25 @@ class ReadFileTool(Tool):
                 "description": "1-indexed start line",
             },
             "limit": {"type": "integer", "description": "Max lines to read"},
+            "force": {
+                "type": "boolean",
+                "description": "Show full content even if unchanged since your last read.",
+                "default": False,
+            },
         },
         "required": ["path"],
     }
 
-    def run(self, path: str, offset: int = 1, limit: int | None = None) -> ToolResult:
+    def __init__(self, access_log: FileAccessLog | None = None) -> None:
+        self._log = access_log or default_log
+
+    def run(
+        self,
+        path: str,
+        offset: int = 1,
+        limit: int | None = None,
+        force: bool = False,
+    ) -> ToolResult:
         target = Path(path)
 
         try:
@@ -56,8 +79,32 @@ class ReadFileTool(Tool):
         numbered = [
             f"{i + start + 1}\t{line}" for i, line in enumerate(lines[start:end])
         ]
+        content = "\n".join(numbered)
+        content_hash = hashlib.sha256(content.encode()).hexdigest()
 
-        return ToolResult(output=truncate("\n".join(numbered)))
+        last = self._log.last_record(path)
+        unchanged = (
+            not force
+            and last is not None
+            and last.action == "read"
+            and last.offset == offset
+            and last.limit == limit
+            and last.content_hash == content_hash
+        )
+
+        self._log.record(
+            path, "read", content_hash=content_hash, size=len(content),
+            offset=offset, limit=limit,
+        )
+
+        if unchanged:
+            span = f" (lines {offset}-{end})" if limit else ""
+            return ToolResult(
+                output=f"(unchanged since you last read {path}{span} — pass "
+                "force=true to see it again)"
+            )
+
+        return ToolResult(output=truncate(content))
 
 
 class WriteFileTool(Tool):
@@ -72,6 +119,9 @@ class WriteFileTool(Tool):
         "required": ["path", "content"],
     }
     dangerous = True
+
+    def __init__(self, access_log: FileAccessLog | None = None) -> None:
+        self._log = access_log or default_log
 
     def preview(self, path: str, content: str, **_) -> str:
         if _looks_like_diff(content):
@@ -108,6 +158,13 @@ class WriteFileTool(Tool):
         except OSError as exc:
             return ToolResult(output=f"Error writing {path}: {exc}", is_error=True)
 
+        self._log.record(
+            path,
+            "write",
+            content_hash=hashlib.sha256(content.encode()).hexdigest(),
+            size=len(content),
+        )
+
         return ToolResult(output=f"Wrote {len(content)} bytes to {path}")
 
 
@@ -125,6 +182,9 @@ class EditFileTool(Tool):
         "required": ["path", "old_string", "new_string"],
     }
     dangerous = True
+
+    def __init__(self, access_log: FileAccessLog | None = None) -> None:
+        self._log = access_log or default_log
 
     def _apply(
         self, path: str, old_string: str, new_string: str, replace_all: bool
@@ -202,6 +262,13 @@ class EditFileTool(Tool):
         target, _before, after = result
         target.write_text(after)
 
+        self._log.record(
+            path,
+            "edit",
+            content_hash=hashlib.sha256(after.encode()).hexdigest(),
+            size=len(after),
+        )
+
         return ToolResult(output=f"Edited {path}")
 
 
@@ -214,6 +281,9 @@ class DeleteFileTool(Tool):
         "required": ["path"],
     }
     dangerous = True
+
+    def __init__(self, access_log: FileAccessLog | None = None) -> None:
+        self._log = access_log or default_log
 
     def preview(self, path: str, **_) -> str:
         target = Path(path)
@@ -231,6 +301,8 @@ class DeleteFileTool(Tool):
             target.unlink()
         except OSError as exc:
             return ToolResult(output=f"Error deleting {path}: {exc}", is_error=True)
+
+        self._log.record(path, "delete")
 
         return ToolResult(output=f"Deleted {path}")
 

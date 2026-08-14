@@ -7,6 +7,7 @@ import threading
 
 from pycodeloop.core.agent import Agent
 from pycodeloop.core.config import Config
+from pycodeloop.store.file_access_log import session_scope
 from pycodeloop.store.usage_tracker import UsageTracker
 from pycodeloop.core.session import Message, Session
 
@@ -87,9 +88,10 @@ class CodeLoop:
             self.agent.on_message = None
 
         usage_before = self.agent.usage
-        result = self.agent.run(
-            prompt, session=self.session, images=images, cancel_event=cancel_event
-        )
+        with session_scope(session_key or "global"):
+            result = self.agent.run(
+                prompt, session=self.session, images=images, cancel_event=cancel_event
+            )
         usage_after = self.agent.usage
 
         _usage_tracker.record_usage(

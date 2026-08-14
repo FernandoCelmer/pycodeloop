@@ -7,8 +7,10 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from pycodeloop.core.agent import Agent
+from pycodeloop.store.file_access_log import FileAccessLog
 from pycodeloop.tools.filesystem import ReadFileTool, WriteFileTool
 from pycodeloop.providers.generic import GenericProvider
 from tests.functional._fake_llm_server import (
@@ -27,6 +29,15 @@ class AgentEndToEndTestCase(unittest.TestCase):
         previous_cwd = os.getcwd()
         os.chdir(self.tmp_path)
         self.addCleanup(os.chdir, previous_cwd)
+
+        logdir = tempfile.TemporaryDirectory()
+        self.addCleanup(logdir.cleanup)
+        patcher = mock.patch(
+            "pycodeloop.tools.filesystem.default_log",
+            FileAccessLog(path=Path(logdir.name) / "access.db"),
+        )
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
         self.server: FakeLLMServer | None = None
         self.addCleanup(self._close_server)

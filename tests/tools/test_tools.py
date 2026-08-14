@@ -4,7 +4,9 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
+from pycodeloop.store.file_access_log import FileAccessLog
 from pycodeloop.tools.filesystem import (
     DeleteFileTool,
     EditFileTool,
@@ -25,6 +27,15 @@ class ToolTestCase(unittest.TestCase):
         os.chdir(self.tmp_path)
         self.addCleanup(os.chdir, previous_cwd)
 
+        self._logdir = tempfile.TemporaryDirectory()
+        self.addCleanup(self._logdir.cleanup)
+        self.access_log = FileAccessLog(path=Path(self._logdir.name) / "access.db")
+        patcher = mock.patch(
+            "pycodeloop.tools.filesystem.default_log", self.access_log
+        )
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
 
 class TestReadFileTool(ToolTestCase):
     def test_write_then_read_file(self):
@@ -34,6 +45,49 @@ class TestReadFileTool(ToolTestCase):
         result = ReadFileTool().run(path=str(target))
 
         self.assertIn("1\tline1", result.output)
+        self.assertIn("2\tline2", result.output)
+
+    def test_second_identical_read_is_a_short_notice(self):
+        target = self.tmp_path / "note.txt"
+        target.write_text("line1\nline2\n")
+        tool = ReadFileTool()
+
+        first = tool.run(path=str(target))
+        second = tool.run(path=str(target))
+
+        self.assertIn("1\tline1", first.output)
+        self.assertIn("unchanged since you last read", second.output)
+        self.assertNotIn("line1", second.output)
+
+    def test_force_shows_full_content_even_if_unchanged(self):
+        target = self.tmp_path / "note.txt"
+        target.write_text("line1\n")
+        tool = ReadFileTool()
+        tool.run(path=str(target))
+
+        result = tool.run(path=str(target), force=True)
+
+        self.assertIn("1\tline1", result.output)
+
+    def test_read_after_edit_shows_full_content_not_a_cache_hit(self):
+        target = self.tmp_path / "note.txt"
+        target.write_text("line1\n")
+        read_tool = ReadFileTool()
+        read_tool.run(path=str(target))
+
+        EditFileTool().run(path=str(target), old_string="line1", new_string="line2")
+        result = read_tool.run(path=str(target))
+
+        self.assertIn("1\tline2", result.output)
+
+    def test_different_offset_is_not_a_cache_hit(self):
+        target = self.tmp_path / "note.txt"
+        target.write_text("line1\nline2\nline3\n")
+        tool = ReadFileTool()
+        tool.run(path=str(target))
+
+        result = tool.run(path=str(target), offset=2)
+
         self.assertIn("2\tline2", result.output)
 
 
