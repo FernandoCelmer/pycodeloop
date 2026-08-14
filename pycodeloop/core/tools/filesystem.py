@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 import difflib
+import re
 from pathlib import Path
 
 from pycodeloop.abc.tool import Tool, ToolResult
 from pycodeloop.core.tools._limits import truncate
+
+_HUNK_HEADER = re.compile(r"^@@ -?\d+(,\d+)? \+?\d+(,\d+)? @@", re.MULTILINE)
+_DIFF_PREAMBLE = re.compile(r"^--- .+\n\+\+\+ .+$", re.MULTILINE)
 
 
 def _diff(path: str, before: str, after: str) -> str:
@@ -17,6 +21,10 @@ def _diff(path: str, before: str, after: str) -> str:
         tofile=path,
     )
     return "".join(lines) or "(no changes)"
+
+
+def _looks_like_diff(text: str) -> bool:
+    return bool(_HUNK_HEADER.search(text) or _DIFF_PREAMBLE.search(text))
 
 
 class ReadFileTool(Tool):
@@ -66,6 +74,13 @@ class WriteFileTool(Tool):
     dangerous = True
 
     def preview(self, path: str, content: str, **_) -> str:
+        if _looks_like_diff(content):
+            return (
+                "content looks like a unified diff (has a '@@ ... @@' hunk "
+                "header or '---'/'+++' file headers), not the file's actual "
+                "text. Pass the full literal file content instead."
+            )
+
         target = Path(path)
 
         try:
@@ -75,6 +90,16 @@ class WriteFileTool(Tool):
         return _diff(path, before, content)
 
     def run(self, path: str, content: str) -> ToolResult:
+        if _looks_like_diff(content):
+            return ToolResult(
+                output=(
+                    "content looks like a unified diff (has a '@@ ... @@' hunk "
+                    "header or '---'/'+++' file headers), not the file's actual "
+                    "text. Pass the full literal file content instead."
+                ),
+                is_error=True,
+            )
+
         target = Path(path)
 
         try:
@@ -104,6 +129,17 @@ class EditFileTool(Tool):
     def _apply(
         self, path: str, old_string: str, new_string: str, replace_all: bool
     ) -> tuple[Path, str, str] | ToolResult:
+        if _looks_like_diff(new_string):
+            return ToolResult(
+                output=(
+                    "new_string looks like a unified diff (has a '@@ ... @@' "
+                    "hunk header or '---'/'+++' file headers), not literal "
+                    "replacement text. Pass the actual code to substitute in, "
+                    "not a diff of it."
+                ),
+                is_error=True,
+            )
+
         target = Path(path)
 
         try:

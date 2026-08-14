@@ -49,7 +49,9 @@ DEFAULT_SYSTEM_PROMPT = (
     "what to do. Investigate before acting: read relevant files and search "
     "for existing patterns rather than guessing. Prefer the smallest change "
     "that solves the request. Be concise — state what you did, not what "
-    "you're about to do."
+    "you're about to do. write_file's content and edit_file's old_string/"
+    "new_string are literal file text, never diff syntax — no '@@ ... @@' "
+    "hunk headers, no leading '-'/'+' line markers."
 )
 
 
