@@ -113,7 +113,7 @@ pycodeloop/
 git clone https://github.com/dotflow-io/pycodeloop.git
 cd pycodeloop
 
-poetry install --extras all --with dev,code-quality,docs
+poetry install --extras mcp --with dev,code-quality,docs
 ```
 
 ## Building the docs
