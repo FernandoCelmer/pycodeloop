@@ -28,8 +28,9 @@ _TOOL_ICONS = {
     "git_log": "🌿",
     "git_commit": "🌿",
     "env": "🧾",
-    "todo": "✅",
     "read_skill": "🧠",
+    "sql_query": "🗄️",
+    "sql_schema": "🗄️",
 }
 
 

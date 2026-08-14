@@ -30,4 +30,6 @@
 
 ::: pycodeloop.tools.env.EnvTool
 
-::: pycodeloop.tools.todo.TodoTool
+::: pycodeloop.tools.sql.SqlSchemaTool
+
+::: pycodeloop.tools.sql.SqlQueryTool

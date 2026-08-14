@@ -15,7 +15,7 @@ from .filesystem import (
 from .git import GitCommitTool, GitDiffTool, GitLogTool, GitStatusTool
 from .http_request import HttpRequestTool
 from .search import GlobTool, GrepTool
-from .todo import TodoTool
+from .sql import SqlQueryTool, SqlSchemaTool
 from .web import WebFetchTool
 
 _read_file = ReadFileTool()
@@ -26,6 +26,8 @@ _web_fetch = WebFetchTool()
 _git_status = GitStatusTool()
 _git_diff = GitDiffTool()
 _git_log = GitLogTool()
+_sql_schema = SqlSchemaTool()
+_sql_query = SqlQueryTool()
 
 DEFAULT_TOOLS: list[Tool] = [
     _read_file,
@@ -43,7 +45,8 @@ DEFAULT_TOOLS: list[Tool] = [
     _git_log,
     GitCommitTool(),
     EnvTool(),
-    TodoTool(),
+    _sql_schema,
+    _sql_query,
 ]
 
 READ_ONLY_TOOLS: list[Tool] = [
@@ -55,6 +58,8 @@ READ_ONLY_TOOLS: list[Tool] = [
     _git_status,
     _git_diff,
     _git_log,
+    _sql_schema,
+    _sql_query,
 ]
 
 __all__ = [
@@ -75,7 +80,8 @@ __all__ = [
     "GitLogTool",
     "GitCommitTool",
     "HttpRequestTool",
-    "TodoTool",
+    "SqlSchemaTool",
+    "SqlQueryTool",
     "WebFetchTool",
     "DEFAULT_TOOLS",
     "READ_ONLY_TOOLS",
