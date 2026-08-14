@@ -291,6 +291,19 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             });
         });
         break;
+      case "askAside":
+        void this.ensureClient().then(() => {
+          this.client
+            ?.request("chat/ask", { prompt: message.prompt })
+            .then((response) => {
+              if (response.error) {
+                this.post({ type: "asideError", id: message.id, message: response.error.message });
+              } else {
+                this.post({ type: "asideAnswer", id: message.id, text: response.result?.text ?? "" });
+              }
+            });
+        });
+        break;
       case "cancel":
         this.client?.notify("chat/cancel");
         break;

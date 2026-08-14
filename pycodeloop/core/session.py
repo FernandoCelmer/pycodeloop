@@ -40,23 +40,32 @@ class Session:
         return self.messages
 
     def _repair_dangling_tool_calls(self) -> None:
-        """Self-heals a session left with a trailing tool_calls message
-        that has no tool_result replies — e.g. the process was killed
-        (crash, force-quit) between persisting the assistant's tool_use
-        message and running the tools. Every provider rejects a tool_use
-        without a matching tool_result on the next call, which would
-        otherwise make the session permanently unusable."""
-        if not self.messages:
-            return
+        """Self-heals any assistant tool_calls message left without a
+        matching tool_result immediately after it, anywhere in history."""
+        i = 0
+        while i < len(self.messages):
+            msg = self.messages[i]
+            if msg.role != "assistant" or not msg.tool_calls:
+                i += 1
+                continue
 
-        last = self.messages[-1]
-        if last.role != "assistant" or not last.tool_calls:
-            return
+            j = i + 1
+            satisfied_ids = set()
+            while j < len(self.messages) and self.messages[j].role == "tool":
+                satisfied_ids.add(self.messages[j].tool_call_id)
+                j += 1
 
-        for call in last.tool_calls:
-            self.add_tool_result(
-                call["id"], "Cancelled — connection was lost before this tool ran."
-            )
+            missing = [call for call in msg.tool_calls if call["id"] not in satisfied_ids]
+            for offset, call in enumerate(missing):
+                self.messages.insert(
+                    j + offset,
+                    Message(
+                        role="tool",
+                        content="Cancelled — connection was lost before this tool ran.",
+                        tool_call_id=call["id"],
+                    ),
+                )
+            i = j + len(missing)
 
     def trim(self, max_turns: int) -> None:
         """Keep only the most recent `max_turns` user-initiated turns,

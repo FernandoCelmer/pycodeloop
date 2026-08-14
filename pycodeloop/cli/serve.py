@@ -39,6 +39,7 @@ class RpcServer:
         self._out_lock = threading.Lock()
         self._confirm_waiters: dict[str, queue.Queue] = {}
         self._cancel_event: threading.Event | None = None
+        self._chat_thread: threading.Thread | None = None
         self._wire_callbacks()
 
     def _send(self, message: dict) -> None:
@@ -138,18 +139,50 @@ class RpcServer:
                 }
             )
 
+    def _run_ask(self, request_id, params: dict) -> None:
+        try:
+            text = self.flow.ask(params.get("prompt", ""))
+            self._send({"jsonrpc": "2.0", "id": request_id, "result": {"text": text}})
+        except Exception as exc:
+            self._send(
+                {
+                    "jsonrpc": "2.0",
+                    "id": request_id,
+                    "error": {"code": -32000, "message": str(exc)},
+                }
+            )
+
     def handle(self, request: dict) -> None:
         method = request.get("method")
         params = request.get("params") or {}
         request_id = request.get("id")
 
         if method == "chat/send":
+            if self._chat_thread is not None and self._chat_thread.is_alive():
+                self._send(
+                    {
+                        "jsonrpc": "2.0",
+                        "id": request_id,
+                        "error": {
+                            "code": -32001,
+                            "message": "A chat turn is already running.",
+                        },
+                    }
+                )
+            else:
+                self._chat_thread = threading.Thread(
+                    target=self._run_chat, args=(request_id, params), daemon=True
+                )
+                self._chat_thread.start()
+        elif method == "chat/ask":
             threading.Thread(
-                target=self._run_chat, args=(request_id, params), daemon=True
+                target=self._run_ask, args=(request_id, params), daemon=True
             ).start()
         elif method == "chat/cancel":
             if self._cancel_event is not None:
                 self._cancel_event.set()
+            for waiter in list(self._confirm_waiters.values()):
+                waiter.put(False)
         elif method == "chat/confirmResponse":
             waiter = self._confirm_waiters.get(params.get("id"))
             if waiter is not None:

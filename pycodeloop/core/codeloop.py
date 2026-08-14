@@ -8,7 +8,7 @@ import threading
 from pycodeloop.core.agent import Agent
 from pycodeloop.core.config import Config
 from pycodeloop.core.store.usage_tracker import UsageTracker
-from pycodeloop.core.session import Session
+from pycodeloop.core.session import Message, Session
 
 _usage_tracker = UsageTracker()
 
@@ -102,3 +102,27 @@ class CodeLoop:
             self.config.storage.post(session_key, self.session)
 
         return result
+
+    def ask(self, question: str) -> str:
+        """One-shot Q&A against a read-only snapshot of the current
+        session — doesn't touch `self.session`, run tools, or persist,
+        so it's safe to call while `run()` is mid-turn on another thread."""
+        messages = list(self.session.messages)
+        last = messages[-1] if messages else None
+        if last is not None and last.role == "assistant" and last.tool_calls:
+            for call in last.tool_calls:
+                messages.append(
+                    Message(
+                        role="tool",
+                        tool_call_id=call["id"],
+                        content="(pending — this tool hasn't finished yet)",
+                    )
+                )
+        messages.append(Message(role="user", content=question))
+
+        response = self.agent.provider.complete(
+            system_prompt=self.agent.system_prompt,
+            messages=messages,
+            tools=[],
+        )
+        return response.text

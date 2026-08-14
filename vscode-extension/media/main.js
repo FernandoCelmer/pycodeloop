@@ -44,6 +44,7 @@
 
   let assistantTurn = null;
   let pendingAssistantText = "";
+  let isBusy = false;
   const pendingToolCards = new Map(); // name -> array of card elements, FIFO
   let currentModel = "";
   let autoApprove = false;
@@ -67,9 +68,6 @@
       .replace(/>/g, "&gt;");
   }
 
-  // Minimal, safe-ish markdown: fenced code blocks, headings, lists, links,
-  // inline code, bold/italic. Escapes HTML first so model output can never
-  // inject markup.
   function renderInline(segment) {
     segment = escapeHtml(segment);
     segment = segment.replace(/`([^`]+)`/g, "<code>$1</code>");
@@ -124,9 +122,6 @@
   }
 
   function renderMarkdown(raw) {
-    // Guard against an unterminated fence mid-stream (odd backtick count):
-    // render everything before the last opening ``` as-is and leave the
-    // in-progress fence as plain text until it closes.
     const blocks = raw.split(/```(\w*\n[\s\S]*?)```/g);
     let html = "";
     for (let i = 0; i < blocks.length; i++) {
@@ -154,10 +149,6 @@
     return el;
   }
 
-  // Provider HTTP errors arrive as Python's str(HTTPError): "HTTP Error
-  // 400: Bad Request: {...raw JSON body...}". Pull the human message out
-  // of that JSON (Anthropic/OpenAI both nest it under error.message) and
-  // show it up front, with the raw response tucked behind "Details".
   function parseApiError(text) {
     const match = /^HTTP Error (\d+): ([^:]+): ([\s\S]*)$/.exec(text);
     if (!match) {
@@ -252,6 +243,42 @@
     }
 
     messagesEl.appendChild(turn);
+    scrollToBottom();
+  }
+
+  const pendingAsides = new Map();
+
+  function addAsideTurn(id, text) {
+    const question = document.createElement("div");
+    question.className = "turn user aside";
+    const questionBubble = document.createElement("div");
+    questionBubble.className = "bubble";
+    questionBubble.textContent = text;
+    question.appendChild(questionBubble);
+    messagesEl.appendChild(question);
+
+    const answer = document.createElement("div");
+    answer.className = "turn assistant aside";
+    const answerBubble = document.createElement("div");
+    answerBubble.className = "bubble";
+    answerBubble.textContent = "…";
+    answer.appendChild(answerBubble);
+    messagesEl.appendChild(answer);
+
+    pendingAsides.set(id, answerBubble);
+    scrollToBottom();
+  }
+
+  function resolveAsideTurn(id, text, isError) {
+    const bubble = pendingAsides.get(id);
+    if (!bubble) {
+      return;
+    }
+    pendingAsides.delete(id);
+    bubble.innerHTML = renderMarkdown(text);
+    if (isError) {
+      bubble.classList.add("error");
+    }
     scrollToBottom();
   }
 
@@ -442,18 +469,11 @@
       }
     }
 
-    // renderToolCall() also queues each card in pendingToolCards (keyed by
-    // name) for live toolResult matching — replayed cards are already
-    // resolved above, so clear it or a later live result would wrongly
-    // pop a stale historical card instead of the new one.
     pendingToolCards.clear();
     scrollToBottom();
   }
 
   function markToolAutoApproved(name) {
-    // Wire order is toolCall -> (confirm gate) autoApproved -> toolResult,
-    // so the card still waiting at the front of this name's queue is the
-    // one being auto-approved right now.
     const queue = pendingToolCards.get(name);
     const card = queue && queue[0];
     if (!card) {
@@ -464,7 +484,8 @@
   }
 
   function setBusy(busy) {
-    sendButton.disabled = busy;
+    isBusy = busy;
+    sendButton.disabled = false;
     cancelButton.disabled = !busy;
   }
 
@@ -776,10 +797,21 @@
     if (!prompt && !pendingImages.length) {
       return;
     }
-    addUserTurn(prompt, pendingImages);
+    const images = pendingImages;
+
+    if (isBusy) {
+      const id = "aside-" + Date.now() + "-" + Math.random().toString(36).slice(2);
+      addAsideTurn(id, prompt);
+      promptEl.value = "";
+      pendingImages = [];
+      renderAttachmentsPreview();
+      vscode.postMessage({ type: "askAside", id, prompt });
+      return;
+    }
+
+    addUserTurn(prompt, images);
     promptEl.value = "";
     commandMenu.hidden = true;
-    const images = pendingImages;
     pendingImages = [];
     renderAttachmentsPreview();
     assistantTurn = null;
@@ -1078,6 +1110,12 @@
         finishAssistantTurn();
         addErrorNote(message.message);
         setBusy(false);
+        break;
+      case "asideAnswer":
+        resolveAsideTurn(message.id, message.text, false);
+        break;
+      case "asideError":
+        resolveAsideTurn(message.id, message.message, true);
         break;
       case "connectionError":
         clearStatusCards();
