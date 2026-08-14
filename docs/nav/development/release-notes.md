@@ -1,6 +1,9 @@
 # Release Notes
 
-## v0.6.0
+## v0.5.0
+
+- ⚙️ `pycodeloop --version`/`-V` prints the installed version and exits — nothing previously let a caller check it without importing the package; the VS Code extension uses this to detect an outdated CLI and offer to update it
+- ⚙️ VS Code extension: CLI update check — on connect, compares the installed `pycodeloop --version` against the latest release on PyPI and, if outdated, shows a card with an "Update CodeLoop CLI" button (`pip install --user --upgrade pycodeloop`)
 
 **Security hardening — tools**
 
@@ -21,11 +24,6 @@
 
 - ⬆️ `mypy` now runs with the correct config path in CI; `.pre-commit-config.yaml`'s file glob pointed at the pre-rename `codeloop/` package instead of `pycodeloop/`; CI now diffs `templates/` against `pycodeloop/providers/templates/` to catch the two going out of sync
 - 📝 `ruff` target-version bumped to `py310` (matches `requires-python`) and the full tree reformatted to it — full `ruff check`/`ruff format --check` pass
-
-## v0.5.0
-
-- ⚙️ `pycodeloop --version`/`-V` prints the installed version and exits — nothing previously let a caller check it without importing the package; the VS Code extension uses this to detect an outdated CLI and offer to update it
-- ⚙️ VS Code extension: CLI update check — on connect, compares the installed `pycodeloop --version` against the latest release on PyPI and, if outdated, shows a card with an "Update CodeLoop CLI" button (`pip install --user --upgrade pycodeloop`)
 
 ## v0.4.0
 
