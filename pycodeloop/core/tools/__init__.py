@@ -18,34 +18,43 @@ from .search import GlobTool, GrepTool
 from .todo import TodoTool
 from .web import WebFetchTool
 
+_read_file = ReadFileTool()
+_list_dir = ListDirTool()
+_glob = GlobTool()
+_grep = GrepTool()
+_web_fetch = WebFetchTool()
+_git_status = GitStatusTool()
+_git_diff = GitDiffTool()
+_git_log = GitLogTool()
+
 DEFAULT_TOOLS: list[Tool] = [
-    ReadFileTool(),
+    _read_file,
     WriteFileTool(),
     EditFileTool(),
     DeleteFileTool(),
-    ListDirTool(),
-    GlobTool(),
-    GrepTool(),
+    _list_dir,
+    _glob,
+    _grep,
     BashTool(),
-    WebFetchTool(),
+    _web_fetch,
     HttpRequestTool(),
-    GitStatusTool(),
-    GitDiffTool(),
-    GitLogTool(),
+    _git_status,
+    _git_diff,
+    _git_log,
     GitCommitTool(),
     EnvTool(),
     TodoTool(),
 ]
 
 READ_ONLY_TOOLS: list[Tool] = [
-    ReadFileTool(),
-    ListDirTool(),
-    GlobTool(),
-    GrepTool(),
-    WebFetchTool(),
-    GitStatusTool(),
-    GitDiffTool(),
-    GitLogTool(),
+    _read_file,
+    _list_dir,
+    _glob,
+    _grep,
+    _web_fetch,
+    _git_status,
+    _git_diff,
+    _git_log,
 ]
 
 __all__ = [
