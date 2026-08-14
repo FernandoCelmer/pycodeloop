@@ -27,6 +27,7 @@
   const menuSessions = document.getElementById("menu-sessions");
   const menuProvider = document.getElementById("menu-provider");
   const menuApiKey = document.getElementById("menu-api-key");
+  const menuApiKeyLabel = document.getElementById("menu-api-key-label");
   const menuModel = document.getElementById("menu-model");
   const menuAutoApprove = document.getElementById("menu-auto-approve");
   const menuAutoApproveCheck = document.getElementById("menu-auto-approve-check");
@@ -564,7 +565,7 @@
     actions.className = "confirm-actions";
 
     const configure = document.createElement("button");
-    configure.textContent = "🔌 Select Provider";
+    configure.textContent = "Select Provider";
     configure.addEventListener("click", () => {
       vscode.postMessage({ type: "showProviders" });
     });
@@ -1079,11 +1080,11 @@
     menuAutoApproveCheck.classList.toggle("checked", autoApprove);
     menuSkillsCheck.classList.toggle("checked", skillsEnabled);
     menuDelegationCheck.classList.toggle("checked", delegationEnabled);
-    menuApiKey.textContent = hasApiKey
-      ? "🔑 API Key (saved)"
+    menuApiKeyLabel.textContent = hasApiKey
+      ? "API Key (saved)"
       : apiKeyEnv
-        ? "🔑 API Key (" + apiKeyEnv + ")"
-        : "🔑 API Key";
+        ? "API Key (" + apiKeyEnv + ")"
+        : "API Key";
     if (!hasApiKey && apiKeyEnv && !apiKeyCard && !apiKeyPromptHidden) {
       renderApiKeyCard();
     }
