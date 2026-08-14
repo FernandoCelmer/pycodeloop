@@ -49,10 +49,6 @@ export function renderChatHtml(options: ChatHtmlOptions): string {
   </div>
   <div id="messages"></div>
   <div id="composer">
-    <div id="api-key-row">
-      <input id="api-key" type="password" placeholder="API key" autocomplete="off" spellcheck="false" />
-      <button id="api-key-save" class="secondary" title="Save API key">Save</button>
-    </div>
     <div id="attachments" hidden></div>
     <textarea id="prompt" placeholder="Ask CodeLoop… (paste a screenshot to attach it)" rows="2" disabled></textarea>
     <input type="file" id="attach-file" accept="image/*" multiple hidden />

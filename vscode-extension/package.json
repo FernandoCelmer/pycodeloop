@@ -3,7 +3,7 @@
   "displayName": "CodeLoop",
   "description": "Chat with CodeLoop — an agentic coding assistant — inside VS Code.",
   "version": "0.1.0",
-  "publisher": "dotflow-io",
+  "publisher": "fernandocelmer",
   "repository": {
     "type": "git",
     "url": "https://github.com/dotflow-io/pycodeloop.git",

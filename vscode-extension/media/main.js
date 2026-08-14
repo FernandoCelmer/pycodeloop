@@ -41,8 +41,6 @@
   const attachmentsEl = document.getElementById("attachments");
   const attachButton = document.getElementById("attach");
   const attachFileInput = document.getElementById("attach-file");
-  const apiKeyInput = document.getElementById("api-key");
-  const apiKeySave = document.getElementById("api-key-save");
 
   let assistantTurn = null;
   let pendingAssistantText = "";
@@ -50,6 +48,12 @@
   let currentModel = "";
   let autoApprove = false;
   let skillsEnabled = true;
+  let hasApiKey = false;
+  let apiKeyEnv = "";
+  let authHeader = "";
+  let providerFile = "";
+  let apiKeyCard = null;
+  let apiKeyPromptHidden = false;
   let pendingImages = []; // base64 PNG/JPEG data (no data: prefix)
 
   function scrollToBottom() {
@@ -201,6 +205,21 @@
     details.appendChild(summaryToggle);
     details.appendChild(pre);
     box.appendChild(details);
+
+    if (parsed.status === "401") {
+      const actions = document.createElement("div");
+      actions.className = "confirm-actions";
+      const setKey = document.createElement("button");
+      setKey.textContent = apiKeyEnv ? "Set " + apiKeyEnv : "Set API Key";
+      setKey.addEventListener("click", () => {
+        apiKeyPromptHidden = false;
+        renderApiKeyCard();
+      });
+      actions.appendChild(setKey);
+      box.appendChild(actions);
+      apiKeyPromptHidden = false;
+      renderApiKeyCard();
+    }
 
     messagesEl.appendChild(box);
     scrollToBottom();
@@ -489,6 +508,13 @@
       vscode.postMessage({ type: "selectConfig" });
     });
 
+    const apiKey = document.createElement("button");
+    apiKey.className = "secondary";
+    apiKey.textContent = "Set API Key";
+    apiKey.addEventListener("click", () => {
+      renderApiKeyCard();
+    });
+
     const settings = document.createElement("button");
     settings.className = "secondary";
     settings.textContent = "Open Settings";
@@ -497,6 +523,7 @@
     });
 
     actions.appendChild(configure);
+    actions.appendChild(apiKey);
     actions.appendChild(settings);
     box.appendChild(actions);
 
@@ -583,6 +610,122 @@
     scrollToBottom();
   }
 
+  function dismissApiKeyCard() {
+    if (apiKeyCard) {
+      apiKeyCard.remove();
+      apiKeyCard = null;
+    }
+  }
+
+  function apiKeyHint() {
+    const file = providerFile || "The provider config";
+    const env = apiKeyEnv;
+    const header = authHeader;
+    if (env && header) {
+      return (
+        file +
+        " sends this key in the " +
+        header +
+        " header. Paste it here. CodeLoop sets " +
+        env +
+        " when it starts pycodeloop serve — no terminal export."
+      );
+    }
+    if (env) {
+      return (
+        file +
+        " reads " +
+        env +
+        ". Paste the key here. CodeLoop sets that variable for pycodeloop serve — no terminal export."
+      );
+    }
+    return "Paste the API key for this provider. CodeLoop stores it in the editor secret store.";
+  }
+
+  function renderApiKeyCard() {
+    dismissApiKeyCard();
+
+    const box = document.createElement("div");
+    box.className = "confirm-box status-card";
+
+    const title = document.createElement("div");
+    title.className = "title";
+    title.textContent = hasApiKey
+      ? "Update API key?"
+      : apiKeyEnv
+        ? "API key required: " + apiKeyEnv
+        : "Set API key?";
+    box.appendChild(title);
+
+    const hint = document.createElement("div");
+    hint.className = "turn-meta";
+    hint.textContent = apiKeyHint();
+    box.appendChild(hint);
+
+    const input = document.createElement("input");
+    input.type = "password";
+    input.autocomplete = "off";
+    input.spellcheck = false;
+    input.placeholder = apiKeyEnv || "sk-…";
+    box.appendChild(input);
+
+    const actions = document.createElement("div");
+    actions.className = "confirm-actions";
+
+    const save = document.createElement("button");
+    save.textContent = hasApiKey ? "Update" : "Save";
+    save.addEventListener("click", () => {
+      const value = input.value.trim();
+      if (!value) {
+        return;
+      }
+      apiKeyPromptHidden = false;
+      vscode.postMessage({ type: "setApiKey", value });
+      dismissApiKeyCard();
+    });
+
+    const cancel = document.createElement("button");
+    cancel.className = "secondary";
+    cancel.textContent = "Decline";
+    cancel.addEventListener("click", () => {
+      apiKeyPromptHidden = true;
+      dismissApiKeyCard();
+    });
+
+    actions.appendChild(save);
+    if (hasApiKey) {
+      const clear = document.createElement("button");
+      clear.className = "secondary";
+      clear.textContent = "Clear";
+      clear.addEventListener("click", () => {
+        vscode.postMessage({ type: "setApiKey", value: "", clear: true });
+        dismissApiKeyCard();
+      });
+      actions.appendChild(clear);
+    }
+    actions.appendChild(cancel);
+    box.appendChild(actions);
+
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        event.stopPropagation();
+        save.click();
+      }
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        apiKeyPromptHidden = true;
+        dismissApiKeyCard();
+      }
+    });
+
+    messagesEl.appendChild(box);
+    apiKeyCard = box;
+    scrollToBottom();
+    input.focus();
+  }
+
   function shortProviderLabel(provider) {
     if (!provider) {
       return provider;
@@ -650,7 +793,7 @@
     { name: "new", description: "Start a new session", run: () => vscode.postMessage({ type: "newSession" }) },
     { name: "sessions", description: "Switch to a saved session", run: () => vscode.postMessage({ type: "selectSession" }) },
     { name: "provider", description: "Select a provider config file", run: () => vscode.postMessage({ type: "selectConfig" }) },
-    { name: "key", description: "Focus the API key field", run: () => focusApiKey() },
+    { name: "key", description: "Set or update the API key", run: () => renderApiKeyCard() },
     { name: "model", description: "Set a model override", run: () => vscode.postMessage({ type: "selectModel", current: currentModel }) },
     {
       name: "auto-approve",
@@ -814,7 +957,7 @@
   });
   menuApiKey.addEventListener("click", () => {
     closeMenu();
-    focusApiKey();
+    renderApiKeyCard();
   });
   menuModel.addEventListener("click", () => {
     closeMenu();
@@ -841,34 +984,25 @@
     vscode.postMessage({ type: "openSettings" });
   });
 
-  function focusApiKey() {
-    apiKeyInput.focus();
-    apiKeyInput.select();
-  }
-
-  function saveApiKey() {
-    vscode.postMessage({ type: "setApiKey", value: apiKeyInput.value });
-    apiKeyInput.value = "";
-  }
-
-  apiKeySave.addEventListener("click", saveApiKey);
-  apiKeyInput.addEventListener("keydown", (event) => {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      saveApiKey();
-    }
-  });
-
-  function applySettings(model, nextAutoApprove, nextSkills, hasApiKey) {
-    currentModel = model || "";
-    autoApprove = !!nextAutoApprove;
-    skillsEnabled = nextSkills !== false;
+  function applySettings(message) {
+    currentModel = message.model || "";
+    autoApprove = !!message.autoApprove;
+    skillsEnabled = message.skills !== false;
+    hasApiKey = !!message.hasApiKey;
+    apiKeyEnv = message.apiKeyEnv || "";
+    authHeader = message.authHeader || "";
+    providerFile = message.providerFile || "";
     menuModel.title = currentModel ? "Current: " + currentModel : "Using provider default";
     menuAutoApproveCheck.classList.toggle("checked", autoApprove);
     menuSkillsCheck.classList.toggle("checked", skillsEnabled);
-    apiKeyInput.placeholder = hasApiKey ? "API key saved — type to replace" : "API key";
-    apiKeySave.textContent = hasApiKey ? "Update" : "Save";
-    menuApiKey.textContent = hasApiKey ? "API Key (saved)…" : "API Key…";
+    menuApiKey.textContent = hasApiKey
+      ? "API Key (saved)…"
+      : apiKeyEnv
+        ? "API Key… (" + apiKeyEnv + ")"
+        : "API Key…";
+    if (!hasApiKey && apiKeyEnv && !apiKeyCard && !apiKeyPromptHidden) {
+      renderApiKeyCard();
+    }
   }
 
   window.addEventListener("message", (event) => {
@@ -876,7 +1010,7 @@
 
     switch (message.type) {
       case "settings":
-        applySettings(message.model, message.autoApprove, message.skills, message.hasApiKey);
+        applySettings(message);
         break;
       case "cliMissing":
         clearStatusCards();
@@ -888,7 +1022,7 @@
         setStatus("", "Not configured");
         renderSetupCard(
           "Set up a provider to start chatting",
-          "Pick a provider config JSON file and paste your API key in the field below, or set pycodeloop.provider in Settings."
+          "Pick a provider JSON. It names the env var for the API key (e.g. ANTHROPIC_API_KEY). Then paste that key in CodeLoop — you don't export it in a terminal."
         );
         break;
       case "connecting":
@@ -961,6 +1095,7 @@
       case "sessionReset":
         messagesEl.innerHTML = "";
         assistantTurn = null;
+        apiKeyCard = null;
         pendingToolCards.clear();
         break;
       case "history":

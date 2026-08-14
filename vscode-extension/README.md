@@ -13,7 +13,7 @@ terminal.
 - **Multiple sessions** — start a new one (`CodeLoop: New Session`) or switch between existing ones (`CodeLoop: Switch Session…`), each keeping its own history.
 - **Image attachments** — paste a screenshot straight into the prompt box, or attach one from disk, to give the agent visual context.
 - **Live token usage and context %** — see input/output tokens per turn and how full the context window is, with compaction events surfaced inline.
-- **Skills-aware** — auto-discovers Claude Code, Cursor, and `AGENTS.md` skills already on disk, no setup required.
+- **API key** — ⚙ → API Key… (or the card that opens when the provider JSON names `api_key_env`). The extension stores the secret and sets that env var (e.g. `ANTHROPIC_API_KEY`) for `pycodeloop serve`. You don't export it in a terminal.
 
 ## How it works
 
@@ -30,6 +30,9 @@ dangerous tools.
 - A provider configured the same way as the CLI — see the main
   project's README for `templates/*.json` and the `pycodeloop.provider`
   / `pycodeloop.model` / `pycodeloop.url` settings below.
+- The API key that JSON names in `api_key_env` (for Anthropic that's
+  `ANTHROPIC_API_KEY`, sent as `x-api-key`). Paste it in the CodeLoop
+  sidebar; the extension injects it into `pycodeloop serve`.
 
 ## Settings
 

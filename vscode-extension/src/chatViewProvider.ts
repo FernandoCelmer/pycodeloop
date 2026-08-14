@@ -1,12 +1,14 @@
 import * as vscode from "vscode";
 import * as crypto from "crypto";
 import * as cp from "child_process";
+import * as fs from "fs";
+import * as path from "path";
 import { RpcClient } from "./rpcClient";
 import { currentWorkspaceFolder, readSettings, updateSetting } from "./config/settings";
 import { resolveWorkspacePath } from "./lib/resolveSetting";
 import { buildServeArgs } from "./lib/serveArgs";
 import { buildInstallCommand } from "./lib/installCommand";
-import { API_KEY_SECRET, spawnEnvForApiKey } from "./lib/apiKey";
+import { API_KEY_SECRET, providerAuthFromJson, spawnEnvForApiKey } from "./lib/apiKey";
 import { toSessionPickItems } from "./lib/sessionList";
 import { ADD_MCP_SERVER_LABEL, addServer, parseServerLabel, removeServer, toQuickPickLabels } from "./lib/mcpServerList";
 import { renderChatHtml } from "./webview/html";
@@ -71,6 +73,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private async postSettings(): Promise<void> {
     const settings = readSettings();
     const apiKey = await this.context.secrets.get(API_KEY_SECRET);
+    const auth = this.readProviderAuth(settings.provider);
     this.post({
       type: "settings",
       model: settings.model,
@@ -78,6 +81,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       skills: settings.skills,
       mcpServers: settings.mcpServers,
       hasApiKey: Boolean(apiKey),
+      apiKeyEnv: auth.apiKeyEnv,
+      authHeader: auth.authHeader,
+      providerFile: auth.providerFile,
     });
   }
 
@@ -200,11 +206,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.reload();
   }
 
-  async setApiKey(value: string): Promise<void> {
-    const trimmed = value.trim();
-    if (!trimmed) {
+  async setApiKey(value: string, clear = false): Promise<void> {
+    if (clear) {
       await this.context.secrets.delete(API_KEY_SECRET);
     } else {
+      const trimmed = value.trim();
+      if (!trimmed) {
+        return;
+      }
       await this.context.secrets.store(API_KEY_SECRET, trimmed);
     }
     await this.postSettings();
@@ -301,7 +310,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         this.selectModel(message.current ?? "");
         break;
       case "setApiKey":
-        this.setApiKey(String(message.value ?? ""));
+        this.setApiKey(String(message.value ?? ""), !!message.clear);
         break;
       case "toggleAutoApprove":
         this.toggleAutoApprove(!!message.next);
@@ -341,7 +350,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       resolveSetting: (value) => this.resolveSetting(value),
     });
     const apiKey = await this.context.secrets.get(API_KEY_SECRET);
-    const env = spawnEnvForApiKey(apiKey);
+    const env = spawnEnvForApiKey(apiKey, this.providerApiKeyEnvNames(settings.provider));
 
     const client = new RpcClient(command, args, currentWorkspaceFolder(), env);
     for (const method of FORWARDED_NOTIFICATIONS) {
@@ -369,6 +378,28 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     });
 
     this.client = client;
+  }
+
+  private readProviderAuth(provider: string): {
+    apiKeyEnv?: string;
+    authHeader?: string;
+    providerFile?: string;
+  } {
+    const filePath = this.resolveSetting(provider);
+    if (!filePath.endsWith(".json")) {
+      return {};
+    }
+    const providerFile = path.basename(filePath);
+    try {
+      return { ...providerAuthFromJson(fs.readFileSync(filePath, "utf8")), providerFile };
+    } catch {
+      return { providerFile };
+    }
+  }
+
+  private providerApiKeyEnvNames(provider: string): string[] {
+    const envName = this.readProviderAuth(provider).apiKeyEnv;
+    return envName ? [envName] : [];
   }
 
   private disposeClient(): void {
