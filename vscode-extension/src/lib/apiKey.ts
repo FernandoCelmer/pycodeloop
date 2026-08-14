@@ -1,6 +1,12 @@
 export const API_KEY_SECRET = "pycodeloop.apiKey";
 export const API_KEY_ENV = "PYCODELOOP_API_KEY";
 
+/** Secret-storage key for a remembered per-provider key, so switching
+ * providers in the gallery doesn't re-prompt once one has been entered. */
+export function providerKeySecret(providerId: string): string {
+  return `pycodeloop.apiKey.${providerId}`;
+}
+
 export interface ProviderAuth {
   apiKeyEnv?: string;
   authHeader?: string;

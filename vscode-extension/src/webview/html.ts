@@ -31,7 +31,7 @@ export function renderChatHtml(options: ChatHtmlOptions): string {
         <button id="menu-toggle" class="secondary" title="Configure">⚙</button>
         <div id="menu" hidden>
           <button id="menu-sessions" class="menu-item">Sessions…</button>
-          <button id="menu-provider" class="menu-item">Provider Config…</button>
+          <button id="menu-provider" class="menu-item">Select Provider…</button>
           <button id="menu-api-key" class="menu-item">API Key…</button>
           <button id="menu-model" class="menu-item">Model…</button>
           <button id="menu-auto-approve" class="menu-item">
@@ -48,6 +48,16 @@ export function renderChatHtml(options: ChatHtmlOptions): string {
     </div>
   </div>
   <div id="messages"></div>
+  <div id="provider-gallery" hidden>
+    <div class="gallery-header">
+      <button id="gallery-back" class="gallery-back">← Back to chat</button>
+      <h2 class="gallery-title">Connect a provider.</h2>
+    </div>
+    <div id="gallery-list" class="gallery-list"></div>
+    <div class="gallery-footer">
+      <button id="gallery-custom">+ Custom provider (URL or JSON)</button>
+    </div>
+  </div>
   <div id="composer">
     <div id="attachments" hidden></div>
     <textarea id="prompt" placeholder="Ask CodeLoop… (paste a screenshot to attach it)" rows="2" disabled></textarea>

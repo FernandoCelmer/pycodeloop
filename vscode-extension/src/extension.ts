@@ -14,6 +14,9 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("pycodeloop.newSession", () => {
       provider.newSession();
     }),
+    vscode.commands.registerCommand("pycodeloop.selectProvider", () => {
+      provider.openProviderGallery();
+    }),
     vscode.commands.registerCommand("pycodeloop.selectConfig", () => {
       provider.selectConfig();
     }),

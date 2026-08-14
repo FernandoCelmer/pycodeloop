@@ -41,6 +41,10 @@
   const attachmentsEl = document.getElementById("attachments");
   const attachButton = document.getElementById("attach");
   const attachFileInput = document.getElementById("attach-file");
+  const providerGallery = document.getElementById("provider-gallery");
+  const galleryBack = document.getElementById("gallery-back");
+  const galleryList = document.getElementById("gallery-list");
+  const galleryCustom = document.getElementById("gallery-custom");
 
   let assistantTurn = null;
   let pendingAssistantText = "";
@@ -524,9 +528,9 @@
     actions.className = "confirm-actions";
 
     const configure = document.createElement("button");
-    configure.textContent = "Select Provider Config…";
+    configure.textContent = "Select Provider…";
     configure.addEventListener("click", () => {
-      vscode.postMessage({ type: "selectConfig" });
+      vscode.postMessage({ type: "showProviders" });
     });
 
     const apiKey = document.createElement("button");
@@ -824,7 +828,7 @@
   const SLASH_COMMANDS = [
     { name: "new", description: "Start a new session", run: () => vscode.postMessage({ type: "newSession" }) },
     { name: "sessions", description: "Switch to a saved session", run: () => vscode.postMessage({ type: "selectSession" }) },
-    { name: "provider", description: "Select a provider config file", run: () => vscode.postMessage({ type: "selectConfig" }) },
+    { name: "provider", description: "Select a provider (Anthropic, OpenAI, Gemini, Grok, …)", run: () => vscode.postMessage({ type: "showProviders" }) },
     { name: "key", description: "Set or update the API key", run: () => renderApiKeyCard() },
     { name: "model", description: "Set a model override", run: () => vscode.postMessage({ type: "selectModel", current: currentModel }) },
     {
@@ -985,7 +989,7 @@
   });
   menuProvider.addEventListener("click", () => {
     closeMenu();
-    vscode.postMessage({ type: "selectConfig" });
+    vscode.postMessage({ type: "showProviders" });
   });
   menuApiKey.addEventListener("click", () => {
     closeMenu();
@@ -1037,12 +1041,86 @@
     }
   }
 
+  function showProviderGallery() {
+    providerGallery.hidden = false;
+  }
+
+  function hideProviderGallery() {
+    providerGallery.hidden = true;
+  }
+
+  galleryBack.addEventListener("click", hideProviderGallery);
+  galleryCustom.addEventListener("click", () => {
+    vscode.postMessage({ type: "connectProvider", id: "custom" });
+  });
+
+  function renderProviderGallery(items) {
+    showProviderGallery();
+    galleryList.textContent = "";
+
+    for (const item of items) {
+      const card = document.createElement("div");
+      card.className = "provider-card";
+      if (item.active) {
+        card.classList.add("active");
+      }
+
+      const head = document.createElement("div");
+      head.className = "provider-card-head";
+
+      const nameRow = document.createElement("div");
+      nameRow.className = "provider-name-row";
+      const dot = document.createElement("span");
+      dot.className = "provider-dot";
+      const name = document.createElement("span");
+      name.className = "provider-name";
+      name.textContent = item.label;
+      nameRow.append(dot, name);
+
+      const chip = document.createElement("span");
+      chip.className = "provider-chip " + (item.local ? "local" : item.connected ? "connected" : "");
+      chip.textContent = item.local ? "Local" : item.connected ? "Connected" : "Needs key";
+
+      head.append(nameRow, chip);
+
+      const body = document.createElement("div");
+      body.className = "provider-card-body";
+
+      const info = document.createElement("div");
+      const desc = document.createElement("p");
+      desc.className = "provider-desc";
+      desc.textContent = item.description;
+      const model = document.createElement("span");
+      model.className = "provider-model";
+      model.textContent = item.model;
+      info.append(desc, model);
+
+      const action = document.createElement("button");
+      if (item.active) {
+        action.className = "secondary";
+        action.textContent = "Active";
+      } else {
+        action.textContent = "Connect";
+        action.addEventListener("click", () => {
+          vscode.postMessage({ type: "connectProvider", id: item.id });
+        });
+      }
+
+      body.append(info, action);
+      card.append(head, body);
+      galleryList.appendChild(card);
+    }
+  }
+
   window.addEventListener("message", (event) => {
     const message = event.data;
 
     switch (message.type) {
       case "settings":
         applySettings(message);
+        break;
+      case "providers":
+        renderProviderGallery(message.items);
         break;
       case "cliMissing":
         clearStatusCards();
@@ -1054,7 +1132,7 @@
         setStatus("", "Not configured");
         renderSetupCard(
           "Set up a provider to start chatting",
-          "Pick a provider JSON. It names the env var for the API key (e.g. ANTHROPIC_API_KEY). Then paste that key in CodeLoop — you don't export it in a terminal."
+          "Pick a ready-made provider — Anthropic, OpenAI, Gemini, Grok, Groq, or a local model. The key stays in CodeLoop, never a terminal export."
         );
         break;
       case "connecting":

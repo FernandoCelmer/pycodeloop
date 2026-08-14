@@ -1,0 +1,22 @@
+{
+  "url": "https://api.anthropic.com/v1/messages",
+  "model": "claude-sonnet-5",
+  "api_key_env": "ANTHROPIC_API_KEY",
+  "auth_header": "x-api-key",
+  "auth_prefix": "",
+  "headers": {
+    "anthropic-version": "2023-06-01"
+  },
+  "timeout": 60,
+  "request": {
+    "body_paths": {
+      "system": "system"
+    },
+    "message_shape": "anthropic",
+    "tool_schema": "anthropic",
+    "params": {
+      "max_tokens": 8192
+    }
+  },
+  "response_shape": "anthropic"
+}

@@ -8,8 +8,9 @@ import { currentWorkspaceFolder, readSettings, updateSetting } from "./config/se
 import { resolveWorkspacePath } from "./lib/resolveSetting";
 import { buildServeArgs } from "./lib/serveArgs";
 import { buildInstallCommand } from "./lib/installCommand";
-import { API_KEY_SECRET, providerAuthFromJson, spawnEnvForApiKey } from "./lib/apiKey";
+import { API_KEY_SECRET, providerAuthFromJson, providerKeySecret, spawnEnvForApiKey } from "./lib/apiKey";
 import { toSessionPickItems } from "./lib/sessionList";
+import { PROVIDER_CATALOG, findProviderDef } from "./lib/providerCatalog";
 import { ADD_MCP_SERVER_LABEL, addServer, parseServerLabel, removeServer, toQuickPickLabels } from "./lib/mcpServerList";
 import { renderChatHtml } from "./webview/html";
 
@@ -186,8 +187,171 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
 
     await updateSetting("provider", file.fsPath);
+    await updateSetting("url", "");
     this.post({ type: "configChanged", path: file.fsPath });
+    await this.postSettings();
     this.reload();
+  }
+
+  private providersDir(): string {
+    return vscode.Uri.joinPath(this.context.extensionUri, "providers").fsPath;
+  }
+
+  /** Which catalog entry (if any) the current provider setting resolves to —
+   * drives the "Active"/"Connected" state shown on each gallery card. */
+  private activeProviderId(providerSetting: string): string {
+    if (!providerSetting) {
+      return "";
+    }
+    const resolved = this.resolveSetting(providerSetting);
+    if (resolved === "generic") {
+      return "generic";
+    }
+    const dir = this.providersDir();
+    for (const def of PROVIDER_CATALOG) {
+      if (resolved === path.join(dir, def.file)) {
+        return def.id;
+      }
+    }
+    return "custom";
+  }
+
+  /** Opens the chat view and shows the provider gallery in it — the
+   * entry point for the "Select Provider…" command/menu/slash-command. */
+  async openProviderGallery(): Promise<void> {
+    await vscode.commands.executeCommand("pycodeloop.chat.focus");
+    await this.showProviderGallery();
+  }
+
+  /** Pushes the provider catalog plus each entry's live connection state to
+   * the webview, which renders it as a card gallery. */
+  async showProviderGallery(): Promise<void> {
+    const settings = readSettings();
+    const activeId = this.activeProviderId(settings.provider);
+    const activeHasKey = Boolean(await this.context.secrets.get(API_KEY_SECRET));
+
+    const items = await Promise.all(
+      PROVIDER_CATALOG.map(async (def) => {
+        const isActive = def.id === activeId;
+        const hasKey = def.local
+          ? false
+          : isActive
+            ? activeHasKey
+            : Boolean(await this.context.secrets.get(providerKeySecret(def.id)));
+        return {
+          id: def.id,
+          label: def.label,
+          description: def.description,
+          model: isActive && settings.model ? settings.model : def.defaultModel,
+          local: def.local,
+          active: isActive,
+          connected: hasKey,
+        };
+      })
+    );
+
+    this.post({ type: "providers", items, activeId });
+  }
+
+  /** Connects a ready-made provider (or the "generic"/"custom" fallback
+   * actions) — picks a model, reuses a remembered key or prompts for one,
+   * then reloads the connection and re-renders the gallery. */
+  async connectProvider(id: string): Promise<void> {
+    if (id === "custom") {
+      await this.selectConfig();
+      await this.showProviderGallery();
+      return;
+    }
+
+    if (id === "generic") {
+      const current = readSettings();
+      const url = await vscode.window.showInputBox({
+        title: "Generic provider URL",
+        prompt: "OpenAI-compatible chat/completions endpoint",
+        value: current.provider === "generic" ? current.url : "",
+        placeHolder: "https://api.example.com/v1/chat/completions",
+        ignoreFocusOut: true,
+      });
+      if (!url) {
+        return;
+      }
+      await updateSetting("provider", "generic");
+      await updateSetting("url", url);
+      await this.selectModel(readSettings().model);
+      await this.showProviderGallery();
+      return;
+    }
+
+    const def = findProviderDef(id);
+    if (!def) {
+      return;
+    }
+
+    const modelItems = [...def.models.map((m) => ({ label: m })), { label: "Custom…" }];
+    const modelPick = await vscode.window.showQuickPick(modelItems, {
+      title: `${def.label} model`,
+      placeHolder: `Default: ${def.defaultModel}`,
+    });
+    if (!modelPick) {
+      return;
+    }
+
+    let model = def.defaultModel;
+    if (modelPick.label === "Custom…") {
+      model = (await vscode.window.showInputBox({
+        title: `${def.label} model`,
+        value: def.defaultModel,
+        ignoreFocusOut: true,
+      })) ?? def.defaultModel;
+    } else {
+      model = modelPick.label;
+    }
+
+    if (!def.local) {
+      const remembered = await this.context.secrets.get(providerKeySecret(def.id));
+      if (remembered) {
+        await this.context.secrets.store(API_KEY_SECRET, remembered);
+      } else {
+        const key = await vscode.window.showInputBox({
+          title: `${def.label} API key`,
+          prompt: `Stored securely, sent as ${def.file === "anthropic.json" ? "x-api-key" : "Authorization: Bearer …"}`,
+          password: true,
+          ignoreFocusOut: true,
+        });
+        const trimmed = key?.trim();
+        if (trimmed) {
+          await this.context.secrets.store(API_KEY_SECRET, trimmed);
+          await this.context.secrets.store(providerKeySecret(def.id), trimmed);
+        }
+      }
+    }
+
+    const providerPath = path.join(this.providersDir(), def.file);
+    await updateSetting("provider", providerPath);
+    await updateSetting("url", "");
+    await updateSetting("model", model);
+
+    this.post({ type: "configChanged", path: providerPath });
+    await this.postSettings();
+    await this.showProviderGallery();
+    this.reload();
+  }
+
+  /** Forgets the remembered key for one catalog provider (gallery "Sign
+   * out" action) without touching whichever provider is currently active. */
+  async disconnectProvider(id: string): Promise<void> {
+    const def = findProviderDef(id);
+    if (!def || def.local) {
+      return;
+    }
+    await this.context.secrets.delete(providerKeySecret(id));
+    const settings = readSettings();
+    if (this.activeProviderId(settings.provider) === id) {
+      await this.context.secrets.delete(API_KEY_SECRET);
+      await this.postSettings();
+      this.reload();
+    }
+    await this.showProviderGallery();
   }
 
   async selectModel(current: string): Promise<void> {
@@ -207,14 +371,23 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   async setApiKey(value: string, clear = false): Promise<void> {
+    const activeId = this.activeProviderId(readSettings().provider);
+    const remembersKey = activeId && activeId !== "generic" && activeId !== "custom";
+
     if (clear) {
       await this.context.secrets.delete(API_KEY_SECRET);
+      if (remembersKey) {
+        await this.context.secrets.delete(providerKeySecret(activeId));
+      }
     } else {
       const trimmed = value.trim();
       if (!trimmed) {
         return;
       }
       await this.context.secrets.store(API_KEY_SECRET, trimmed);
+      if (remembersKey) {
+        await this.context.secrets.store(providerKeySecret(activeId), trimmed);
+      }
     }
     await this.postSettings();
     this.reload();
@@ -315,6 +488,15 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         break;
       case "selectConfig":
         this.selectConfig();
+        break;
+      case "showProviders":
+        this.showProviderGallery();
+        break;
+      case "connectProvider":
+        this.connectProvider(String(message.id ?? ""));
+        break;
+      case "disconnectProvider":
+        this.disconnectProvider(String(message.id ?? ""));
         break;
       case "selectSession":
         this.selectSession();
