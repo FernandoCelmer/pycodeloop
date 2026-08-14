@@ -33,7 +33,9 @@ class GitToolTestCase(unittest.TestCase):
         )
         (self.repo / "a.txt").write_text("hello\n")
         subprocess.run(["git", "add", "-A"], cwd=self.repo, check=True)
-        subprocess.run(["git", "commit", "-q", "-m", "init"], cwd=self.repo, check=True)
+        subprocess.run(
+            ["git", "commit", "-q", "-m", "init"], cwd=self.repo, check=True
+        )
 
         os.chdir(self.repo)
 
@@ -65,7 +67,9 @@ class TestGitDiffTool(GitToolTestCase):
 
         result = GitDiffTool().run()
 
-        self.assertLessEqual(len(result.output), 20000 + len("\n… (truncated)"))
+        self.assertLessEqual(
+            len(result.output), 20000 + len("\n… (truncated)")
+        )
         self.assertIn("(truncated)", result.output)
 
 
@@ -77,10 +81,10 @@ class TestGitLogTool(GitToolTestCase):
 
 
 class TestGitCommitTool(GitToolTestCase):
-    def test_commits_staged_changes(self):
+    def test_commits_explicit_paths(self):
         (self.repo / "a.txt").write_text("v2\n")
 
-        result = GitCommitTool().run(message="update a.txt")
+        result = GitCommitTool().run(message="update a.txt", paths=["a.txt"])
 
         self.assertFalse(result.is_error)
         log = subprocess.run(
@@ -91,10 +95,26 @@ class TestGitCommitTool(GitToolTestCase):
         )
         self.assertIn("update a.txt", log.stdout)
 
+    def test_refuses_missing_paths(self):
+        (self.repo / "a.txt").write_text("v2\n")
+
+        result = GitCommitTool().run(message="nope")
+
+        self.assertTrue(result.is_error)
+        self.assertIn("paths is required", result.output)
+
+    def test_refuses_catch_all_flags(self):
+        result = GitCommitTool().run(message="nope", paths=["-A"])
+
+        self.assertTrue(result.is_error)
+        self.assertIn("catch-all", result.output)
+
     def test_preview_shows_diff_stat(self):
         (self.repo / "a.txt").write_text("v2\n")
 
-        preview = GitCommitTool().preview(message="update a.txt")
+        preview = GitCommitTool().preview(
+            message="update a.txt", paths=["a.txt"]
+        )
 
         self.assertIn("update a.txt", preview)
         self.assertIn("a.txt", preview)

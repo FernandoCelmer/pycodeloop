@@ -19,7 +19,9 @@ def _run_git(*args: str, timeout: int = 30) -> ToolResult:
     except FileNotFoundError:
         return ToolResult(output="git is not installed", is_error=True)
     except subprocess.TimeoutExpired:
-        return ToolResult(output=f"git {' '.join(args)} timed out", is_error=True)
+        return ToolResult(
+            output=f"git {' '.join(args)} timed out", is_error=True
+        )
 
     output = proc.stdout + proc.stderr
 
@@ -84,26 +86,56 @@ class GitLogTool(Tool):
 class GitCommitTool(Tool):
     name = "git_commit"
     description = (
-        "Stage files and create a commit. Pass `paths` to stage specific "
-        "files, or omit it to stage everything (git add -A)."
+        "Stage specific files and create a commit. `paths` is required — "
+        "list every file to stage by name. Never stages the whole tree "
+        "(no git add -A/-u)."
     )
     parameters = {
         "type": "object",
         "properties": {
             "message": {"type": "string"},
-            "paths": {"type": "array", "items": {"type": "string"}},
+            "paths": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Files to stage (required; no catch-all).",
+            },
         },
-        "required": ["message"],
+        "required": ["message", "paths"],
     }
     dangerous = True
 
-    def preview(self, message: str, paths: list[str] | None = None, **_) -> str:
-        stat = _run_git("diff", "--stat", "HEAD")
-        target = ", ".join(paths) if paths else "all changes"
-        return f"$ git commit -m {message!r} ({target})\n\n{stat.output}"
+    def preview(
+        self, message: str, paths: list[str] | None = None, **_
+    ) -> str:
+        paths = paths or []
+        stat = (
+            _run_git("diff", "--stat", "HEAD", "--", *paths) if paths else None
+        )
+        target = ", ".join(paths) if paths else "(no paths)"
+        body = f"\n\n{stat.output}" if stat else ""
+        return f"$ git commit -m {message!r} ({target}){body}"
 
     def run(self, message: str, paths: list[str] | None = None) -> ToolResult:
-        add_result = _run_git("add", *(paths or ["-A"]))
+        if not paths:
+            return ToolResult(
+                output=(
+                    "paths is required — pass the specific files to stage. "
+                    "Refusing git add -A."
+                ),
+                is_error=True,
+            )
+
+        cleaned = [p for p in paths if p and p not in {"-A", "-u", "--all"}]
+        if not cleaned or cleaned != list(paths):
+            return ToolResult(
+                output=(
+                    "paths must be explicit file paths — "
+                    "refusing catch-all flags like -A/-u."
+                ),
+                is_error=True,
+            )
+
+        add_result = _run_git("add", "--", *cleaned)
 
         if add_result.is_error:
             return add_result
