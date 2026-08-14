@@ -103,6 +103,53 @@ class TestLoadProviderFromJson(GenericProviderTestCase):
 
         self.assertEqual(result.text, "hi")
 
+    def test_default_response_captures_extra_tool_call_fields(self):
+        """Some OpenAI-compatible vendors (e.g. Gemini) attach extra
+        sibling fields to a tool_call — like extra_content.google's
+        thought_signature — that must round-trip back verbatim on the
+        next turn or the vendor rejects the follow-up request."""
+        path = self._write_config(
+            {"url": "http://fake/v1/chat/completions", "model": "my-model"}
+        )
+        provider = GenericProvider.from_json(path)
+
+        response_body = json.dumps(
+            {
+                "choices": [
+                    {
+                        "message": {
+                            "tool_calls": [
+                                {
+                                    "id": "call_1",
+                                    "type": "function",
+                                    "function": {
+                                        "name": "read_file",
+                                        "arguments": '{"path": "a.py"}',
+                                    },
+                                    "extra_content": {
+                                        "google": {"thought_signature": "abc123"}
+                                    },
+                                }
+                            ]
+                        },
+                        "finish_reason": "tool_calls",
+                    }
+                ],
+                "usage": {},
+            }
+        ).encode()
+
+        with mock.patch(
+            "pycodeloop.providers.generic.urllib.request.urlopen",
+            return_value=_FakeResponse(response_body),
+        ):
+            result = provider.complete("sys", [], [])
+
+        self.assertEqual(
+            result.tool_calls[0].extra,
+            {"extra_content": {"google": {"thought_signature": "abc123"}}},
+        )
+
     def test_custom_response_paths(self):
         path = self._write_config(
             {

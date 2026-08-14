@@ -306,7 +306,12 @@ class Agent:
                 self.on_context(self._last_context_tokens, context_window)
 
             tool_calls = [
-                {"id": call.id, "name": call.name, "arguments": call.arguments}
+                {
+                    "id": call.id,
+                    "name": call.name,
+                    "arguments": call.arguments,
+                    **({"extra": call.extra} if call.extra else {}),
+                }
                 for call in response.tool_calls
             ]
             session.add_assistant(response.text, tool_calls=tool_calls or None)

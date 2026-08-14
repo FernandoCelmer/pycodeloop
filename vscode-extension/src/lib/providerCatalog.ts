@@ -32,8 +32,8 @@ export const PROVIDER_CATALOG: ProviderDef[] = [
     label: "Gemini",
     description: "Google Gemini models — needs GEMINI_API_KEY",
     file: "gemini.json",
-    models: ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.5-flash-lite", "gemini-2.0-flash"],
-    defaultModel: "gemini-2.5-flash",
+    models: ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-2.5-pro", "gemini-2.5-flash"],
+    defaultModel: "gemini-3.6-flash",
     local: false,
   },
   {

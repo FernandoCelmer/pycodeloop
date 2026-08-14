@@ -59,6 +59,7 @@ def to_openai_messages(system_prompt: str, messages: list[Message]) -> list[dict
                             "name": call["name"],
                             "arguments": json.dumps(call["arguments"]),
                         },
+                        **(call.get("extra") or {}),
                     }
                     for call in msg.tool_calls
                 ]

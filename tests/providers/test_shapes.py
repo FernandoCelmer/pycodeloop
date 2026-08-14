@@ -72,6 +72,37 @@ class TestOpenAIMessageBuilding(unittest.TestCase):
             },
         )
 
+    def test_tool_call_extra_fields_round_trip_back_to_the_wire(self):
+        """A ToolCall's vendor-specific `extra` (e.g. Gemini's
+        extra_content.google.thought_signature) must be re-emitted as a
+        sibling of id/type/function, unchanged, on the next request."""
+        out = to_openai_messages(
+            "sys",
+            [
+                Message(
+                    role="assistant",
+                    content="",
+                    tool_calls=[
+                        {
+                            "id": "call_1",
+                            "name": "read_file",
+                            "arguments": {"path": "a.py"},
+                            "extra": {
+                                "extra_content": {
+                                    "google": {"thought_signature": "abc123"}
+                                }
+                            },
+                        }
+                    ],
+                )
+            ],
+        )
+
+        self.assertEqual(
+            out[-1]["tool_calls"][0]["extra_content"],
+            {"google": {"thought_signature": "abc123"}},
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
