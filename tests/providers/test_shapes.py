@@ -3,7 +3,12 @@
 import unittest
 
 from pycodeloop.core.session import Message
-from pycodeloop.providers._shapes import to_anthropic_messages, to_openai_messages
+from pycodeloop.providers._shapes import (
+    anthropic_tool_schema,
+    request_builder_from_config,
+    to_anthropic_messages,
+    to_openai_messages,
+)
 
 
 class TestAnthropicMessageBuilding(unittest.TestCase):
@@ -102,6 +107,74 @@ class TestOpenAIMessageBuilding(unittest.TestCase):
             out[-1]["tool_calls"][0]["extra_content"],
             {"google": {"thought_signature": "abc123"}},
         )
+
+
+class TestAnthropicToolSchemaCaching(unittest.TestCase):
+    def test_no_cache_control_by_default(self):
+        schema = anthropic_tool_schema([{"name": "read_file"}])
+
+        self.assertNotIn("cache_control", schema[-1])
+
+    def test_marks_only_the_last_tool_as_cached(self):
+        schema = anthropic_tool_schema(
+            [{"name": "read_file"}, {"name": "write_file"}], cache=True
+        )
+
+        self.assertNotIn("cache_control", schema[0])
+        self.assertEqual(schema[-1]["cache_control"], {"type": "ephemeral"})
+
+    def test_empty_tool_list_stays_empty(self):
+        self.assertEqual(anthropic_tool_schema([], cache=True), [])
+
+
+class TestPromptCacheRequestBuilder(unittest.TestCase):
+    def _cfg(self, prompt_cache: bool) -> dict:
+        return {
+            "message_shape": "anthropic",
+            "tool_schema": "anthropic",
+            "prompt_cache": prompt_cache,
+        }
+
+    def test_system_prompt_becomes_a_cached_content_block(self):
+        builder = request_builder_from_config(self._cfg(True))
+
+        body = builder("You are helpful.", [], [], "claude-x")
+
+        self.assertEqual(
+            body["system"],
+            [
+                {
+                    "type": "text",
+                    "text": "You are helpful.",
+                    "cache_control": {"type": "ephemeral"},
+                }
+            ],
+        )
+
+    def test_tools_get_a_cache_control_breakpoint_on_the_last_one(self):
+        builder = request_builder_from_config(self._cfg(True))
+
+        body = builder(
+            "sys", [], [{"name": "read_file"}, {"name": "write_file"}], "claude-x"
+        )
+
+        self.assertEqual(body["tools"][-1]["cache_control"], {"type": "ephemeral"})
+        self.assertNotIn("cache_control", body["tools"][0])
+
+    def test_disabled_by_default_system_stays_a_plain_string(self):
+        builder = request_builder_from_config(self._cfg(False))
+
+        body = builder("sys", [], [], "claude-x")
+
+        self.assertEqual(body["system"], "sys")
+
+    def test_only_applies_to_the_anthropic_tool_schema(self):
+        cfg = {"message_shape": "openai", "tool_schema": "openai", "prompt_cache": True}
+        builder = request_builder_from_config(cfg)
+
+        body = builder("sys", [], [{"name": "read_file"}], "gpt-x")
+
+        self.assertNotIn("cache_control", body["tools"][0]["function"])
 
 
 if __name__ == "__main__":

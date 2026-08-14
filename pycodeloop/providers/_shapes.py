@@ -78,8 +78,8 @@ def to_openai_messages(system_prompt: str, messages: list[Message]) -> list[dict
     return out
 
 
-def anthropic_tool_schema(tools: list[dict]) -> list[dict]:
-    return [
+def anthropic_tool_schema(tools: list[dict], cache: bool = False) -> list[dict]:
+    schema = [
         {
             "name": tool["name"],
             "description": tool.get("description", ""),
@@ -89,6 +89,9 @@ def anthropic_tool_schema(tools: list[dict]) -> list[dict]:
         }
         for tool in tools
     ]
+    if cache and schema:
+        schema[-1]["cache_control"] = {"type": "ephemeral"}
+    return schema
 
 
 def to_anthropic_messages(messages: list[Message]) -> list[dict]:
@@ -159,14 +162,16 @@ def request_builder_from_config(request_cfg: dict) -> RequestBuilder:
 
     message_shape = request_cfg.get("message_shape", "openai")
     tool_schema = request_cfg.get("tool_schema", "openai")
+    prompt_cache = bool(request_cfg.get("prompt_cache")) and tool_schema == "anthropic"
 
     system_key = body_paths.get("system")
     if system_key is None and message_shape == "anthropic":
         system_key = "system"
 
-    build_tools = (
-        anthropic_tool_schema if tool_schema == "anthropic" else openai_tool_schema
-    )
+    def build_tools(tools: list[dict]) -> list[dict]:
+        if tool_schema == "anthropic":
+            return anthropic_tool_schema(tools, cache=prompt_cache)
+        return openai_tool_schema(tools)
 
     def builder(
         system_prompt: str, messages: list, tools: list[dict], model: str
@@ -191,7 +196,16 @@ def request_builder_from_config(request_cfg: dict) -> RequestBuilder:
 
         body: dict = {model_key: model, messages_key: out_messages}
         if system_key:
-            body[system_key] = system_prompt
+            if prompt_cache and system_prompt:
+                body[system_key] = [
+                    {
+                        "type": "text",
+                        "text": system_prompt,
+                        "cache_control": {"type": "ephemeral"},
+                    }
+                ]
+            else:
+                body[system_key] = system_prompt
         if tools:
             body[tools_key] = build_tools(tools)
 

@@ -20,6 +20,7 @@
       "message_content": "content",
       "system": null
     },
+    "prompt_cache": false,
     "params": {
       "temperature": 0.7,
       "max_tokens": 4096

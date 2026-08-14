@@ -127,6 +127,7 @@ The request body defaults to the OpenAI chat-completions shape. For a backend th
     "body_paths": { "system": "system" },
     "message_shape": "anthropic",
     "tool_schema": "anthropic",
+    "prompt_cache": true,
     "params": { "max_tokens": 8192 }
   },
   "response_shape": "anthropic"
@@ -138,6 +139,7 @@ The request body defaults to the OpenAI chat-completions shape. For a backend th
 | `message_shape: "anthropic"` | Build each message the way Anthropic expects (content blocks, `tool_use`/`tool_result` instead of OpenAI's `tool_calls`/`role: "tool"`) |
 | `tool_schema: "anthropic"` | Describe tools as `{name, description, input_schema}` instead of OpenAI's `{type: "function", function: {...}}` |
 | `body_paths.system` | Move the system prompt to its own top-level body key (`"system"`) instead of embedding it as the first message — Anthropic requires this |
+| `prompt_cache: true` | Only with `tool_schema: "anthropic"`. Marks the system prompt and the last tool definition with `cache_control: {"type": "ephemeral"}`, so Anthropic caches the (usually large, mostly-unchanged) system prompt + tool schema across turns instead of reprocessing them every request — cache reads cost ~10% of a normal input token. No beta header needed. |
 | `params` | Extra static fields merged into every request body — Anthropic requires `max_tokens`, since it has no default |
 
 `response_shape: "anthropic"` parses replies from `content[]` blocks (`type: "text"`/`"tool_use"`) instead of `choices[0].message`, and usage from `usage.input_tokens`/`usage.output_tokens` instead of `usage.prompt_tokens`/`usage.completion_tokens`.
