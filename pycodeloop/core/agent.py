@@ -80,9 +80,15 @@ class Agent:
         on_message: Callable[[], None] | None = None,
         on_retry: Callable[[int, float, Exception], None] | None = None,
         on_turn_end: Callable[[], None] | None = None,
+        on_provider_fallback: (
+            Callable[[Provider, Provider, Exception], None] | None
+        ) = None,
     ) -> None:
         self.provider = provider
         self.fallback_providers = fallback_providers or []
+        self._provider_chain = [provider, *self.fallback_providers]
+        self._provider_index = 0
+        self.on_provider_fallback = on_provider_fallback
         self.tools = {tool.name: tool for tool in (tools or DEFAULT_TOOLS)}
         self.system_prompt = system_prompt
         self.max_turns = max_turns
@@ -109,16 +115,25 @@ class Agent:
         transient failures (rate limits, 5xx, network blips) within a
         provider. If `fallback_providers` were given and the active
         provider still fails after its own retry budget (retryable or
-        not), advances to the next provider in the chain — a real error
-        on the last provider in the chain still raises."""
-        providers = [self.provider, *self.fallback_providers]
+        not), advances to the next provider in `_provider_chain` — a
+        fixed list captured once at construction, walked by index so a
+        provider already tried this run is never retried, and one
+        earlier in the chain that recovers isn't skipped forever. A
+        real error on the last provider in the chain still raises."""
+        starting_index = self._provider_index
         last_exc: Exception | None = None
 
-        for provider in providers:
+        for index in range(starting_index, len(self._provider_chain)):
+            provider = self._provider_chain[index]
             delay = _RETRY_BASE_DELAY
             for attempt in range(_MAX_RETRIES + 1):
                 try:
                     response = provider.complete(**kwargs)
+                    if index != starting_index and self.on_provider_fallback:
+                        self.on_provider_fallback(
+                            self.provider, provider, last_exc
+                        )
+                    self._provider_index = index
                     self.provider = provider
                     return response
                 except Exception as exc:
@@ -130,7 +145,11 @@ class Agent:
                     time.sleep(delay)
                     delay *= 2
 
-        assert last_exc is not None
+        if last_exc is None:
+            raise AssertionError(
+                "_complete exited the provider loop without an exception "
+                "— this is a bug"
+            )
         raise last_exc
 
     def _notify_message(self) -> None:

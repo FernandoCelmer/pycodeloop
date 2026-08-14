@@ -566,6 +566,50 @@ class TestAgentRetry(unittest.TestCase):
         self.assertEqual(primary.calls, 4)
         self.assertEqual(secondary.calls, 4)
 
+    def test_second_turn_after_fallback_does_not_retry_the_dead_primary(self):
+        """Regression: rebuilding `[self.provider, *self.fallback_providers]`
+        fresh on every `_complete` call put the now-active fallback in the
+        list twice (once as `self.provider`, once at its original index)
+        and never retried a provider earlier in the chain — the fixed
+        `_provider_chain` walked by index must instead pick up exactly
+        where the previous call left off."""
+        primary = FlakyProvider(fail_times=10)
+        secondary = FlakyProvider(fail_times=0)
+        agent = Agent(
+            provider=primary,
+            fallback_providers=[secondary],
+            tools=[],
+        )
+
+        agent._complete(system_prompt="s", messages=[], tools=[])
+        self.assertEqual(primary.calls, 4)
+        self.assertEqual(secondary.calls, 1)
+
+        agent._complete(system_prompt="s", messages=[], tools=[])
+        self.assertEqual(primary.calls, 4)
+        self.assertEqual(secondary.calls, 2)
+
+    def test_on_provider_fallback_fires_with_old_new_and_error(self):
+        primary = FlakyProvider(fail_times=10)
+        secondary = FlakyProvider(fail_times=0)
+        events = []
+        agent = Agent(
+            provider=primary,
+            fallback_providers=[secondary],
+            tools=[],
+            on_provider_fallback=lambda old, new, exc: events.append(
+                (old, new, str(exc))
+            ),
+        )
+
+        agent.run("hi")
+
+        self.assertEqual(len(events), 1)
+        old, new, error = events[0]
+        self.assertIs(old, primary)
+        self.assertIs(new, secondary)
+        self.assertIn("failed attempt", error)
+
 
 class TestAgentParallelTools(unittest.TestCase):
     def test_independent_safe_tools_run_concurrently(self):
