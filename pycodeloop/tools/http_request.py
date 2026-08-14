@@ -8,7 +8,11 @@ import httpx
 
 from pycodeloop.abc.tool import Tool, ToolResult
 from pycodeloop.tools._limits import truncate
-from pycodeloop.tools._net import BlockedHostError, is_blocked_host, safe_request
+from pycodeloop.tools._net import (
+    BlockedHostError,
+    is_blocked_host,
+    safe_request,
+)
 
 _METHODS = {"GET", "POST", "PUT", "PATCH", "DELETE"}
 
@@ -64,9 +68,18 @@ class HttpRequestTool(Tool):
         method = method.upper()
 
         if method not in _METHODS:
-            return ToolResult(output=f"Unsupported method: {method}", is_error=True)
+            return ToolResult(
+                output=f"Unsupported method: {method}", is_error=True
+            )
 
-        hostname = urlparse(url).hostname
+        parsed = urlparse(url)
+        if parsed.scheme.lower() not in {"http", "https"}:
+            return ToolResult(
+                output=f"Refused to call {url}: only http/https URLs are allowed",
+                is_error=True,
+            )
+
+        hostname = parsed.hostname
         if not hostname or is_blocked_host(hostname):
             return ToolResult(
                 output=f"Refused to call {url}: host is not a public address",
@@ -88,7 +101,9 @@ class HttpRequestTool(Tool):
                 is_error=True,
             )
         except httpx.HTTPError as exc:
-            return ToolResult(output=f"Error calling {url}: {exc}", is_error=True)
+            return ToolResult(
+                output=f"Error calling {url}: {exc}", is_error=True
+            )
 
         if response.is_redirect:
             return ToolResult(
@@ -98,7 +113,9 @@ class HttpRequestTool(Tool):
                 is_error=True,
             )
 
-        summary = f"{response.status_code} {response.reason_phrase}\n{response.text}"
+        summary = (
+            f"{response.status_code} {response.reason_phrase}\n{response.text}"
+        )
         summary = truncate(summary)
 
         return ToolResult(output=summary, is_error=response.is_error)

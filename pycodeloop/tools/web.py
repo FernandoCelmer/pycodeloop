@@ -9,7 +9,11 @@ import httpx
 
 from pycodeloop.abc.tool import Tool, ToolResult
 from pycodeloop.tools._limits import truncate
-from pycodeloop.tools._net import BlockedHostError, is_blocked_host, safe_request
+from pycodeloop.tools._net import (
+    BlockedHostError,
+    is_blocked_host,
+    safe_request,
+)
 
 _SKIP_TAGS = {"script", "style", "noscript"}
 
@@ -52,8 +56,14 @@ class WebFetchTool(Tool):
     }
 
     def run(self, url: str, timeout: float = 30) -> ToolResult:
-        hostname = urlparse(url).hostname
+        parsed = urlparse(url)
+        if parsed.scheme.lower() not in {"http", "https"}:
+            return ToolResult(
+                output=f"Refused to fetch {url}: only http/https URLs are allowed",
+                is_error=True,
+            )
 
+        hostname = parsed.hostname
         if not hostname or is_blocked_host(hostname):
             return ToolResult(
                 output=f"Refused to fetch {url}: host is not a public address",
@@ -61,14 +71,18 @@ class WebFetchTool(Tool):
             )
 
         try:
-            response = safe_request("GET", url, timeout=timeout, follow_redirects=False)
+            response = safe_request(
+                "GET", url, timeout=timeout, follow_redirects=False
+            )
         except BlockedHostError:
             return ToolResult(
                 output=f"Refused to fetch {url}: host is not a public address",
                 is_error=True,
             )
         except httpx.HTTPError as exc:
-            return ToolResult(output=f"Error fetching {url}: {exc}", is_error=True)
+            return ToolResult(
+                output=f"Error fetching {url}: {exc}", is_error=True
+            )
 
         if response.is_redirect:
             return ToolResult(
@@ -81,9 +95,15 @@ class WebFetchTool(Tool):
         try:
             response.raise_for_status()
         except httpx.HTTPError as exc:
-            return ToolResult(output=f"Error fetching {url}: {exc}", is_error=True)
+            return ToolResult(
+                output=f"Error fetching {url}: {exc}", is_error=True
+            )
 
         content_type = response.headers.get("content-type", "")
-        text = _html_to_text(response.text) if "html" in content_type else response.text
+        text = (
+            _html_to_text(response.text)
+            if "html" in content_type
+            else response.text
+        )
 
         return ToolResult(output=truncate(text))
