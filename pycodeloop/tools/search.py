@@ -7,6 +7,10 @@ from pathlib import Path
 
 from pycodeloop.abc.tool import Tool, ToolResult
 from pycodeloop.tools._limits import truncate
+from pycodeloop.tools._workspace import (
+    OutsideWorkspaceError,
+    resolve_in_workspace,
+)
 
 _SKIP_DIRS = {
     ".git",
@@ -40,14 +44,21 @@ class GrepTool(Tool):
         "required": ["pattern"],
     }
 
-    def run(self, pattern: str, path: str = ".", max_results: int = 100) -> ToolResult:
+    def run(
+        self, pattern: str, path: str = ".", max_results: int = 100
+    ) -> ToolResult:
+        try:
+            root = resolve_in_workspace(path)
+        except OutsideWorkspaceError as exc:
+            return ToolResult(output=str(exc), is_error=True)
+
         try:
             regex = re.compile(pattern)
         except re.error as exc:
             return ToolResult(output=f"Invalid regex: {exc}", is_error=True)
 
         matches: list[str] = []
-        for file_path in Path(path).rglob("*"):
+        for file_path in root.rglob("*"):
             if not file_path.is_file() or set(file_path.parts) & _SKIP_DIRS:
                 continue
             if _is_binary(file_path):
@@ -80,11 +91,18 @@ class GlobTool(Tool):
         "required": ["pattern"],
     }
 
-    def run(self, pattern: str, path: str = ".", max_results: int = 100) -> ToolResult:
+    def run(
+        self, pattern: str, path: str = ".", max_results: int = 100
+    ) -> ToolResult:
+        try:
+            root = resolve_in_workspace(path)
+        except OutsideWorkspaceError as exc:
+            return ToolResult(output=str(exc), is_error=True)
+
         try:
             matches = [
                 str(p)
-                for p in Path(path).glob(pattern)
+                for p in root.glob(pattern)
                 if not set(p.parts) & _SKIP_DIRS
             ]
         except (OSError, ValueError) as exc:
@@ -92,4 +110,6 @@ class GlobTool(Tool):
 
         matches = sorted(matches)[:max_results]
 
-        return ToolResult(output="\n".join(matches) if matches else "No matches.")
+        return ToolResult(
+            output="\n".join(matches) if matches else "No matches."
+        )

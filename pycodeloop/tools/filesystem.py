@@ -10,6 +10,10 @@ from pathlib import Path
 from pycodeloop.abc.tool import Tool, ToolResult
 from pycodeloop.store.file_access_log import FileAccessLog, default_log
 from pycodeloop.tools._limits import truncate
+from pycodeloop.tools._workspace import (
+    OutsideWorkspaceError,
+    resolve_in_workspace,
+)
 
 _HUNK_HEADER = re.compile(r"^@@ -?\d+(,\d+)? \+?\d+(,\d+)? @@", re.MULTILINE)
 _DIFF_PREAMBLE = re.compile(r"^--- .+\n\+\+\+ .+$", re.MULTILINE)
@@ -27,6 +31,13 @@ def _diff(path: str, before: str, after: str) -> str:
 
 def _looks_like_diff(text: str) -> bool:
     return bool(_HUNK_HEADER.search(text) or _DIFF_PREAMBLE.search(text))
+
+
+def _resolve_path(path: str) -> Path | ToolResult:
+    try:
+        return resolve_in_workspace(path)
+    except OutsideWorkspaceError as exc:
+        return ToolResult(output=str(exc), is_error=True)
 
 
 class ReadFileTool(Tool):
@@ -67,17 +78,23 @@ class ReadFileTool(Tool):
         limit: int | None = None,
         force: bool = False,
     ) -> ToolResult:
-        target = Path(path)
+        resolved = _resolve_path(path)
+        if isinstance(resolved, ToolResult):
+            return resolved
+        target = resolved
 
         try:
             lines = target.read_text().splitlines()
         except OSError as exc:
-            return ToolResult(output=f"Error reading {path}: {exc}", is_error=True)
+            return ToolResult(
+                output=f"Error reading {path}: {exc}", is_error=True
+            )
 
         start = max(offset - 1, 0)
         end = start + limit if limit else len(lines)
         numbered = [
-            f"{i + start + 1}\t{line}" for i, line in enumerate(lines[start:end])
+            f"{i + start + 1}\t{line}"
+            for i, line in enumerate(lines[start:end])
         ]
         content = "\n".join(numbered)
         content_hash = hashlib.sha256(content.encode()).hexdigest()
@@ -135,7 +152,10 @@ class WriteFileTool(Tool):
                 "text. Pass the full literal file content instead."
             )
 
-        target = Path(path)
+        try:
+            target = resolve_in_workspace(path)
+        except OutsideWorkspaceError as exc:
+            return str(exc)
 
         try:
             before = target.read_text()
@@ -154,13 +174,18 @@ class WriteFileTool(Tool):
                 is_error=True,
             )
 
-        target = Path(path)
+        resolved = _resolve_path(path)
+        if isinstance(resolved, ToolResult):
+            return resolved
+        target = resolved
 
         try:
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(content)
         except OSError as exc:
-            return ToolResult(output=f"Error writing {path}: {exc}", is_error=True)
+            return ToolResult(
+                output=f"Error writing {path}: {exc}", is_error=True
+            )
 
         self._log.record(
             path,
@@ -204,17 +229,24 @@ class EditFileTool(Tool):
                 is_error=True,
             )
 
-        target = Path(path)
+        resolved = _resolve_path(path)
+        if isinstance(resolved, ToolResult):
+            return resolved
+        target = resolved
 
         try:
             text = target.read_text()
         except OSError as exc:
-            return ToolResult(output=f"Error reading {path}: {exc}", is_error=True)
+            return ToolResult(
+                output=f"Error reading {path}: {exc}", is_error=True
+            )
 
         count = text.count(old_string)
 
         if count == 0:
-            return ToolResult(output=f"old_string not found in {path}", is_error=True)
+            return ToolResult(
+                output=f"old_string not found in {path}", is_error=True
+            )
 
         if count > 1 and not replace_all:
             return ToolResult(
@@ -290,7 +322,10 @@ class DeleteFileTool(Tool):
         self._log = access_log or default_log
 
     def preview(self, path: str, **_) -> str:
-        target = Path(path)
+        try:
+            target = resolve_in_workspace(path)
+        except OutsideWorkspaceError as exc:
+            return str(exc)
 
         try:
             before = target.read_text()
@@ -299,12 +334,17 @@ class DeleteFileTool(Tool):
         return _diff(path, before, "")
 
     def run(self, path: str) -> ToolResult:
-        target = Path(path)
+        resolved = _resolve_path(path)
+        if isinstance(resolved, ToolResult):
+            return resolved
+        target = resolved
 
         try:
             target.unlink()
         except OSError as exc:
-            return ToolResult(output=f"Error deleting {path}: {exc}", is_error=True)
+            return ToolResult(
+                output=f"Error deleting {path}: {exc}", is_error=True
+            )
 
         self._log.record(path, "delete")
 
@@ -320,12 +360,17 @@ class ListDirTool(Tool):
     }
 
     def run(self, path: str = ".") -> ToolResult:
-        target = Path(path)
+        resolved = _resolve_path(path)
+        if isinstance(resolved, ToolResult):
+            return resolved
+        target = resolved
 
         try:
             entries = sorted(target.iterdir())
         except OSError as exc:
-            return ToolResult(output=f"Error listing {path}: {exc}", is_error=True)
+            return ToolResult(
+                output=f"Error listing {path}: {exc}", is_error=True
+            )
 
         lines = [f"{'d' if e.is_dir() else 'f'} {e.name}" for e in entries]
 
