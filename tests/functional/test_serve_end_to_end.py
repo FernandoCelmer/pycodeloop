@@ -5,6 +5,7 @@ exactly how the VSCode extension talks to it."""
 from __future__ import annotations
 
 import json
+import os
 import queue
 import subprocess
 import sys
@@ -26,6 +27,11 @@ class ServeSubprocess:
     def __init__(
         self, url: str, cwd: Path, extra_args: list[str] | None = None
     ) -> None:
+        # Config() defaults storage/trace to real files under
+        # ~/.pycodeloop/ when neither is overridden — this is a real
+        # subprocess, so redirect HOME instead of mock.patch.
+        self._home_tmpdir = tempfile.TemporaryDirectory()
+        env = {**os.environ, "HOME": self._home_tmpdir.name}
         self.process = subprocess.Popen(
             [
                 sys.executable,
@@ -47,6 +53,7 @@ class ServeSubprocess:
             text=True,
             bufsize=1,
             cwd=cwd,
+            env=env,
         )
         self._lines: queue.Queue = queue.Queue()
         self._reader = threading.Thread(target=self._read_loop, daemon=True)
@@ -71,6 +78,7 @@ class ServeSubprocess:
             self.process.wait(timeout=5)
         except subprocess.TimeoutExpired:
             self.process.kill()
+        self._home_tmpdir.cleanup()
 
 
 class TestServeEndToEnd(unittest.TestCase):

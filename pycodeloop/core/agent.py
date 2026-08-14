@@ -80,6 +80,7 @@ class Agent:
         on_message: Callable[[], None] | None = None,
         on_retry: Callable[[int, float, Exception], None] | None = None,
         on_turn_end: Callable[[], None] | None = None,
+        on_trace_event: Callable[[dict], None] | None = None,
         on_provider_fallback: (
             Callable[[Provider, Provider, Exception], None] | None
         ) = None,
@@ -107,8 +108,13 @@ class Agent:
         self.on_message = on_message
         self.on_retry = on_retry
         self.on_turn_end = on_turn_end
+        self.on_trace_event = on_trace_event
         self.usage = Usage()
         self._last_context_tokens = 0
+
+    def _trace(self, event_type: str, **fields) -> None:
+        if self.on_trace_event:
+            self.on_trace_event({"type": event_type, **fields})
 
     def _complete(self, **kwargs) -> ProviderResponse:
         """`provider.complete()` with retry + exponential backoff on
@@ -139,7 +145,14 @@ class Agent:
                 except Exception as exc:
                     last_exc = exc
                     if attempt >= _MAX_RETRIES or not _is_retryable(exc):
+                        self._trace("provider_error", error=str(exc))
                         break
+                    self._trace(
+                        "retry",
+                        attempt=attempt + 1,
+                        delay=delay,
+                        error=str(exc),
+                    )
                     if self.on_retry:
                         self.on_retry(attempt + 1, delay, exc)
                     time.sleep(delay)
@@ -222,6 +235,7 @@ class Agent:
         cancel_event: threading.Event | None,
     ) -> None:
         for call in calls:
+            self._trace("tool_call", name=call.name, arguments=call.arguments)
             if self.on_tool_call:
                 self.on_tool_call(call.name, call.arguments)
 
@@ -255,6 +269,12 @@ class Agent:
                 result_text = self._summarize_tool_result(
                     call.name, result_text
                 )
+            self._trace(
+                "tool_result",
+                name=call.name,
+                is_error=is_error,
+                result_len=len(result_text),
+            )
             if self.on_tool_result:
                 self.on_tool_result(call.name, result_text, is_error)
             session.add_tool_result(call.id, result_text)
@@ -316,6 +336,9 @@ class Agent:
         session.messages = recent
         self._notify_message()
 
+        self._trace(
+            "compact", before=before_count, after=len(session.messages)
+        )
         if self.on_compact_end:
             self.on_compact_end(before_count, len(session.messages))
 
@@ -333,12 +356,14 @@ class Agent:
         session = session or Session(system_prompt=self.system_prompt)
         session.add_user(prompt, images=images)
         self._notify_message()
+        self._trace("run_start", prompt_len=len(prompt))
 
         if self.max_history_turns is not None:
             session.trim(self.max_history_turns)
 
         for _ in range(self.max_turns):
             if cancel_event and cancel_event.is_set():
+                self._trace("run_end", reason="cancelled")
                 return "Cancelled by user."
 
             context_window = context_window_for(self.provider.model)
@@ -364,6 +389,16 @@ class Agent:
             if self.on_usage:
                 self.on_usage(response.usage, self.usage, elapsed)
 
+            self._trace(
+                "turn",
+                model=self.provider.model,
+                tool_calls=[call.name for call in response.tool_calls],
+                stop_reason=response.stop_reason,
+                elapsed=elapsed,
+                input_tokens=response.usage.input_tokens,
+                output_tokens=response.usage.output_tokens,
+            )
+
             self._last_context_tokens = response.usage.input_tokens
             if self.on_context:
                 self.on_context(self._last_context_tokens, context_window)
@@ -383,11 +418,14 @@ class Agent:
                 self.on_turn_end()
 
             if not response.tool_calls:
+                self._trace("run_end", reason="done")
                 return response.text
 
             self._run_tool_calls(response.tool_calls, session, cancel_event)
 
             if cancel_event and cancel_event.is_set():
+                self._trace("run_end", reason="cancelled")
                 return "Cancelled by user."
 
+        self._trace("run_end", reason="max_turns")
         return "Reached max_turns without finishing."

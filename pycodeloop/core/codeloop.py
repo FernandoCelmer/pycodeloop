@@ -8,6 +8,7 @@ import threading
 from pycodeloop.core.agent import Agent
 from pycodeloop.core.config import Config
 from pycodeloop.core.session import Message, Session
+from pycodeloop.store.execution_trace import JsonlTracer
 from pycodeloop.store.file_access_log import session_scope
 from pycodeloop.store.usage_tracker import UsageTracker
 
@@ -62,6 +63,7 @@ class CodeLoop:
         self.session = Session(
             system_prompt=self.agent.system_prompt, cwd=os.getcwd()
         )
+        self._tracers: dict[str, JsonlTracer] = {}
 
     def run(
         self,
@@ -91,6 +93,12 @@ class CodeLoop:
         else:
             self.agent.on_message = None
 
+        self.agent.on_trace_event = (
+            self._tracer_for(session_key or "global")
+            if self.config.trace
+            else None
+        )
+
         usage_before = self.agent.usage
         with session_scope(session_key or "global"):
             result = self.agent.run(
@@ -111,6 +119,13 @@ class CodeLoop:
             self.config.storage.post(session_key, self.session)
 
         return result
+
+    def _tracer_for(self, key: str) -> JsonlTracer:
+        tracer = self._tracers.get(key)
+        if tracer is None:
+            tracer = JsonlTracer(key)
+            self._tracers[key] = tracer
+        return tracer
 
     def ask(self, question: str) -> str:
         """One-shot Q&A against a read-only snapshot of the current

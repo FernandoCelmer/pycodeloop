@@ -89,6 +89,11 @@ class Config:
             in one session is still followed in the next, instead of the
             user repeating it every time. On by default.
 
+        trace (bool): Append one JSON line per provider call, tool call/
+            result, retry, and compaction event to
+            `~/.pycodeloop/logs/<session_key or "global">.jsonl`, for
+            postmortem debugging when a run misbehaves. On by default.
+
         storage (Optional[Sessions]): Persists the session so
             `CodeLoop.run(prompt, session_key=...)` can resume a
             conversation across process restarts. Defaults to
@@ -129,6 +134,7 @@ class Config:
         skills_refresh: bool = False,
         delegation: bool = False,
         memory: bool = True,
+        trace: bool = True,
         storage: Sessions | bool | None = None,
         workspace: bool = True,
     ) -> None:
@@ -153,6 +159,7 @@ class Config:
             ]
         if memory:
             self._load_memory()
+        self.trace = trace
         self.storage = (
             None if storage is False else storage or _default_storage()
         )
