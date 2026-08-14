@@ -43,7 +43,7 @@ It can be built three ways:
 
 ## JSON config shape
 
-A config file (see [`templates/`](https://github.com/dotflow-io/pycodeloop/tree/master/templates) for ready-made ones — `anthropic.json`, `openai.json`, `ollama.json`, `lmstudio.json` — and [`reference.json`](https://github.com/dotflow-io/pycodeloop/blob/master/templates/reference.json) for every field) declares:
+A config file (see [`templates/`](https://github.com/dotflow-io/pycodeloop/tree/master/templates) for ready-made ones — `anthropic.json`, `openai.json`, `gemini.json`, `grok.json`, `groq.json`, `ollama.json`, `lmstudio.json` — and [`reference.json`](https://github.com/dotflow-io/pycodeloop/blob/master/templates/reference.json) for every field) declares:
 
 - `url`, `model`, `api_key`/`api_key_env`, `headers`, `auth_header`/`auth_prefix`, `timeout` — connection basics.
 - `response_shape: "anthropic"` — a one-word override that parses replies from Anthropic's `content[]` blocks and `usage.input_tokens`/`usage.output_tokens` instead of the OpenAI-shaped `choices[0].message`/`usage.prompt_tokens`. Omit it (or use `response_paths`, a dict of dot-paths into an arbitrary JSON response) for anything else non-OpenAI-shaped.

@@ -37,7 +37,7 @@ CodeLoop is a terminal coding agent, in the shape of Claude Code, Codex, or Gemi
 
 The key features are:
 
-* **Provider-agnostic**: Anthropic, OpenAI, Ollama, LM Studio, or any OpenAI-compatible endpoint — swapping models means swapping a JSON file, never touching code. `GenericProvider` talks HTTP directly, no vendor SDK required.
+* **Provider-agnostic**: Anthropic, OpenAI, Gemini, Grok (xAI), Groq, Ollama, LM Studio, or any OpenAI-compatible endpoint — swapping models means swapping a JSON file, never touching code. `GenericProvider` talks HTTP directly, no vendor SDK required.
 * **Fast to start**: one `pip install`, one JSON file, one prompt. No boilerplate, no framework to learn first.
 * **Safe by default**: every write, edit, delete, shell command, commit, or HTTP call shows a diff or command preview and waits for your OK before running.
 * **Full-screen chat**: bare `pycodeloop` drops you into a Textual-based terminal UI; `pycodeloop run` stays scriptable for CI and one-shot use.
@@ -87,6 +87,9 @@ Every backend is the same JSON shape — [`templates/`](templates/) ships one pe
 ```bash
 pycodeloop run "..." --provider templates/anthropic.json   # Claude
 pycodeloop run "..." --provider templates/openai.json      # GPT
+pycodeloop run "..." --provider templates/gemini.json      # Gemini
+pycodeloop run "..." --provider templates/grok.json        # Grok (xAI)
+pycodeloop run "..." --provider templates/groq.json        # Groq (fast open-weight inference)
 pycodeloop run "..." --provider templates/ollama.json      # local, no key needed
 pycodeloop run "..." --provider templates/lmstudio.json    # local, no key needed
 ```

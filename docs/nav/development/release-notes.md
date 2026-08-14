@@ -1,5 +1,10 @@
 # Release Notes
 
+## v0.3.0
+
+- ⚙️ Ready-made provider templates for Gemini (`templates/gemini.json`), Grok/xAI (`templates/grok.json`), and Groq (`templates/groq.json`) — same `GenericProvider` JSON shape, OpenAI-compatible endpoints, no code required
+- ⚙️ VS Code extension (0.3.0): a provider gallery (⚙ → Select Provider…, or `/provider`) replaces the flat quickpick — card picker for Anthropic/OpenAI/Gemini/Grok/Groq/Ollama/LM Studio with a connected/local/needs-key status per card, plus a custom-JSON/generic-URL fallback. API keys are now remembered per provider, so switching back doesn't re-prompt. The panel's visual style was also reworked (thin borders, sharp corners, monospace labels) while staying on VS Code's own theme tokens
+
 ## v0.2.1
 
 - ⚙️ VS Code extension source restructured by responsibility — thin `extension.ts` entrypoint, `chatViewProvider.ts` for orchestration, `config/settings.ts` for typed config access, pure `lib/` helpers, and `webview/html.ts` for the panel template — plus 26 unit tests (`npm test`, no new dependency)
