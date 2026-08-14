@@ -92,6 +92,37 @@
     return segment;
   }
 
+  function isTableRow(line) {
+    return /\|/.test(line) && line.trim() !== "";
+  }
+
+  function isTableSeparator(line) {
+    return /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/.test(line);
+  }
+
+  function splitTableRow(line) {
+    const trimmed = line.trim().replace(/^\|/, "").replace(/\|$/, "");
+    return trimmed.split("|").map((cell) => cell.trim());
+  }
+
+  function renderTable(headerLine, bodyLines) {
+    const headerCells = splitTableRow(headerLine);
+    let html = "<table><thead><tr>";
+    for (const cell of headerCells) {
+      html += "<th>" + renderInline(cell) + "</th>";
+    }
+    html += "</tr></thead><tbody>";
+    for (const row of bodyLines) {
+      html += "<tr>";
+      for (const cell of splitTableRow(row)) {
+        html += "<td>" + renderInline(cell) + "</td>";
+      }
+      html += "</tr>";
+    }
+    html += "</tbody></table>";
+    return html;
+  }
+
   function renderTextBlock(text) {
     const lines = text.split("\n");
     let html = "";
@@ -102,11 +133,31 @@
         listTag = null;
       }
     };
-    for (const line of lines) {
+    let i = 0;
+    while (i < lines.length) {
+      const line = lines[i];
+
+      if (isTableRow(line) && i + 1 < lines.length && isTableSeparator(lines[i + 1])) {
+        closeList();
+        const bodyLines = [];
+        let j = i + 2;
+        while (j < lines.length && isTableRow(lines[j]) && !isTableSeparator(lines[j])) {
+          bodyLines.push(lines[j]);
+          j++;
+        }
+        html += renderTable(line, bodyLines);
+        i = j;
+        continue;
+      }
+
       const heading = /^(#{1,6})\s+(.*)$/.exec(line);
       const bullet = /^[-*]\s+(.*)$/.exec(line);
       const numbered = /^\d+\.\s+(.*)$/.exec(line);
-      if (heading) {
+      const rule = /^ {0,3}([-*_])(?: *\1){2,} *$/.test(line);
+      if (rule) {
+        closeList();
+        html += "<hr>";
+      } else if (heading) {
         closeList();
         const level = heading[1].length;
         html += "<h" + level + ">" + renderInline(heading[2]) + "</h" + level + ">";
@@ -131,6 +182,7 @@
         closeList();
         html += renderInline(line) + "\n";
       }
+      i++;
     }
     closeList();
     return html;
