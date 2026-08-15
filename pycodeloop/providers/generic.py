@@ -118,6 +118,7 @@ class _ConnectionSnapshot:
     auth_prefix: str
     api_key: str | None
     timeout: float
+    request_builder: RequestBuilder
     response_parser: ResponseParser
     uses_default_parser: bool
 
@@ -289,6 +290,7 @@ class GenericProvider(Provider):
             auth_prefix=self.auth_prefix,
             api_key=self.api_key,
             timeout=self.timeout,
+            request_builder=self.request_builder,
             response_parser=self.response_parser,
             uses_default_parser=self._uses_default_parser,
         )
@@ -330,9 +332,9 @@ class GenericProvider(Provider):
     ) -> ProviderResponse:
         with self._lock:
             config = self._snapshot_locked()
-            body = self.request_builder(
-                system_prompt, messages, tools, config.model
-            )
+        body = config.request_builder(
+            system_prompt, messages, tools, config.model
+        )
         known_tools = {tool["name"] for tool in tools}
 
         if on_delta is not None and config.uses_default_parser:
