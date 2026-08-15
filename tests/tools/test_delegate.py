@@ -1,6 +1,8 @@
 """Test DelegateTool"""
 
+import threading
 import unittest
+from unittest import mock
 
 from pycodeloop.abc.provider import Provider, ProviderResponse
 from pycodeloop.tools import READ_ONLY_TOOLS
@@ -51,6 +53,31 @@ class TestDelegateTool(unittest.TestCase):
         self.assertEqual(
             tool.preview(task="investigate the bug"), "investigate the bug"
         )
+
+    def test_wants_cancel_event_is_set(self):
+        tool = DelegateTool(provider=FakeProvider([]), tools=[])
+
+        self.assertTrue(tool.wants_cancel_event)
+
+    def test_forwards_cancel_event_to_the_sub_agent(self):
+        provider = FakeProvider([ProviderResponse(text="done")])
+        tool = DelegateTool(provider=provider, tools=list(READ_ONLY_TOOLS))
+        event = threading.Event()
+
+        with mock.patch(
+            "pycodeloop.core.agent.Agent.run", return_value="done"
+        ) as run:
+            tool.run(task="investigate", cancel_event=event)
+
+        run.assert_called_once_with("investigate", cancel_event=event)
+
+    def test_timeout_scales_with_max_turns_and_provider_timeout(self):
+        class TimedProvider(FakeProvider):
+            timeout = 30.0
+
+        tool = DelegateTool(provider=TimedProvider([]), tools=[], max_turns=5)
+
+        self.assertEqual(tool.timeout, 150.0)
 
 
 if __name__ == "__main__":
