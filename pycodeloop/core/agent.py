@@ -372,7 +372,9 @@ class Agent:
                 self._trace("run_end", reason="cancelled")
                 return "Cancelled by user."
 
-            context_window = context_window_for(self.provider.model)
+            context_window = getattr(self.provider, "context_window", None)
+            if context_window is None:
+                context_window = context_window_for(self.provider.model)
             if self.auto_compact and self._last_context_tokens >= (
                 context_window * self.compact_threshold
             ):
