@@ -227,19 +227,25 @@ class TestServeEndToEnd(unittest.TestCase):
             }
         )
 
-        methods = []
+        notifications = []
         response = None
         while response is None:
             message = self.client.next_message()
             if message.get("id") == "1" and "result" in message:
                 response = message
             else:
-                methods.append(message.get("method"))
+                notifications.append(message)
 
+        methods = [n.get("method") for n in notifications]
         self.assertIn("chat/autoApproved", methods)
         self.assertNotIn("chat/confirmRequest", methods)
         self.assertEqual(response["result"]["text"], "Wrote it.")
         self.assertEqual((self.tmp_path / "note.txt").read_text(), "hi")
+
+        auto_approved = next(
+            n for n in notifications if n.get("method") == "chat/autoApproved"
+        )
+        self.assertIn("note.txt", auto_approved["params"]["preview"])
 
 
 if __name__ == "__main__":
