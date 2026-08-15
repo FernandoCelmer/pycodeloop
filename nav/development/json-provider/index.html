@@ -2177,10 +2177,11 @@
 </span><span id="__span-5-9"><span class="w">    </span><span class="nt">&quot;body_paths&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;system&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;system&quot;</span><span class="w"> </span><span class="p">},</span>
 </span><span id="__span-5-10"><span class="w">    </span><span class="nt">&quot;message_shape&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;anthropic&quot;</span><span class="p">,</span>
 </span><span id="__span-5-11"><span class="w">    </span><span class="nt">&quot;tool_schema&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;anthropic&quot;</span><span class="p">,</span>
-</span><span id="__span-5-12"><span class="w">    </span><span class="nt">&quot;params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;max_tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">8192</span><span class="w"> </span><span class="p">}</span>
-</span><span id="__span-5-13"><span class="w">  </span><span class="p">},</span>
-</span><span id="__span-5-14"><span class="w">  </span><span class="nt">&quot;response_shape&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;anthropic&quot;</span>
-</span><span id="__span-5-15"><span class="p">}</span>
+</span><span id="__span-5-12"><span class="w">    </span><span class="nt">&quot;prompt_cache&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+</span><span id="__span-5-13"><span class="w">    </span><span class="nt">&quot;params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;max_tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">8192</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-5-14"><span class="w">  </span><span class="p">},</span>
+</span><span id="__span-5-15"><span class="w">  </span><span class="nt">&quot;response_shape&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;anthropic&quot;</span>
+</span><span id="__span-5-16"><span class="p">}</span>
 </span></code></pre></div>
 <table>
 <thead>
@@ -2201,6 +2202,10 @@
 <tr>
 <td><code>body_paths.system</code></td>
 <td>Move the system prompt to its own top-level body key (<code>"system"</code>) instead of embedding it as the first message — Anthropic requires this</td>
+</tr>
+<tr>
+<td><code>prompt_cache: true</code></td>
+<td>Only with <code>tool_schema: "anthropic"</code>. Marks the system prompt and the last tool definition with <code>cache_control: {"type": "ephemeral"}</code>, so Anthropic caches the (usually large, mostly-unchanged) system prompt + tool schema across turns instead of reprocessing them every request — cache reads cost ~10% of a normal input token. No beta header needed.</td>
 </tr>
 <tr>
 <td><code>params</code></td>

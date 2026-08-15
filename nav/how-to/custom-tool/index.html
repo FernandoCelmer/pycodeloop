@@ -1897,7 +1897,7 @@
 <p>See <a href="../permission-prompts/">Permission prompts</a> for how <code>preview()</code> and the <code>confirm</code> hook interact.</p>
 <h2 id="wiring-it-in">Wiring it in<a class="headerlink" href="#wiring-it-in" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span id="__span-2-1"><span class="kn">from</span><span class="w"> </span><span class="nn">pycodeloop</span><span class="w"> </span><span class="kn">import</span> <span class="n">Config</span>
-</span><span id="__span-2-2"><span class="kn">from</span><span class="w"> </span><span class="nn">pycodeloop.core.tools</span><span class="w"> </span><span class="kn">import</span> <span class="n">DEFAULT_TOOLS</span>
+</span><span id="__span-2-2"><span class="kn">from</span><span class="w"> </span><span class="nn">pycodeloop.tools</span><span class="w"> </span><span class="kn">import</span> <span class="n">DEFAULT_TOOLS</span>
 </span><span id="__span-2-3">
 </span><span id="__span-2-4"><span class="n">config</span> <span class="o">=</span> <span class="n">Config</span><span class="p">(</span><span class="n">tools</span><span class="o">=</span><span class="n">DEFAULT_TOOLS</span> <span class="o">+</span> <span class="p">[</span><span class="n">MyTool</span><span class="p">()])</span>
 </span></code></pre></div>

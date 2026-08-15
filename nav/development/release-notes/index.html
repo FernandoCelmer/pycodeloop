@@ -1291,6 +1291,61 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#v061" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.6.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v060" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.6.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v050" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.5.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v040" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.4.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v030" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.3.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#v021" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1785,6 +1840,61 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#v061" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.6.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v060" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.6.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v050" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.5.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v040" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.4.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v030" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.3.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#v021" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1886,6 +1996,90 @@
 
 
 <h1 id="release-notes">Release Notes<a class="headerlink" href="#release-notes" title="Permanent link">&para;</a></h1>
+<h2 id="v061">v0.6.1<a class="headerlink" href="#v061" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="https://pypi.org/project/pycodeloop/0.6.1/">📦 PyPI - Build 0.6.1</a></li>
+<li><a href="https://github.com/dotflow-io/pycodeloop/pull/13">🪲 Bug: Preserve real image MIME type instead of hardcoding image/png (#12)</a></li>
+</ul>
+<h2 id="v060">v0.6.0<a class="headerlink" href="#v060" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="https://pypi.org/project/pycodeloop/0.6.0/">📦 PyPI - Build 0.6.0</a></li>
+<li><a href="https://github.com/dotflow-io/pycodeloop/pull/5">⚙️ Feature: Per-role model fallback chains for Agent (#1)</a></li>
+<li><a href="https://github.com/dotflow-io/pycodeloop/pull/6">🪲 Bug: Parse fenced tool calls a model narrates as prose (#2)</a></li>
+<li><a href="https://github.com/dotflow-io/pycodeloop/pull/7">🪲 Bug: Add repetition guard to streaming responses (#3)</a></li>
+<li><a href="https://github.com/dotflow-io/pycodeloop/pull/8">⚙️ Feature: Add per-run JSONL execution trace (#4)</a></li>
+<li><a href="https://github.com/dotflow-io/pycodeloop/pull/10">⚙️ Feature: Add workspace jail toggle and clarify bash's exemption from it (#9)</a></li>
+</ul>
+<h2 id="v050">v0.5.0<a class="headerlink" href="#v050" title="Permanent link">&para;</a></h2>
+<ul>
+<li>⚙️ <code>pycodeloop --version</code>/<code>-V</code> prints the installed version and exits — nothing previously let a caller check it without importing the package; the VS Code extension uses this to detect an outdated CLI and offer to update it</li>
+<li>⚙️ VS Code extension: CLI update check — on connect, compares the installed <code>pycodeloop --version</code> against the latest release on PyPI and, if outdated, shows a card with an "Update CodeLoop CLI" button (<code>pip install --user --upgrade pycodeloop</code>)</li>
+</ul>
+<p><strong>Security hardening — tools</strong></p>
+<ul>
+<li>⚠️ <code>sql_query</code>/<code>sql_schema</code> are now <code>dangerous</code> (require confirm) and open the connection read-only at the driver level (<code>PRAGMA query_only</code>/<code>SET TRANSACTION READ ONLY</code>) instead of trusting a regex alone. The regex itself got stricter too: a <code>_FORBIDDEN</code> list blocks <code>INTO OUTFILE</code>/<code>INTO DUMPFILE</code>/<code>LOAD_FILE()</code>/<code>pg_read_file()</code>/<code>COPY ... TO</code>/<code>ATTACH DATABASE</code>, and <code>PRAGMA</code> is now checked against an explicit safe-list instead of being allowed wholesale. Connection URLs are validated against an allowlist of SQLAlchemy schemes (sqlite/postgresql/mysql/mariadb variants) before a connection is even attempted</li>
+<li>⚠️ <code>git_commit</code> now requires an explicit <code>paths</code> list and refuses <code>-A</code>/<code>-u</code>/<code>--all</code> — it could previously default to <code>git add -A</code>, contradicting this repo's own "never git add -A" rule</li>
+<li>⚠️ Filesystem tools (<code>read_file</code>, <code>write_file</code>, <code>edit_file</code>, <code>delete_file</code>, <code>grep</code>, <code>glob</code>) are jailed to the workspace root (<code>pycodeloop/tools/_workspace.py</code>) — an absolute path or a <code>..</code> escape outside the process cwd is now refused instead of silently followed</li>
+<li>⚠️ <code>http_request</code>/<code>web_fetch</code>/<code>safe_request</code> reject any URL whose scheme isn't <code>http</code>/<code>https</code> before the SSRF host check runs, and <code>is_blocked_host</code> now also blocks multicast and unspecified addresses</li>
+<li>⚠️ <code>env</code>'s sensitive-name matching widened (<code>AUTH</code>, <code>BEARER</code>, <code>COOKIE</code>, <code>SESSION</code>, <code>PASSWD</code>, <code>PASSPHRASE</code>, <code>APIKEY</code>, …) and now matches whole name segments instead of a raw substring, so it also masks more accurately</li>
+</ul>
+<p><strong>Reliability</strong></p>
+<ul>
+<li>🪲 <code>Agent</code> refuses to run a <code>dangerous</code> tool when no <code>confirm</code> callback is set instead of running it unconfirmed — closes a fail-open gap when <code>Agent</code> is used as a library without wiring a confirm handler</li>
+<li>🪲 <code>pycodeloop serve</code> now emits a <code>chat/turnEnd</code> notification after each provider turn, so an editor client can end the current text bubble at the right point instead of concatenating text from before and after a tool call into one run-on message</li>
+<li>🪲 <code>FileAccessLog</code>/<code>SqliteSessions</code> dispose their SQLite engine (<code>NullPool</code> + explicit <code>close()</code>/<code>__del__</code>) instead of leaking connections/<code>ResourceWarning</code>s across the process lifetime</li>
+<li>🪲 The interactive input-reader thread no longer raises when stdin closes out from under it mid-read</li>
+</ul>
+<p><strong>CI / quality gates</strong></p>
+<ul>
+<li>⬆️ <code>mypy</code> now runs with the correct config path in CI; <code>.pre-commit-config.yaml</code>'s file glob pointed at the pre-rename <code>codeloop/</code> package instead of <code>pycodeloop/</code>; CI now diffs <code>templates/</code> against <code>pycodeloop/providers/templates/</code> to catch the two going out of sync</li>
+<li>📝 <code>ruff</code> target-version bumped to <code>py310</code> (matches <code>requires-python</code>) and the full tree reformatted to it — full <code>ruff check</code>/<code>ruff format --check</code> pass</li>
+</ul>
+<h2 id="v040">v0.4.0<a class="headerlink" href="#v040" title="Permanent link">&para;</a></h2>
+<p><strong>pycodeloop core</strong></p>
+<ul>
+<li>⚙️ Sub-agent delegation (<code>--delegate</code>, off by default) — a <code>delegate</code> tool spawns a fresh sub-agent (same provider, read-only tools: <code>read_file</code>/<code>list_dir</code>/<code>glob</code>/<code>grep</code>/<code>git status</code>/<code>diff</code>/<code>log</code>/<code>web_fetch</code>/<code>sql_schema</code>/<code>sql_query</code>, no write/edit/delete/bash) for an independent subtask. Several <code>delegate</code> calls in the same turn run in parallel</li>
+<li>🪲 <code>Agent._can_parallelize</code> previously forced <em>any</em> repeated tool name in a batch to run sequentially, even for stateless tools — added <code>Tool.concurrent_safe</code> (opt-in, default <code>False</code>, preserves existing behavior for every built-in tool) so <code>delegate</code> can declare its repeated calls safe to run concurrently</li>
+<li>⚙️ Persistent project memory (<code>--memory</code>, on by default) — <code>.pycodeloop/memory.md</code> auto-loaded into the system prompt every run, plus a <code>remember</code> tool the agent calls when the user corrects its approach or states a standing rule. <code>remember</code> is gated behind confirmation like every other write tool</li>
+<li>🪲 <code>write_file</code>/<code>edit_file</code> reject content that looks like a pasted unified diff (<code>@@ ... @@</code> hunk header, or <code>---</code>/<code>+++</code> file headers) instead of writing the diff syntax itself into the file</li>
+<li>⚙️ Six more ready-made provider templates: AWS Bedrock (<code>aws.json</code>, via the bearer-token <code>bedrock-mantle</code> endpoint — no SigV4 needed), Kimi/Moonshot AI (<code>kimi.json</code>), DeepSeek (<code>deepseek.json</code>), Llama via Together AI (<code>llama.json</code> — Meta retired its own Llama API on 2026-07-06), Qwen/Alibaba DashScope (<code>qwen.json</code>), NVIDIA NIM (<code>nvidia.json</code>)</li>
+<li>🪲 Grok template was pointing at <code>grok-4</code>/<code>grok-4-fast</code>/<code>grok-code-fast-1</code> — all retired 2026-05-15. Moved to <code>grok-4.5</code>/<code>grok-4.3</code>/<code>grok-build-0.1</code>. OpenAI template's <code>gpt-5</code>/<code>gpt-5-mini</code>/<code>gpt-5-nano</code> moved to the current <code>gpt-5.6</code> family</li>
+<li>🪲 Gemini 3's thinking models attach <code>extra_content.google.thought_signature</code> to tool_calls and reject the next turn if it isn't echoed back unchanged — and thinking can't be disabled on Gemini 3 (minimum is <code>LOW</code>, which still requires the signature). Rather than staying pinned to Gemini 2.5 (itself now 404ing for new API keys), <code>GenericProvider</code> round-trips arbitrary vendor-specific tool_call fields via a new <code>ToolCall.extra</code>, so Gemini's default is <code>gemini-3.6-flash</code> again</li>
+<li>⚙️ Anthropic prompt caching — set <code>"prompt_cache": true</code> in a provider's <code>request</code> config (already on by default in <code>anthropic.json</code>) to mark the system prompt and the last tool definition with <code>cache_control: {"type": "ephemeral"}</code>, so Anthropic reuses the cached system prompt + tool schema across turns instead of reprocessing them every request (cache reads cost ~10% of a normal input token)</li>
+<li>⚙️ Two new tools: <code>sql_schema</code> (list a database's tables, or one table's columns) and <code>sql_query</code> (a single read-only SELECT/WITH/EXPLAIN/PRAGMA/SHOW/DESCRIBE statement, no writes/DDL/stacked statements) — any SQLAlchemy-supported database via a connection URL</li>
+<li>⚙️ Token-saving read cache — <code>read_file</code> now logs every read/write/edit/delete to a <code>file_access</code> table (<code>~/.pycodeloop/pycodeloop.db</code>), scoped to the session. Reading the exact same path/offset/limit twice with no change on disk in between returns a short "unchanged since you last read" notice instead of repeating the content — pass <code>force=true</code> to see it again</li>
+<li>🗑️ Removed the <code>todo</code> tool (scratchpad checklist) — never adopted, dead weight in the default tool list</li>
+<li>🪲 <code>http_request</code>/<code>web_fetch</code> had a DNS-rebinding gap in their SSRF guard: the hostname was resolved once to check it wasn't private/internal, then resolved <em>again</em>, independently, for the actual connection — a rebinding DNS answer between those two lookups could hand the request to a blocked address the check had just approved. Both now resolve once and connect directly to that pinned address (<code>Host</code> header + TLS SNI still carry the real hostname, so routing/cert validation are unaffected)</li>
+<li>🪲 <code>git_diff</code>/<code>git_log</code>/etc never capped their output, unlike every other tool (<code>bash</code>, filesystem, <code>grep</code>, <code>http_request</code>, <code>web_fetch</code>) — a large diff or a deep log could blow out the context. <code>http_request</code>/<code>web_fetch</code> also each hand-rolled the same 20000-char truncation <code>_limits.truncate()</code> already provides; both now use it</li>
+<li>🪲 <code>env</code> now also masks values shaped like <code>scheme://user:pass@host</code> (e.g. a <code>DATABASE_URL</code>), not just names containing SECRET/KEY/TOKEN/PASSWORD/CREDENTIAL; <code>grep</code> skips binary files instead of searching through decoded garbage</li>
+<li>🎨 <code>core/</code> split: <code>store/</code> (SQLite/JSON/file sessions, usage tracking, user settings, ORM models), <code>tools/</code> (built-in <code>Tool</code> implementations — the <code>Tool</code> ABC already lived in <code>abc/</code>, not <code>core/</code>), and the optional-feature modules <code>skills.py</code>/<code>memory.py</code>/<code>mcp.py</code> moved out to be siblings of <code>core/</code>, which now only holds the agent engine itself (<code>agent</code>, <code>config</code>, <code>session</code>, <code>codeloop</code>, <code>context_window</code>, <code>exception</code>). <code>clipboard.py</code> moved into <code>cli/</code> — it's only used by the interactive Textual chat</li>
+<li>🎨 New <code>protocol/</code> module: <code>Message</code> moved out of <code>core/session.py</code> into <code>protocol/messages.py</code>; the JSON-RPC envelope builders (<code>notification</code>/<code>response</code>/<code>error_response</code>, error codes) <code>pycodeloop serve</code> was hand-assembling inline moved into <code>protocol/events.py</code></li>
+<li>🎨 <code>providers/generic.py</code> (one class doing config loading, three response-parsing strategies, a request-builder factory, and raw HTTP/SSE transport) split — the response parsers moved to a new <code>providers/_responses.py</code>, the config-driven request builder moved into <code>providers/_shapes.py</code> next to the message/tool-schema builders it already used. <code>GenericProvider</code> now only orchestrates config loading and HTTP transport</li>
+<li>🎨 <code>Config._append_to_system_prompt</code> helper extracted (was duplicated between skills discovery and memory loading); <code>tools/__init__.py</code>'s <code>DEFAULT_TOOLS</code>/<code>READ_ONLY_TOOLS</code> no longer double-instantiate the tools they share</li>
+<li>🗑️ Removed the <code>anthropic</code>/<code>openai</code> poetry extras — dead weight, <code>GenericProvider</code> is stdlib-only and never imports either SDK. The <code>mcp</code> extra (actually used, by <code>pycodeloop/mcp.py</code>) stays</li>
+</ul>
+<p><strong>VS Code extension — now its own repo, <a href="https://github.com/dotflow-io/vscodeloop">dotflow-io/vscodeloop</a></strong></p>
+<p>The extension moved out of this repo's <code>vscode-extension/</code> into its own, with full commit history preserved. It still ships as the <code>pycodeloop</code>/"CodeLoop" VS Code extension; only where the code lives changed.</p>
+<ul>
+<li>⚙️ Provider gallery (⚙ → Select Provider…, or <code>/provider</code>): card picker for all 13 providers (Anthropic, OpenAI, Gemini, Grok, Groq, AWS Bedrock, Kimi, DeepSeek, Llama, Qwen, NVIDIA NIM, Ollama, LM Studio) with a connected/local/needs-key status per card, a per-provider model picker, and a custom-JSON/generic-URL fallback. API keys and the chosen model are remembered per provider, so switching back doesn't re-prompt</li>
+<li>⚙️ Dedicated Sessions page (Sessions toolbar button, replacing the native quickpick): cards show message count, working directory, last-updated time, and an Active badge, each with a Switch action</li>
+<li>⚙️ <code>pycodeloop.delegation</code> and <code>pycodeloop.memory</code> settings, gear-menu toggles, <code>/delegate</code> and <code>/memory</code> slash commands</li>
+<li>⚙️ Claude Code-style status line ("● Thinking… · 12s") replacing the earlier 3-dot bubble — live elapsed-time counter, and switches to "N sub-agents working…" while parallel <code>delegate</code> calls are in flight</li>
+<li>⚙️ Completed write_file/edit_file/delete_file tool cards now render the diff computed for the confirmation prompt (colored +/- lines, "Added N lines" summary) instead of discarding it for a bare "Edited path" string</li>
+<li>🪲 A per-provider model choice that's since been retired by the vendor (e.g. Gemini's <code>gemini-2.5-flash</code>, no longer available to new API keys) used to keep 404ing every session until manually changed — the extension now self-heals it back to the provider's current default the next time it connects</li>
+<li>🎨 Panel reworked to an owline-style visual language: thin 1px borders, sharp corners, monospace uppercase for buttons/labels, SVG line icons instead of emoji, no VS Code default rounded-button chrome — all still on <code>var(--vscode-*)</code> tokens so it follows the user's editor theme</li>
+<li>🎨 "API Key" removed from the gear menu — redundant with the provider gallery's own connect/key flow, which is where the key actually gets set</li>
+<li>🎨 <code>src/</code> restructured from a flat bag of <code>lib</code>/<code>config</code>/<code>webview</code> files into <code>features/</code> (chat, sessions, settings — each with its own controller), <code>vscode/</code> (webview shell, sidebar registration), <code>core-client/</code> (RPC client, process management, wire protocol), and <code>services/</code> (credentials, settings, storage, terminal, workspace)</li>
+<li>🎨 <code>media/main.js</code> (1511 lines, one file) split into 9 plain <code>&lt;script&gt;</code> files (<code>dom</code>, <code>render-utils</code>, <code>chat-turns</code>, <code>chat-tools</code>, <code>chat-apikey</code>, <code>composer</code>, <code>menu</code>, <code>gallery</code>, <code>app</code>) loaded in a fixed order — still no bundler, they share one global scope by design, same as before</li>
+<li>📘 ESLint added (flat config, <code>typescript-eslint</code>) with an <code>npm run lint</code> script</li>
+<li>📘 <code>WebviewMessage</code> discriminated union replaces <code>onWebviewMessage(message: any)</code>; 11 near-identical gear-menu handlers deduplicated into one <code>onMenuClick(button, action)</code> helper</li>
+<li>📘 <code>AGENTS.md</code> added at the (former) repo root capturing standing rules (provider JSONs synced across template dirs, verify model IDs against current vendor docs, no emoji icons, rebuild+reinstall the <code>.vsix</code> after every extension change) for skills discovery to pick up automatically</li>
+</ul>
+<h2 id="v030">v0.3.0<a class="headerlink" href="#v030" title="Permanent link">&para;</a></h2>
+<ul>
+<li>⚙️ Ready-made provider templates for Gemini (<code>templates/gemini.json</code>), Grok/xAI (<code>templates/grok.json</code>), and Groq (<code>templates/groq.json</code>) — same <code>GenericProvider</code> JSON shape, OpenAI-compatible endpoints, no code required</li>
+<li>⚙️ VS Code extension (0.3.0): a provider gallery (⚙ → Select Provider…, or <code>/provider</code>) replaces the flat quickpick — card picker for Anthropic/OpenAI/Gemini/Grok/Groq/Ollama/LM Studio with a connected/local/needs-key status per card, plus a custom-JSON/generic-URL fallback. API keys are now remembered per provider, so switching back doesn't re-prompt. The panel's visual style was also reworked (thin borders, sharp corners, monospace labels) while staying on VS Code's own theme tokens</li>
+</ul>
 <h2 id="v021">v0.2.1<a class="headerlink" href="#v021" title="Permanent link">&para;</a></h2>
 <ul>
 <li>⚙️ VS Code extension source restructured by responsibility — thin <code>extension.ts</code> entrypoint, <code>chatViewProvider.ts</code> for orchestration, <code>config/settings.ts</code> for typed config access, pure <code>lib/</code> helpers, and <code>webview/html.ts</code> for the panel template — plus 26 unit tests (<code>npm test</code>, no new dependency)</li>

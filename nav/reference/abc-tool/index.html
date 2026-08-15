@@ -1554,6 +1554,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#pycodeloop.abc.tool.Tool.concurrent_safe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;concurrent_safe
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#pycodeloop.abc.tool.Tool.dangerous" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1908,6 +1919,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#pycodeloop.abc.tool.Tool.concurrent_safe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;concurrent_safe
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#pycodeloop.abc.tool.Tool.dangerous" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2128,7 +2150,11 @@
 
         <p>Action the agent can take. Set <code>dangerous = True</code> on subclasses that
 change state (filesystem, shell, remote calls) so Agent asks for
-confirmation before running them.</p>
+confirmation before running them. Set <code>concurrent_safe = True</code> on
+subclasses whose <code>run()</code> has no shared mutable state, so Agent may
+run several calls to the <em>same</em> tool concurrently within one batch
+(distinct-named tools in a batch already run concurrently regardless
+of this flag — it only affects repeated same-name calls).</p>
 
           
 
@@ -2166,34 +2192,44 @@ confirmation before running them.</p>
 <span class="normal">40</span>
 <span class="normal">41</span>
 <span class="normal">42</span>
-<span class="normal">43</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-16"><span class="k">class</span><span class="w"> </span><span class="nc">Tool</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="normal">43</span>
+<span class="normal">44</span>
+<span class="normal">45</span>
+<span class="normal">46</span>
+<span class="normal">47</span>
+<span class="normal">48</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-16"><span class="k">class</span><span class="w"> </span><span class="nc">Tool</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
 </span><span id="__span-0-17"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Action the agent can take. Set `dangerous = True` on subclasses that</span>
 </span><span id="__span-0-18"><span class="sd">    change state (filesystem, shell, remote calls) so Agent asks for</span>
-</span><span id="__span-0-19"><span class="sd">    confirmation before running them.&quot;&quot;&quot;</span>
-</span><span id="__span-0-20">
-</span><span id="__span-0-21">    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
-</span><span id="__span-0-22">    <span class="n">description</span><span class="p">:</span> <span class="nb">str</span>
-</span><span id="__span-0-23">    <span class="n">parameters</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;object&quot;</span><span class="p">,</span> <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="p">{}}</span>
-</span><span id="__span-0-24">    <span class="n">dangerous</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
-</span><span id="__span-0-25">
-</span><span id="__span-0-26">    <span class="k">def</span><span class="w"> </span><span class="nf">schema</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-</span><span id="__span-0-27">        <span class="k">return</span> <span class="p">{</span>
-</span><span id="__span-0-28">            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-</span><span id="__span-0-29">            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="p">,</span>
-</span><span id="__span-0-30">            <span class="s2">&quot;parameters&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">,</span>
-</span><span id="__span-0-31">        <span class="p">}</span>
-</span><span id="__span-0-32">
-</span><span id="__span-0-33">    <span class="k">def</span><span class="w"> </span><span class="nf">preview</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="__span-0-34"><span class="w">        </span><span class="sd">&quot;&quot;&quot;Human-readable summary of what `run(**kwargs)` would do.</span>
-</span><span id="__span-0-35">
-</span><span id="__span-0-36"><span class="sd">        Shown to the user in a confirmation prompt before a dangerous tool</span>
-</span><span id="__span-0-37"><span class="sd">        actually runs. Override for a diff, a shell command line, etc.</span>
-</span><span id="__span-0-38"><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="__span-0-39">        <span class="k">return</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">value</span><span class="si">!r}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+</span><span id="__span-0-19"><span class="sd">    confirmation before running them. Set `concurrent_safe = True` on</span>
+</span><span id="__span-0-20"><span class="sd">    subclasses whose `run()` has no shared mutable state, so Agent may</span>
+</span><span id="__span-0-21"><span class="sd">    run several calls to the *same* tool concurrently within one batch</span>
+</span><span id="__span-0-22"><span class="sd">    (distinct-named tools in a batch already run concurrently regardless</span>
+</span><span id="__span-0-23"><span class="sd">    of this flag — it only affects repeated same-name calls).&quot;&quot;&quot;</span>
+</span><span id="__span-0-24">
+</span><span id="__span-0-25">    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="__span-0-26">    <span class="n">description</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="__span-0-27">    <span class="n">parameters</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;object&quot;</span><span class="p">,</span> <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="p">{}}</span>
+</span><span id="__span-0-28">    <span class="n">dangerous</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="__span-0-29">    <span class="n">concurrent_safe</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="__span-0-30">
+</span><span id="__span-0-31">    <span class="k">def</span><span class="w"> </span><span class="nf">schema</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+</span><span id="__span-0-32">        <span class="k">return</span> <span class="p">{</span>
+</span><span id="__span-0-33">            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+</span><span id="__span-0-34">            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="p">,</span>
+</span><span id="__span-0-35">            <span class="s2">&quot;parameters&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">,</span>
+</span><span id="__span-0-36">        <span class="p">}</span>
+</span><span id="__span-0-37">
+</span><span id="__span-0-38">    <span class="k">def</span><span class="w"> </span><span class="nf">preview</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="__span-0-39"><span class="w">        </span><span class="sd">&quot;&quot;&quot;Human-readable summary of what `run(**kwargs)` would do.</span>
 </span><span id="__span-0-40">
-</span><span id="__span-0-41">    <span class="nd">@abstractmethod</span>
-</span><span id="__span-0-42">    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ToolResult</span><span class="p">:</span>
-</span><span id="__span-0-43">        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+</span><span id="__span-0-41"><span class="sd">        Shown to the user in a confirmation prompt before a dangerous tool</span>
+</span><span id="__span-0-42"><span class="sd">        actually runs. Override for a diff, a shell command line, etc.</span>
+</span><span id="__span-0-43"><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="__span-0-44">        <span class="k">return</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">value</span><span class="si">!r}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+</span><span id="__span-0-45">
+</span><span id="__span-0-46">    <span class="nd">@abstractmethod</span>
+</span><span id="__span-0-47">    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ToolResult</span><span class="p">:</span>
+</span><span id="__span-0-48">        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
 </span></code></pre></div></td></tr></table></div>
               </details>
 
@@ -2206,6 +2242,28 @@ confirmation before running them.</p>
 
 
 
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="pycodeloop.abc.tool.Tool.concurrent_safe" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <code class="highlight language-python"><span class="n">concurrent_safe</span> <span class="o">=</span> <span class="kc">False</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#pycodeloop.abc.tool.Tool.concurrent_safe" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+          
+    </div>
+
+</div>
 
 <div class="doc doc-object doc-attribute">
 
@@ -2314,19 +2372,19 @@ actually runs. Override for a diff, a shell command line, etc.</p>
 
             <details class="quote">
               <summary>Source code in <code>pycodeloop/abc/tool.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">33</span>
-<span class="normal">34</span>
-<span class="normal">35</span>
-<span class="normal">36</span>
-<span class="normal">37</span>
-<span class="normal">38</span>
-<span class="normal">39</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-33"><span class="k">def</span><span class="w"> </span><span class="nf">preview</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="__span-0-34"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Human-readable summary of what `run(**kwargs)` would do.</span>
-</span><span id="__span-0-35">
-</span><span id="__span-0-36"><span class="sd">    Shown to the user in a confirmation prompt before a dangerous tool</span>
-</span><span id="__span-0-37"><span class="sd">    actually runs. Override for a diff, a shell command line, etc.</span>
-</span><span id="__span-0-38"><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-39">    <span class="k">return</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">value</span><span class="si">!r}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">38</span>
+<span class="normal">39</span>
+<span class="normal">40</span>
+<span class="normal">41</span>
+<span class="normal">42</span>
+<span class="normal">43</span>
+<span class="normal">44</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-38"><span class="k">def</span><span class="w"> </span><span class="nf">preview</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="__span-0-39"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Human-readable summary of what `run(**kwargs)` would do.</span>
+</span><span id="__span-0-40">
+</span><span id="__span-0-41"><span class="sd">    Shown to the user in a confirmation prompt before a dangerous tool</span>
+</span><span id="__span-0-42"><span class="sd">    actually runs. Override for a diff, a shell command line, etc.</span>
+</span><span id="__span-0-43"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-44">    <span class="k">return</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">value</span><span class="si">!r}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -2352,11 +2410,11 @@ actually runs. Override for a diff, a shell command line, etc.</p>
 
             <details class="quote">
               <summary>Source code in <code>pycodeloop/abc/tool.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">41</span>
-<span class="normal">42</span>
-<span class="normal">43</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-41"><span class="nd">@abstractmethod</span>
-</span><span id="__span-0-42"><span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ToolResult</span><span class="p">:</span>
-</span><span id="__span-0-43">    <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">46</span>
+<span class="normal">47</span>
+<span class="normal">48</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-46"><span class="nd">@abstractmethod</span>
+</span><span id="__span-0-47"><span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ToolResult</span><span class="p">:</span>
+</span><span id="__span-0-48">    <span class="k">raise</span> <span class="ne">NotImplementedError</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -2378,17 +2436,17 @@ actually runs. Override for a diff, a shell command line, etc.</p>
 
             <details class="quote">
               <summary>Source code in <code>pycodeloop/abc/tool.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">26</span>
-<span class="normal">27</span>
-<span class="normal">28</span>
-<span class="normal">29</span>
-<span class="normal">30</span>
-<span class="normal">31</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-26"><span class="k">def</span><span class="w"> </span><span class="nf">schema</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-</span><span id="__span-0-27">    <span class="k">return</span> <span class="p">{</span>
-</span><span id="__span-0-28">        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-</span><span id="__span-0-29">        <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="p">,</span>
-</span><span id="__span-0-30">        <span class="s2">&quot;parameters&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">,</span>
-</span><span id="__span-0-31">    <span class="p">}</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">31</span>
+<span class="normal">32</span>
+<span class="normal">33</span>
+<span class="normal">34</span>
+<span class="normal">35</span>
+<span class="normal">36</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-31"><span class="k">def</span><span class="w"> </span><span class="nf">schema</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+</span><span id="__span-0-32">    <span class="k">return</span> <span class="p">{</span>
+</span><span id="__span-0-33">        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+</span><span id="__span-0-34">        <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="p">,</span>
+</span><span id="__span-0-35">        <span class="s2">&quot;parameters&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">,</span>
+</span><span id="__span-0-36">    <span class="p">}</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>

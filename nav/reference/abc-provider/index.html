@@ -1703,6 +1703,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#pycodeloop.abc.provider.ToolCall.extra" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;extra
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#pycodeloop.abc.provider.ToolCall.id" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2229,6 +2240,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#pycodeloop.abc.provider.ToolCall.extra" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;extra
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#pycodeloop.abc.provider.ToolCall.id" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2434,8 +2456,7 @@ or <code>Config(provider=...)</code>.</p>
 
               <details class="quote">
                 <summary>Source code in <code>pycodeloop/abc/provider.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">39</span>
-<span class="normal">40</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">40</span>
 <span class="normal">41</span>
 <span class="normal">42</span>
 <span class="normal">43</span>
@@ -2465,38 +2486,43 @@ or <code>Config(provider=...)</code>.</p>
 <span class="normal">67</span>
 <span class="normal">68</span>
 <span class="normal">69</span>
-<span class="normal">70</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-39"><span class="k">class</span><span class="w"> </span><span class="nc">Provider</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
-</span><span id="__span-0-40"><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="__span-0-41"><span class="sd">    Import:</span>
-</span><span id="__span-0-42"><span class="sd">        You can import the **Provider** class with:</span>
-</span><span id="__span-0-43">
-</span><span id="__span-0-44"><span class="sd">            from pycodeloop.abc.provider import Provider</span>
-</span><span id="__span-0-45">
-</span><span id="__span-0-46"><span class="sd">    Every LLM backend CodeLoop can drive implements this interface. Swap</span>
-</span><span id="__span-0-47"><span class="sd">    providers by passing a different instance to `Agent(provider=...)`</span>
-</span><span id="__span-0-48"><span class="sd">    or `Config(provider=...)`.</span>
-</span><span id="__span-0-49"><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-50">
-</span><span id="__span-0-51">    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;base&quot;</span>
-</span><span id="__span-0-52">
-</span><span id="__span-0-53">    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">api_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-54">        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
-</span><span id="__span-0-55">        <span class="bp">self</span><span class="o">.</span><span class="n">api_key</span> <span class="o">=</span> <span class="n">api_key</span>
-</span><span id="__span-0-56">        <span class="bp">self</span><span class="o">.</span><span class="n">extra</span> <span class="o">=</span> <span class="n">kwargs</span>
-</span><span id="__span-0-57">
-</span><span id="__span-0-58">    <span class="nd">@abstractmethod</span>
-</span><span id="__span-0-59">    <span class="k">def</span><span class="w"> </span><span class="nf">complete</span><span class="p">(</span>
-</span><span id="__span-0-60">        <span class="bp">self</span><span class="p">,</span>
-</span><span id="__span-0-61">        <span class="n">system_prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-</span><span id="__span-0-62">        <span class="n">messages</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
-</span><span id="__span-0-63">        <span class="n">tools</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span>
-</span><span id="__span-0-64">        <span class="n">on_delta</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-65">    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ProviderResponse</span><span class="p">:</span>
-</span><span id="__span-0-66"><span class="w">        </span><span class="sd">&quot;&quot;&quot;Send conversation + tool schema, return the model&#39;s response.</span>
-</span><span id="__span-0-67">
-</span><span id="__span-0-68"><span class="sd">        When `on_delta` is given, call it with each text chunk as it</span>
-</span><span id="__span-0-69"><span class="sd">        arrives instead of only returning the assembled text at the end.</span>
-</span><span id="__span-0-70"><span class="sd">        &quot;&quot;&quot;</span>
+<span class="normal">70</span>
+<span class="normal">71</span>
+<span class="normal">72</span>
+<span class="normal">73</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-40"><span class="k">class</span><span class="w"> </span><span class="nc">Provider</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+</span><span id="__span-0-41"><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="__span-0-42"><span class="sd">    Import:</span>
+</span><span id="__span-0-43"><span class="sd">        You can import the **Provider** class with:</span>
+</span><span id="__span-0-44">
+</span><span id="__span-0-45"><span class="sd">            from pycodeloop.abc.provider import Provider</span>
+</span><span id="__span-0-46">
+</span><span id="__span-0-47"><span class="sd">    Every LLM backend CodeLoop can drive implements this interface. Swap</span>
+</span><span id="__span-0-48"><span class="sd">    providers by passing a different instance to `Agent(provider=...)`</span>
+</span><span id="__span-0-49"><span class="sd">    or `Config(provider=...)`.</span>
+</span><span id="__span-0-50"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-51">
+</span><span id="__span-0-52">    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;base&quot;</span>
+</span><span id="__span-0-53">
+</span><span id="__span-0-54">    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+</span><span id="__span-0-55">        <span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">api_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+</span><span id="__span-0-56">    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-57">        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
+</span><span id="__span-0-58">        <span class="bp">self</span><span class="o">.</span><span class="n">api_key</span> <span class="o">=</span> <span class="n">api_key</span>
+</span><span id="__span-0-59">        <span class="bp">self</span><span class="o">.</span><span class="n">extra</span> <span class="o">=</span> <span class="n">kwargs</span>
+</span><span id="__span-0-60">
+</span><span id="__span-0-61">    <span class="nd">@abstractmethod</span>
+</span><span id="__span-0-62">    <span class="k">def</span><span class="w"> </span><span class="nf">complete</span><span class="p">(</span>
+</span><span id="__span-0-63">        <span class="bp">self</span><span class="p">,</span>
+</span><span id="__span-0-64">        <span class="n">system_prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="__span-0-65">        <span class="n">messages</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+</span><span id="__span-0-66">        <span class="n">tools</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span>
+</span><span id="__span-0-67">        <span class="n">on_delta</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-68">    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ProviderResponse</span><span class="p">:</span>
+</span><span id="__span-0-69"><span class="w">        </span><span class="sd">&quot;&quot;&quot;Send conversation + tool schema, return the model&#39;s response.</span>
+</span><span id="__span-0-70">
+</span><span id="__span-0-71"><span class="sd">        When `on_delta` is given, call it with each text chunk as it</span>
+</span><span id="__span-0-72"><span class="sd">        arrives instead of only returning the assembled text at the end.</span>
+</span><span id="__span-0-73"><span class="sd">        &quot;&quot;&quot;</span>
 </span></code></pre></div></td></tr></table></div>
               </details>
 
@@ -2612,13 +2638,17 @@ or <code>Config(provider=...)</code>.</p>
 
             <details class="quote">
               <summary>Source code in <code>pycodeloop/abc/provider.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">53</span>
-<span class="normal">54</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">54</span>
 <span class="normal">55</span>
-<span class="normal">56</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-53"><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">api_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-54">    <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
-</span><span id="__span-0-55">    <span class="bp">self</span><span class="o">.</span><span class="n">api_key</span> <span class="o">=</span> <span class="n">api_key</span>
-</span><span id="__span-0-56">    <span class="bp">self</span><span class="o">.</span><span class="n">extra</span> <span class="o">=</span> <span class="n">kwargs</span>
+<span class="normal">56</span>
+<span class="normal">57</span>
+<span class="normal">58</span>
+<span class="normal">59</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-54"><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+</span><span id="__span-0-55">    <span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">api_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+</span><span id="__span-0-56"><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-57">    <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
+</span><span id="__span-0-58">    <span class="bp">self</span><span class="o">.</span><span class="n">api_key</span> <span class="o">=</span> <span class="n">api_key</span>
+</span><span id="__span-0-59">    <span class="bp">self</span><span class="o">.</span><span class="n">extra</span> <span class="o">=</span> <span class="n">kwargs</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -2648,10 +2678,7 @@ arrives instead of only returning the assembled text at the end.</p>
 
             <details class="quote">
               <summary>Source code in <code>pycodeloop/abc/provider.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">58</span>
-<span class="normal">59</span>
-<span class="normal">60</span>
-<span class="normal">61</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">61</span>
 <span class="normal">62</span>
 <span class="normal">63</span>
 <span class="normal">64</span>
@@ -2660,19 +2687,22 @@ arrives instead of only returning the assembled text at the end.</p>
 <span class="normal">67</span>
 <span class="normal">68</span>
 <span class="normal">69</span>
-<span class="normal">70</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-58"><span class="nd">@abstractmethod</span>
-</span><span id="__span-0-59"><span class="k">def</span><span class="w"> </span><span class="nf">complete</span><span class="p">(</span>
-</span><span id="__span-0-60">    <span class="bp">self</span><span class="p">,</span>
-</span><span id="__span-0-61">    <span class="n">system_prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-</span><span id="__span-0-62">    <span class="n">messages</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
-</span><span id="__span-0-63">    <span class="n">tools</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span>
-</span><span id="__span-0-64">    <span class="n">on_delta</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-65"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ProviderResponse</span><span class="p">:</span>
-</span><span id="__span-0-66"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Send conversation + tool schema, return the model&#39;s response.</span>
-</span><span id="__span-0-67">
-</span><span id="__span-0-68"><span class="sd">    When `on_delta` is given, call it with each text chunk as it</span>
-</span><span id="__span-0-69"><span class="sd">    arrives instead of only returning the assembled text at the end.</span>
-</span><span id="__span-0-70"><span class="sd">    &quot;&quot;&quot;</span>
+<span class="normal">70</span>
+<span class="normal">71</span>
+<span class="normal">72</span>
+<span class="normal">73</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-61"><span class="nd">@abstractmethod</span>
+</span><span id="__span-0-62"><span class="k">def</span><span class="w"> </span><span class="nf">complete</span><span class="p">(</span>
+</span><span id="__span-0-63">    <span class="bp">self</span><span class="p">,</span>
+</span><span id="__span-0-64">    <span class="n">system_prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="__span-0-65">    <span class="n">messages</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+</span><span id="__span-0-66">    <span class="n">tools</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span>
+</span><span id="__span-0-67">    <span class="n">on_delta</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-68"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ProviderResponse</span><span class="p">:</span>
+</span><span id="__span-0-69"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Send conversation + tool schema, return the model&#39;s response.</span>
+</span><span id="__span-0-70">
+</span><span id="__span-0-71"><span class="sd">    When `on_delta` is given, call it with each text chunk as it</span>
+</span><span id="__span-0-72"><span class="sd">    arrives instead of only returning the assembled text at the end.</span>
+</span><span id="__span-0-73"><span class="sd">    &quot;&quot;&quot;</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -2714,19 +2744,19 @@ arrives instead of only returning the assembled text at the end.</p>
 
               <details class="quote">
                 <summary>Source code in <code>pycodeloop/abc/provider.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">30</span>
-<span class="normal">31</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">31</span>
 <span class="normal">32</span>
 <span class="normal">33</span>
 <span class="normal">34</span>
 <span class="normal">35</span>
-<span class="normal">36</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-30"><span class="nd">@dataclass</span>
-</span><span id="__span-0-31"><span class="k">class</span><span class="w"> </span><span class="nc">ProviderResponse</span><span class="p">:</span>
-</span><span id="__span-0-32">    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
-</span><span id="__span-0-33">    <span class="n">tool_calls</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ToolCall</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
-</span><span id="__span-0-34">    <span class="n">stop_reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;end_turn&quot;</span>
-</span><span id="__span-0-35">    <span class="n">usage</span><span class="p">:</span> <span class="n">Usage</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">Usage</span><span class="p">)</span>
-</span><span id="__span-0-36">    <span class="n">raw</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="normal">36</span>
+<span class="normal">37</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-31"><span class="nd">@dataclass</span>
+</span><span id="__span-0-32"><span class="k">class</span><span class="w"> </span><span class="nc">ProviderResponse</span><span class="p">:</span>
+</span><span id="__span-0-33">    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+</span><span id="__span-0-34">    <span class="n">tool_calls</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ToolCall</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+</span><span id="__span-0-35">    <span class="n">stop_reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;end_turn&quot;</span>
+</span><span id="__span-0-36">    <span class="n">usage</span><span class="p">:</span> <span class="n">Usage</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">Usage</span><span class="p">)</span>
+</span><span id="__span-0-37">    <span class="n">raw</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>
 </span></code></pre></div></td></tr></table></div>
               </details>
 
@@ -2908,11 +2938,13 @@ arrives instead of only returning the assembled text at the end.</p>
 <span class="normal">12</span>
 <span class="normal">13</span>
 <span class="normal">14</span>
-<span class="normal">15</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-11"><span class="nd">@dataclass</span>
+<span class="normal">15</span>
+<span class="normal">16</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-11"><span class="nd">@dataclass</span>
 </span><span id="__span-0-12"><span class="k">class</span><span class="w"> </span><span class="nc">ToolCall</span><span class="p">:</span>
 </span><span id="__span-0-13">    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
 </span><span id="__span-0-14">    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
 </span><span id="__span-0-15">    <span class="n">arguments</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+</span><span id="__span-0-16">    <span class="n">extra</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 </span></code></pre></div></td></tr></table></div>
               </details>
 
@@ -2938,6 +2970,28 @@ arrives instead of only returning the assembled text at the end.</p>
   </span>
 
 <a href="#pycodeloop.abc.provider.ToolCall.arguments" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+          
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="pycodeloop.abc.provider.ToolCall.extra" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <code class="highlight language-python"><span class="n">extra</span> <span class="o">=</span> <span class="kc">None</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#pycodeloop.abc.provider.ToolCall.extra" class="headerlink" title="Permanent link">&para;</a></h3>
 
 
     <div class="doc doc-contents ">
@@ -2995,7 +3049,7 @@ arrives instead of only returning the assembled text at the end.</p>
 
 
 <h3 id="pycodeloop.abc.provider.ToolCall.__init__" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">arguments</span><span class="p">)</span></code>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">arguments</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
 
 <a href="#pycodeloop.abc.provider.ToolCall.__init__" class="headerlink" title="Permanent link">&para;</a></h3>
 
@@ -3043,8 +3097,7 @@ arrives instead of only returning the assembled text at the end.</p>
 
               <details class="quote">
                 <summary>Source code in <code>pycodeloop/abc/provider.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">18</span>
-<span class="normal">19</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">19</span>
 <span class="normal">20</span>
 <span class="normal">21</span>
 <span class="normal">22</span>
@@ -3052,16 +3105,17 @@ arrives instead of only returning the assembled text at the end.</p>
 <span class="normal">24</span>
 <span class="normal">25</span>
 <span class="normal">26</span>
-<span class="normal">27</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-18"><span class="nd">@dataclass</span>
-</span><span id="__span-0-19"><span class="k">class</span><span class="w"> </span><span class="nc">Usage</span><span class="p">:</span>
-</span><span id="__span-0-20">    <span class="n">input_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="__span-0-21">    <span class="n">output_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="__span-0-22">
-</span><span id="__span-0-23">    <span class="k">def</span><span class="w"> </span><span class="fm">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Usage</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Usage</span><span class="p">:</span>
-</span><span id="__span-0-24">        <span class="k">return</span> <span class="n">Usage</span><span class="p">(</span>
-</span><span id="__span-0-25">            <span class="n">input_tokens</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_tokens</span> <span class="o">+</span> <span class="n">other</span><span class="o">.</span><span class="n">input_tokens</span><span class="p">,</span>
-</span><span id="__span-0-26">            <span class="n">output_tokens</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">output_tokens</span> <span class="o">+</span> <span class="n">other</span><span class="o">.</span><span class="n">output_tokens</span><span class="p">,</span>
-</span><span id="__span-0-27">        <span class="p">)</span>
+<span class="normal">27</span>
+<span class="normal">28</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-19"><span class="nd">@dataclass</span>
+</span><span id="__span-0-20"><span class="k">class</span><span class="w"> </span><span class="nc">Usage</span><span class="p">:</span>
+</span><span id="__span-0-21">    <span class="n">input_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-0-22">    <span class="n">output_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-0-23">
+</span><span id="__span-0-24">    <span class="k">def</span><span class="w"> </span><span class="fm">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Usage</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Usage</span><span class="p">:</span>
+</span><span id="__span-0-25">        <span class="k">return</span> <span class="n">Usage</span><span class="p">(</span>
+</span><span id="__span-0-26">            <span class="n">input_tokens</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_tokens</span> <span class="o">+</span> <span class="n">other</span><span class="o">.</span><span class="n">input_tokens</span><span class="p">,</span>
+</span><span id="__span-0-27">            <span class="n">output_tokens</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">output_tokens</span> <span class="o">+</span> <span class="n">other</span><span class="o">.</span><span class="n">output_tokens</span><span class="p">,</span>
+</span><span id="__span-0-28">        <span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
               </details>
 
@@ -3136,15 +3190,15 @@ arrives instead of only returning the assembled text at the end.</p>
 
             <details class="quote">
               <summary>Source code in <code>pycodeloop/abc/provider.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">23</span>
-<span class="normal">24</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">24</span>
 <span class="normal">25</span>
 <span class="normal">26</span>
-<span class="normal">27</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-23"><span class="k">def</span><span class="w"> </span><span class="fm">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Usage</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Usage</span><span class="p">:</span>
-</span><span id="__span-0-24">    <span class="k">return</span> <span class="n">Usage</span><span class="p">(</span>
-</span><span id="__span-0-25">        <span class="n">input_tokens</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_tokens</span> <span class="o">+</span> <span class="n">other</span><span class="o">.</span><span class="n">input_tokens</span><span class="p">,</span>
-</span><span id="__span-0-26">        <span class="n">output_tokens</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">output_tokens</span> <span class="o">+</span> <span class="n">other</span><span class="o">.</span><span class="n">output_tokens</span><span class="p">,</span>
-</span><span id="__span-0-27">    <span class="p">)</span>
+<span class="normal">27</span>
+<span class="normal">28</span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-24"><span class="k">def</span><span class="w"> </span><span class="fm">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Usage</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Usage</span><span class="p">:</span>
+</span><span id="__span-0-25">    <span class="k">return</span> <span class="n">Usage</span><span class="p">(</span>
+</span><span id="__span-0-26">        <span class="n">input_tokens</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_tokens</span> <span class="o">+</span> <span class="n">other</span><span class="o">.</span><span class="n">input_tokens</span><span class="p">,</span>
+</span><span id="__span-0-27">        <span class="n">output_tokens</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">output_tokens</span> <span class="o">+</span> <span class="n">other</span><span class="o">.</span><span class="n">output_tokens</span><span class="p">,</span>
+</span><span id="__span-0-28">    <span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>

@@ -1922,6 +1922,16 @@
 <td>Skip the skills cache and force a full rescan</td>
 </tr>
 <tr>
+<td><code>delegation</code></td>
+<td><code>False</code></td>
+<td>Expose a <code>delegate</code> tool that spawns a fresh sub-agent (same provider, read-only tools) for an independent subtask. Several <code>delegate</code> calls in the same turn run in parallel</td>
+</tr>
+<tr>
+<td><code>memory</code></td>
+<td><code>True</code></td>
+<td>Load <code>.pycodeloop/memory.md</code> into the system prompt and expose a <code>remember</code> tool the agent uses to save standing corrections/preferences across sessions</td>
+</tr>
+<tr>
 <td><code>storage</code></td>
 <td><code>SqliteSessions()</code> (<code>~/.pycodeloop/pycodeloop.db</code>)</td>
 <td>Persists sessions so <code>CodeLoop.run(prompt, session_key=...)</code> can resume across restarts; pass <code>False</code> for in-memory only</td>

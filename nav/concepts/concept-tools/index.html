@@ -631,6 +631,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#token-saving-read-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Token-saving read cache
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-the-same-tool-multiple-times-in-one-turn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running the same tool multiple times in one turn
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#dangerous-tools-and-preview" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1818,6 +1840,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#token-saving-read-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Token-saving read cache
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-the-same-tool-multiple-times-in-one-turn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running the same tool multiple times in one turn
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#dangerous-tools-and-preview" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1936,10 +1980,11 @@
 </span><span id="__span-0-3">    <span class="n">description</span><span class="p">:</span> <span class="nb">str</span>
 </span><span id="__span-0-4">    <span class="n">parameters</span><span class="p">:</span> <span class="nb">dict</span>            <span class="c1"># JSON schema</span>
 </span><span id="__span-0-5">    <span class="n">dangerous</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
-</span><span id="__span-0-6">
-</span><span id="__span-0-7">    <span class="k">def</span><span class="w"> </span><span class="nf">schema</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span> <span class="o">...</span>
-</span><span id="__span-0-8">    <span class="k">def</span><span class="w"> </span><span class="nf">preview</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span> <span class="o">...</span>
-</span><span id="__span-0-9">    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ToolResult</span><span class="p">:</span> <span class="o">...</span>
+</span><span id="__span-0-6">    <span class="n">concurrent_safe</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="__span-0-7">
+</span><span id="__span-0-8">    <span class="k">def</span><span class="w"> </span><span class="nf">schema</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span> <span class="o">...</span>
+</span><span id="__span-0-9">    <span class="k">def</span><span class="w"> </span><span class="nf">preview</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span> <span class="o">...</span>
+</span><span id="__span-0-10">    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ToolResult</span><span class="p">:</span> <span class="o">...</span>
 </span></code></pre></div>
 <h2 id="built-in-tools">Built-in tools<a class="headerlink" href="#built-in-tools" title="Permanent link">&para;</a></h2>
 <table>
@@ -2027,13 +2072,32 @@
 <td>No</td>
 </tr>
 <tr>
-<td><code>todo</code></td>
-<td>Scratchpad checklist for multi-step tasks</td>
+<td><code>sql_schema</code></td>
+<td>List a database's tables, or one table's columns</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>sql_query</code></td>
+<td>Run a single read-only SQL statement (SELECT/WITH/EXPLAIN/PRAGMA/SHOW/DESCRIBE)</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>delegate</code></td>
+<td>Spawn a fresh sub-agent (same provider, read-only tools) for an independent subtask — <code>Config(delegation=True)</code> / <code>--delegate</code>, off by default</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>remember</code></td>
+<td>Save a standing correction/preference to <code>.pycodeloop/memory.md</code> — <code>Config(memory=True)</code> / <code>--memory</code>, on by default</td>
 <td>No</td>
 </tr>
 </tbody>
 </table>
-<p><code>DEFAULT_TOOLS</code> (<code>pycodeloop.core.tools.DEFAULT_TOOLS</code>) is that list, ready to pass into <code>Config</code>.</p>
+<p><code>DEFAULT_TOOLS</code> (<code>pycodeloop.tools.DEFAULT_TOOLS</code>) is that list (everything above except <code>delegate</code>/<code>remember</code>, which <code>Config</code> appends conditionally), ready to pass into <code>Config</code>. <code>READ_ONLY_TOOLS</code> (<code>pycodeloop.tools.READ_ONLY_TOOLS</code>) is the read-only subset — <code>read_file</code>/<code>list_dir</code>/<code>glob</code>/<code>grep</code>/<code>web_fetch</code>/<code>git_status</code>/<code>git_diff</code>/<code>git_log</code>/<code>sql_schema</code>/<code>sql_query</code> — that <code>delegate</code> hands to each sub-agent.</p>
+<h2 id="token-saving-read-cache">Token-saving read cache<a class="headerlink" href="#token-saving-read-cache" title="Permanent link">&para;</a></h2>
+<p><code>read_file</code> logs every read/write/edit/delete to a <code>file_access</code> table in <code>~/.pycodeloop/pycodeloop.db</code>, scoped to the active session (<code>session_key</code>, or <code>"global"</code> outside one). If the exact same <code>path</code>/<code>offset</code>/<code>limit</code> is read again in the same session and the file hasn't changed since (content hash matches), it returns a short "unchanged since you last read" notice instead of repeating the content — pass <code>force=true</code> to see the full content again (e.g. after compaction dropped it from context).</p>
+<h2 id="running-the-same-tool-multiple-times-in-one-turn">Running the same tool multiple times in one turn<a class="headerlink" href="#running-the-same-tool-multiple-times-in-one-turn" title="Permanent link">&para;</a></h2>
+<p>By default, if a model calls the same tool name more than once in a single turn, <code>Agent</code> runs those calls sequentially — safe for tools with any shared mutable state. Set <code>concurrent_safe = True</code> on a <code>Tool</code> subclass to opt its repeated calls into running in parallel instead (calls to <em>different</em>-named tools already run concurrently regardless of this flag, as long as none of them is <code>dangerous</code>). <code>delegate</code> sets this, which is what lets several sub-agents fan out and run at the same time.</p>
 <h2 id="dangerous-tools-and-preview">Dangerous tools and preview<a class="headerlink" href="#dangerous-tools-and-preview" title="Permanent link">&para;</a></h2>
 <p>A tool marked <code>dangerous = True</code> gets a confirmation gate: before <code>Agent</code> runs it, it calls <code>tool.preview(**arguments)</code> and passes the result to the <code>confirm</code> hook. If <code>confirm</code> returns <code>False</code>, the tool never runs and the model is told "User declined to run this tool."</p>
 <p><code>preview()</code> defaults to a repr of the arguments, but the built-in dangerous tools override it:</p>
@@ -2044,7 +2108,7 @@
 </ul>
 <p>See <a href="../../how-to/permission-prompts/">Permission prompts</a> for how the CLI renders this.</p>
 <h2 id="mcp-tools">MCP tools<a class="headerlink" href="#mcp-tools" title="Permanent link">&para;</a></h2>
-<p>Tools don't have to be local Python code. <code>pycodeloop.core.mcp.load_mcp_tools(server)</code> connects to a <a href="https://modelcontextprotocol.io/">Model Context Protocol</a> server and returns its remote tools already wrapped as <code>Tool</code> instances — the agent can't tell an MCP tool from a local one. See <a href="../../how-to/mcp-servers/">MCP servers</a>.</p>
+<p>Tools don't have to be local Python code. <code>pycodeloop.mcp.load_mcp_tools(server)</code> connects to a <a href="https://modelcontextprotocol.io/">Model Context Protocol</a> server and returns its remote tools already wrapped as <code>Tool</code> instances — the agent can't tell an MCP tool from a local one. See <a href="../../how-to/mcp-servers/">MCP servers</a>.</p>
 <h2 id="skills">Skills<a class="headerlink" href="#skills" title="Permanent link">&para;</a></h2>
 <p>When skills discovery is on, <code>Config</code> appends a <code>read_skill</code> tool and lists every discovered skill in the system prompt, so the agent can pull one in on demand. See <a href="../../how-to/skills/">Skills</a>.</p>
 <h2 id="writing-your-own">Writing your own<a class="headerlink" href="#writing-your-own" title="Permanent link">&para;</a></h2>
