@@ -11,6 +11,7 @@ from typing import Any
 class ToolResult:
     output: str
     is_error: bool = False
+    error_kind: str | None = None
 
 
 class Tool(ABC):
