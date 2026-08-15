@@ -50,6 +50,22 @@ class TestAnthropicMessageBuilding(unittest.TestCase):
         self.assertEqual(len(out[0]["content"]), 1)
         self.assertEqual(out[0]["content"][0]["type"], "image")
 
+    def test_data_url_image_preserves_its_real_mime_type(self):
+        out = to_anthropic_messages(
+            [
+                Message(
+                    role="user",
+                    content="",
+                    images=["data:image/jpeg;base64,b64data"],
+                )
+            ]
+        )
+
+        self.assertEqual(
+            out[0]["content"][0]["source"],
+            {"type": "base64", "media_type": "image/jpeg", "data": "b64data"},
+        )
+
 
 class TestOpenAIMessageBuilding(unittest.TestCase):
     def test_plain_text_user_message_stays_a_string(self):
@@ -79,6 +95,23 @@ class TestOpenAIMessageBuilding(unittest.TestCase):
                     {"type": "text", "text": "what is this?"},
                 ],
             },
+        )
+
+    def test_data_url_image_preserves_its_real_mime_type(self):
+        out = to_openai_messages(
+            "sys",
+            [
+                Message(
+                    role="user",
+                    content="",
+                    images=["data:image/webp;base64,b64data"],
+                )
+            ],
+        )
+
+        self.assertEqual(
+            out[-1]["content"][0]["image_url"]["url"],
+            "data:image/webp;base64,b64data",
         )
 
     def test_tool_call_extra_fields_round_trip_back_to_the_wire(self):
