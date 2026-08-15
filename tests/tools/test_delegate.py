@@ -79,6 +79,16 @@ class TestDelegateTool(unittest.TestCase):
 
         self.assertEqual(tool.timeout, 150.0)
 
+    def test_timeout_falls_back_to_60s_when_provider_timeout_is_none(self):
+        class NoTimeoutProvider(FakeProvider):
+            timeout = None
+
+        tool = DelegateTool(
+            provider=NoTimeoutProvider([]), tools=[], max_turns=5
+        )
+
+        self.assertEqual(tool.timeout, 300.0)
+
 
 if __name__ == "__main__":
     unittest.main()
