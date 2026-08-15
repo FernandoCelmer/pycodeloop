@@ -1,6 +1,6 @@
 [project]
 name = "pycodeloop"
-version = "0.6.2"
+version = "0.7.0"
 authors = [
   { name="Fernando Celmer", email="email@fernandocelmer.com" },
 ]
@@ -51,7 +51,7 @@ mcp = ["mcp"]
 
 [tool.poetry]
 name = "pycodeloop"
-version = "0.6.2"
+version = "0.7.0"
 description = "CodeLoop — a multi-provider agentic coding assistant, terminal or VS Code."
 authors = ["Fernando Celmer <email@fernandocelmer.com>"]
 readme = "README.md"
