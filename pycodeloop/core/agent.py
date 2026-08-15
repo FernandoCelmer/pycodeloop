@@ -189,7 +189,13 @@ class Agent:
                     "callback. Pass confirm=... or use --yes only from a trusted CLI.",
                     True,
                 )
-            preview = tool.preview(**arguments)
+            try:
+                preview = tool.preview(**arguments)
+            except Exception as exc:
+                return (
+                    f"Tool '{name}' preview raised {exc.__class__.__name__}: {exc}",
+                    True,
+                )
             ask = (
                 self.confirm.ask
                 if isinstance(self.confirm, Confirm)
