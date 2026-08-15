@@ -55,6 +55,10 @@ class EnvTool(Tool):
             "name": {"type": "string"},
         },
     }
+    dangerous = True
+
+    def preview(self, name: str = "", **_) -> str:
+        return f"$ env {name}" if name else "$ env (list every variable name)"
 
     def run(self, name: str = "") -> ToolResult:
         if name:
