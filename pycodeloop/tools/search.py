@@ -44,11 +44,14 @@ class GrepTool(Tool):
         "required": ["pattern"],
     }
 
+    def __init__(self, workspace: bool = True) -> None:
+        self._workspace = workspace
+
     def run(
         self, pattern: str, path: str = ".", max_results: int = 100
     ) -> ToolResult:
         try:
-            root = resolve_in_workspace(path)
+            root = resolve_in_workspace(path, enabled=self._workspace)
         except OutsideWorkspaceError as exc:
             return ToolResult(output=str(exc), is_error=True)
 
@@ -91,11 +94,14 @@ class GlobTool(Tool):
         "required": ["pattern"],
     }
 
+    def __init__(self, workspace: bool = True) -> None:
+        self._workspace = workspace
+
     def run(
         self, pattern: str, path: str = ".", max_results: int = 100
     ) -> ToolResult:
         try:
-            root = resolve_in_workspace(path)
+            root = resolve_in_workspace(path, enabled=self._workspace)
         except OutsideWorkspaceError as exc:
             return ToolResult(output=str(exc), is_error=True)
 

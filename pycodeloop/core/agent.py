@@ -339,7 +339,7 @@ class Agent:
             tool_calls=recent[0].tool_calls,
             images=recent[0].images,
         )
-        session.messages = recent
+        session.replace_messages(recent)
         self._notify_message()
 
         self._trace(
@@ -359,6 +359,8 @@ class Agent:
         or `cancel_event` is set — checked at each turn boundary and
         before every tool call, never mid-request, so an in-flight
         provider call always finishes first."""
+        self._provider_index = 0
+        self.provider = self._provider_chain[0]
         session = session or Session(system_prompt=self.system_prompt)
         session.add_user(prompt, images=images)
         self._notify_message()

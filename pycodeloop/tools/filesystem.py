@@ -33,9 +33,9 @@ def _looks_like_diff(text: str) -> bool:
     return bool(_HUNK_HEADER.search(text) or _DIFF_PREAMBLE.search(text))
 
 
-def _resolve_path(path: str) -> Path | ToolResult:
+def _resolve_path(path: str, *, workspace: bool = True) -> Path | ToolResult:
     try:
-        return resolve_in_workspace(path)
+        return resolve_in_workspace(path, enabled=workspace)
     except OutsideWorkspaceError as exc:
         return ToolResult(output=str(exc), is_error=True)
 
@@ -68,8 +68,13 @@ class ReadFileTool(Tool):
         "required": ["path"],
     }
 
-    def __init__(self, access_log: FileAccessLog | None = None) -> None:
+    def __init__(
+        self,
+        access_log: FileAccessLog | None = None,
+        workspace: bool = True,
+    ) -> None:
         self._log = access_log or default_log
+        self._workspace = workspace
 
     def run(
         self,
@@ -78,7 +83,7 @@ class ReadFileTool(Tool):
         limit: int | None = None,
         force: bool = False,
     ) -> ToolResult:
-        resolved = _resolve_path(path)
+        resolved = _resolve_path(path, workspace=self._workspace)
         if isinstance(resolved, ToolResult):
             return resolved
         target = resolved
@@ -141,8 +146,13 @@ class WriteFileTool(Tool):
     }
     dangerous = True
 
-    def __init__(self, access_log: FileAccessLog | None = None) -> None:
+    def __init__(
+        self,
+        access_log: FileAccessLog | None = None,
+        workspace: bool = True,
+    ) -> None:
         self._log = access_log or default_log
+        self._workspace = workspace
 
     def preview(self, path: str, content: str, **_) -> str:
         if _looks_like_diff(content):
@@ -153,7 +163,7 @@ class WriteFileTool(Tool):
             )
 
         try:
-            target = resolve_in_workspace(path)
+            target = resolve_in_workspace(path, enabled=self._workspace)
         except OutsideWorkspaceError as exc:
             return str(exc)
 
@@ -174,7 +184,7 @@ class WriteFileTool(Tool):
                 is_error=True,
             )
 
-        resolved = _resolve_path(path)
+        resolved = _resolve_path(path, workspace=self._workspace)
         if isinstance(resolved, ToolResult):
             return resolved
         target = resolved
@@ -212,8 +222,13 @@ class EditFileTool(Tool):
     }
     dangerous = True
 
-    def __init__(self, access_log: FileAccessLog | None = None) -> None:
+    def __init__(
+        self,
+        access_log: FileAccessLog | None = None,
+        workspace: bool = True,
+    ) -> None:
         self._log = access_log or default_log
+        self._workspace = workspace
 
     def _apply(
         self, path: str, old_string: str, new_string: str, replace_all: bool
@@ -229,7 +244,7 @@ class EditFileTool(Tool):
                 is_error=True,
             )
 
-        resolved = _resolve_path(path)
+        resolved = _resolve_path(path, workspace=self._workspace)
         if isinstance(resolved, ToolResult):
             return resolved
         target = resolved
@@ -318,12 +333,17 @@ class DeleteFileTool(Tool):
     }
     dangerous = True
 
-    def __init__(self, access_log: FileAccessLog | None = None) -> None:
+    def __init__(
+        self,
+        access_log: FileAccessLog | None = None,
+        workspace: bool = True,
+    ) -> None:
         self._log = access_log or default_log
+        self._workspace = workspace
 
     def preview(self, path: str, **_) -> str:
         try:
-            target = resolve_in_workspace(path)
+            target = resolve_in_workspace(path, enabled=self._workspace)
         except OutsideWorkspaceError as exc:
             return str(exc)
 
@@ -334,7 +354,7 @@ class DeleteFileTool(Tool):
         return _diff(path, before, "")
 
     def run(self, path: str) -> ToolResult:
-        resolved = _resolve_path(path)
+        resolved = _resolve_path(path, workspace=self._workspace)
         if isinstance(resolved, ToolResult):
             return resolved
         target = resolved
@@ -359,8 +379,11 @@ class ListDirTool(Tool):
         "properties": {"path": {"type": "string", "default": "."}},
     }
 
+    def __init__(self, workspace: bool = True) -> None:
+        self._workspace = workspace
+
     def run(self, path: str = ".") -> ToolResult:
-        resolved = _resolve_path(path)
+        resolved = _resolve_path(path, workspace=self._workspace)
         if isinstance(resolved, ToolResult):
             return resolved
         target = resolved
