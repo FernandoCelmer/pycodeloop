@@ -129,7 +129,18 @@ class SqliteSessions(Sessions):
         checked via identity, since a message-count watermark alone
         can't tell the two apart), `session.dirty` (compaction/trim/
         repair replaced or reordered existing messages, not just
-        appended), or the message count shrank."""
+        appended), or the message count shrank.
+
+        `dirty` and `messages` are snapshotted together under
+        `session._lock` before touching the DB — `_repair_dangling_tool_calls`
+        sets `dirty` while holding that same lock, so reading the two
+        fields separately and unlocked could catch `dirty` before a
+        concurrent repair flips it, silently dropping the repair from
+        this save."""
+        with session._lock:
+            is_dirty = session.dirty
+            messages_snapshot = list(session.messages)
+
         with self._db() as db:
             record = db.get(SessionRecord, key)
             is_new = record is None
@@ -147,20 +158,20 @@ class SqliteSessions(Sessions):
             full_rewrite = (
                 is_new
                 or not same_object
-                or session.dirty
-                or len(session.messages) < previous_count
+                or is_dirty
+                or len(messages_snapshot) < previous_count
             )
-            record.message_count = len(session.messages)
+            record.message_count = len(messages_snapshot)
 
             if full_rewrite:
                 db.query(MessageRecord).filter(
                     MessageRecord.session_key == key
                 ).delete()
-                new_messages = list(enumerate(session.messages))
+                new_messages = list(enumerate(messages_snapshot))
             else:
                 new_messages = list(
                     enumerate(
-                        session.messages[previous_count:],
+                        messages_snapshot[previous_count:],
                         start=previous_count,
                     )
                 )
