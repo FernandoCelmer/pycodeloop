@@ -5,10 +5,12 @@ from __future__ import annotations
 import json
 import os
 import re
+import threading
 import urllib.error
 import urllib.request
 import uuid
 from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
 
 from pycodeloop.abc.provider import Provider, ProviderResponse, ToolCall, Usage
@@ -101,6 +103,25 @@ def _fallback_call_id() -> str:
     return f"fallback-{uuid.uuid4().hex[:8]}"
 
 
+@dataclass(frozen=True)
+class _ConnectionSnapshot:
+    """A consistent, point-in-time copy of everything `reload()` can
+    mutate — read once under `GenericProvider._lock` at the start of
+    `complete()`/`_stream()` so a concurrent `reload()` (e.g. `ask()`
+    running on another thread mid-`run()`) can't hand a request a
+    half-old/half-new mix of url/model/headers/parser."""
+
+    url: str
+    model: str
+    headers: dict[str, str]
+    auth_header: str
+    auth_prefix: str
+    api_key: str | None
+    timeout: float
+    response_parser: ResponseParser
+    uses_default_parser: bool
+
+
 class GenericProvider(Provider):
     """Any JSON chat-completions HTTP API via the stdlib, no vendor SDK.
     Defaults to the OpenAI request/response shape; override
@@ -179,6 +200,7 @@ class GenericProvider(Provider):
         self.repetition_repeats = repetition_repeats
         self._uses_default_parser = response_parser is None
         self._config_path: Path | None = None
+        self._lock = threading.Lock()
 
     @classmethod
     def from_json(cls, path: str | Path) -> GenericProvider:
@@ -232,16 +254,17 @@ class GenericProvider(Provider):
             return
 
         fresh = self._build_from_json(self._config_path)
-        self.url = fresh.url
-        self.model = fresh.model
-        self.api_key = fresh.api_key
-        self.headers = fresh.headers
-        self.auth_header = fresh.auth_header
-        self.auth_prefix = fresh.auth_prefix
-        self.request_builder = fresh.request_builder
-        self.response_parser = fresh.response_parser
-        self.timeout = fresh.timeout
-        self._uses_default_parser = fresh._uses_default_parser
+        with self._lock:
+            self.url = fresh.url
+            self.model = fresh.model
+            self.api_key = fresh.api_key
+            self.headers = fresh.headers
+            self.auth_header = fresh.auth_header
+            self.auth_prefix = fresh.auth_prefix
+            self.request_builder = fresh.request_builder
+            self.response_parser = fresh.response_parser
+            self.timeout = fresh.timeout
+            self._uses_default_parser = fresh._uses_default_parser
 
     @staticmethod
     def _default_request(
@@ -256,19 +279,38 @@ class GenericProvider(Provider):
             "tools": openai_tool_schema(tools) if tools else None,
         }
 
-    def _headers(self) -> dict[str, str]:
-        headers = {"Content-Type": "application/json", **self.headers}
-        if self.api_key and self.auth_header not in headers:
-            headers[self.auth_header] = f"{self.auth_prefix}{self.api_key}"
+    def _snapshot_locked(self) -> _ConnectionSnapshot:
+        """Caller must hold `self._lock`."""
+        return _ConnectionSnapshot(
+            url=self.url,
+            model=self.model,
+            headers=dict(self.headers),
+            auth_header=self.auth_header,
+            auth_prefix=self.auth_prefix,
+            api_key=self.api_key,
+            timeout=self.timeout,
+            response_parser=self.response_parser,
+            uses_default_parser=self._uses_default_parser,
+        )
+
+    def _headers(self, config: _ConnectionSnapshot) -> dict[str, str]:
+        headers = {"Content-Type": "application/json", **config.headers}
+        if config.api_key and config.auth_header not in headers:
+            headers[config.auth_header] = (
+                f"{config.auth_prefix}{config.api_key}"
+            )
         return headers
 
-    def _open(self, body: dict):
+    def _open(self, body: dict, config: _ConnectionSnapshot):
         data = json.dumps(body).encode()
         request = urllib.request.Request(
-            self.url, data=data, headers=self._headers(), method="POST"
+            config.url,
+            data=data,
+            headers=self._headers(config),
+            method="POST",
         )
         try:
-            return urllib.request.urlopen(request, timeout=self.timeout)
+            return urllib.request.urlopen(request, timeout=config.timeout)
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode(errors="replace")
             raise urllib.error.HTTPError(
@@ -286,13 +328,17 @@ class GenericProvider(Provider):
         tools: list[dict],
         on_delta: Callable[[str], None] | None = None,
     ) -> ProviderResponse:
-        body = self.request_builder(system_prompt, messages, tools, self.model)
+        with self._lock:
+            config = self._snapshot_locked()
+            body = self.request_builder(
+                system_prompt, messages, tools, config.model
+            )
         known_tools = {tool["name"] for tool in tools}
 
-        if on_delta is not None and self._uses_default_parser:
-            return self._stream(body, on_delta, known_tools)
+        if on_delta is not None and config.uses_default_parser:
+            return self._stream(body, on_delta, known_tools, config)
 
-        with self._open(body) as response:
+        with self._open(body, config) as response:
             raw = response.read()
 
         try:
@@ -300,10 +346,10 @@ class GenericProvider(Provider):
         except json.JSONDecodeError as exc:
             snippet = raw.decode(errors="replace")[:500]
             raise ValueError(
-                f"{self.url} returned malformed/truncated JSON ({exc}): {snippet!r}"
+                f"{config.url} returned malformed/truncated JSON ({exc}): {snippet!r}"
             ) from None
 
-        result = self.response_parser(data)
+        result = config.response_parser(data)
 
         if on_delta is not None and result.text:
             on_delta(result.text)
@@ -315,6 +361,7 @@ class GenericProvider(Provider):
         body: dict,
         on_delta: Callable[[str], None],
         known_tools: set[str],
+        config: _ConnectionSnapshot,
     ) -> ProviderResponse:
         body = {**body, "stream": True}
         text = ""
@@ -322,7 +369,7 @@ class GenericProvider(Provider):
         stop_reason = "stop"
         usage = Usage()
 
-        with self._open(body) as response:
+        with self._open(body, config) as response:
             for raw_line in response:
                 line = raw_line.decode().strip()
                 if not line or not line.startswith("data: "):
