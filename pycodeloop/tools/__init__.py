@@ -18,49 +18,66 @@ from .search import GlobTool, GrepTool
 from .sql import SqlQueryTool, SqlSchemaTool
 from .web import WebFetchTool
 
-_read_file = ReadFileTool()
-_list_dir = ListDirTool()
-_glob = GlobTool()
-_grep = GrepTool()
-_web_fetch = WebFetchTool()
-_git_status = GitStatusTool()
-_git_diff = GitDiffTool()
-_git_log = GitLogTool()
-_sql_schema = SqlSchemaTool()
-_sql_query = SqlQueryTool()
 
-DEFAULT_TOOLS: list[Tool] = [
-    _read_file,
-    WriteFileTool(),
-    EditFileTool(),
-    DeleteFileTool(),
-    _list_dir,
-    _glob,
-    _grep,
-    BashTool(),
-    _web_fetch,
-    HttpRequestTool(),
-    _git_status,
-    _git_diff,
-    _git_log,
-    GitCommitTool(),
-    EnvTool(),
-    _sql_schema,
-    _sql_query,
-]
+def build_tools(workspace: bool = True) -> tuple[list[Tool], list[Tool]]:
+    """Fresh `(default_tools, read_only_tools)` for one `Config` — never
+    shared across `Config`/`Agent` instances, so each one's `workspace`
+    jail setting stays scoped to itself instead of racing through a
+    process-wide global. Tools common to both lists (read_file, list_dir,
+    glob, grep, web_fetch, the read-only git/sql tools) are still
+    instantiated once per call and shared between the two returned
+    lists, matching the previous single-instantiation behavior — just
+    scoped per call instead of per process."""
+    read_file = ReadFileTool(workspace=workspace)
+    list_dir = ListDirTool(workspace=workspace)
+    glob_tool = GlobTool(workspace=workspace)
+    grep = GrepTool(workspace=workspace)
+    web_fetch = WebFetchTool()
+    git_status = GitStatusTool()
+    git_diff = GitDiffTool()
+    git_log = GitLogTool()
+    sql_schema = SqlSchemaTool()
+    sql_query = SqlQueryTool()
 
-READ_ONLY_TOOLS: list[Tool] = [
-    _read_file,
-    _list_dir,
-    _glob,
-    _grep,
-    _web_fetch,
-    _git_status,
-    _git_diff,
-    _git_log,
-    _sql_schema,
-    _sql_query,
-]
+    default_tools: list[Tool] = [
+        read_file,
+        WriteFileTool(workspace=workspace),
+        EditFileTool(workspace=workspace),
+        DeleteFileTool(workspace=workspace),
+        list_dir,
+        glob_tool,
+        grep,
+        BashTool(),
+        web_fetch,
+        HttpRequestTool(),
+        git_status,
+        git_diff,
+        git_log,
+        GitCommitTool(),
+        EnvTool(),
+        sql_schema,
+        sql_query,
+    ]
+
+    read_only_tools: list[Tool] = [
+        read_file,
+        list_dir,
+        glob_tool,
+        grep,
+        web_fetch,
+        git_status,
+        git_diff,
+        git_log,
+        sql_schema,
+        sql_query,
+    ]
+
+    return default_tools, read_only_tools
+
+
+DEFAULT_TOOLS: list[Tool]
+READ_ONLY_TOOLS: list[Tool]
+DEFAULT_TOOLS, READ_ONLY_TOOLS = build_tools()
 
 __all__ = [
     "Tool",
@@ -85,4 +102,5 @@ __all__ = [
     "WebFetchTool",
     "DEFAULT_TOOLS",
     "READ_ONLY_TOOLS",
+    "build_tools",
 ]

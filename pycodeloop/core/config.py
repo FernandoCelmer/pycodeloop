@@ -16,8 +16,7 @@ from pycodeloop.skills import (
     render_skills_index,
 )
 from pycodeloop.store.sqlite_sessions import SqliteSessions
-from pycodeloop.tools import DEFAULT_TOOLS, READ_ONLY_TOOLS, DelegateTool
-from pycodeloop.tools._workspace import set_workspace_enabled
+from pycodeloop.tools import DelegateTool, build_tools
 
 
 def _default_provider() -> Provider:
@@ -141,21 +140,23 @@ class Config:
         self.provider = (
             provider if provider is not None else _default_provider()
         )
-        self.tools = list(tools) if tools is not None else list(DEFAULT_TOOLS)
+        self.workspace = workspace
+        if tools is not None:
+            self.tools = list(tools)
+        else:
+            default_tools, _ = build_tools(workspace)
+            self.tools = default_tools
         self.system_prompt = system_prompt
         self.max_turns = max_turns
         self.max_history_turns = max_history_turns
-        self.workspace = workspace
-        set_workspace_enabled(workspace)
         self.skills = self._discover_skills(
             skills, skill_sources, skills_refresh
         )
         if delegation:
+            _, read_only_tools = build_tools(workspace)
             self.tools = [
                 *self.tools,
-                DelegateTool(
-                    provider=self.provider, tools=list(READ_ONLY_TOOLS)
-                ),
+                DelegateTool(provider=self.provider, tools=read_only_tools),
             ]
         if memory:
             self._load_memory()

@@ -9,9 +9,7 @@ from unittest import mock
 from pycodeloop.store.file_access_log import FileAccessLog
 from pycodeloop.tools._workspace import (
     OutsideWorkspaceError,
-    is_workspace_enabled,
     resolve_in_workspace,
-    set_workspace_enabled,
 )
 from pycodeloop.tools.filesystem import ReadFileTool, WriteFileTool
 from pycodeloop.tools.http_request import HttpRequestTool
@@ -68,7 +66,6 @@ class TestWorkspaceToggle(unittest.TestCase):
         self._cwd = Path.cwd()
         os.chdir(self.root)
         self.addCleanup(os.chdir, self._cwd)
-        self.addCleanup(set_workspace_enabled, True)
 
         # A second, unrelated tmp dir standing in for "outside the
         # workspace" — freshly random per test run, unlike a fixed name
@@ -86,33 +83,45 @@ class TestWorkspaceToggle(unittest.TestCase):
         self.addCleanup(log_patcher.stop)
 
     def test_enabled_by_default(self):
-        self.assertTrue(is_workspace_enabled())
+        outside = self.outside_dir / "default-on"
+
+        with self.assertRaises(OutsideWorkspaceError):
+            resolve_in_workspace(str(outside))
 
     def test_disabled_lets_paths_outside_root_resolve(self):
         outside = self.outside_dir / "toggle-test"
-        set_workspace_enabled(False)
 
-        resolved = resolve_in_workspace(str(outside))
+        resolved = resolve_in_workspace(str(outside), enabled=False)
 
         self.assertEqual(resolved, outside)
 
     def test_disabled_lets_read_file_read_outside_workspace(self):
         outside = self.outside_dir / "toggle-read"
         outside.write_text("secret\n")
-        set_workspace_enabled(False)
 
-        result = ReadFileTool().run(path=str(outside))
+        result = ReadFileTool(workspace=False).run(path=str(outside))
 
         self.assertFalse(result.is_error)
         self.assertIn("secret", result.output)
 
-    def test_re_enabling_restores_the_jail(self):
-        outside = self.outside_dir / "toggle-back"
-        set_workspace_enabled(False)
-        set_workspace_enabled(True)
+    def test_two_tool_instances_with_different_settings_dont_interfere(self):
+        """Regression: the jail used to be a process-wide global —
+        constructing a workspace=False tool anywhere would silently
+        disable the jail for every other tool/instance in the same
+        process, including ones built with workspace=True earlier."""
+        outside = self.outside_dir / "concurrent"
+        outside.write_text("secret\n")
 
-        with self.assertRaises(OutsideWorkspaceError):
-            resolve_in_workspace(str(outside))
+        jailed = ReadFileTool(workspace=True)
+        unjailed = ReadFileTool(workspace=False)
+
+        jailed_result = jailed.run(path=str(outside))
+        unjailed_result = unjailed.run(path=str(outside), force=True)
+        still_jailed_result = jailed.run(path=str(outside), force=True)
+
+        self.assertTrue(jailed_result.is_error)
+        self.assertFalse(unjailed_result.is_error)
+        self.assertTrue(still_jailed_result.is_error)
 
 
 class TestUrlSchemes(unittest.TestCase):
