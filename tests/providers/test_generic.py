@@ -488,6 +488,65 @@ class TestLoadProviderFromJson(GenericProviderTestCase):
         self.assertEqual(result.tool_calls[0].name, "read_file")
         self.assertEqual(result.tool_calls[0].arguments, {"path": "a.py"})
 
+    def test_response_paths_config_still_streams(self):
+        path = self._write_config(
+            {
+                "url": "http://fake/answer",
+                "model": "my-model",
+                "response_paths": {"text": "result.answer"},
+            }
+        )
+        provider = GenericProvider.from_json(path)
+
+        chunks = [
+            {"choices": [{"delta": {"content": "hel"}}]},
+            {"choices": [{"delta": {"content": "lo"}}]},
+            {"choices": [{"delta": {}, "finish_reason": "stop"}]},
+        ]
+        sse_body = (
+            "".join(f"data: {json.dumps(c)}\n" for c in chunks)
+            + "data: [DONE]\n"
+        ).encode()
+
+        deltas = []
+        with mock.patch(
+            "pycodeloop.providers.generic.urllib.request.urlopen",
+            return_value=_FakeResponse(sse_body),
+        ):
+            result = provider.complete("sys", [], [], on_delta=deltas.append)
+
+        self.assertEqual(deltas, ["hel", "lo"])
+        self.assertEqual(result.text, "hello")
+
+    def test_anthropic_response_shape_falls_back_to_a_single_on_delta_call(
+        self,
+    ):
+        path = self._write_config(
+            {
+                "url": "http://fake/answer",
+                "model": "my-model",
+                "response_shape": "anthropic",
+            }
+        )
+        provider = GenericProvider.from_json(path)
+
+        response_body = json.dumps(
+            {
+                "content": [{"type": "text", "text": "hello"}],
+                "usage": {"input_tokens": 3, "output_tokens": 1},
+            }
+        ).encode()
+
+        deltas = []
+        with mock.patch(
+            "pycodeloop.providers.generic.urllib.request.urlopen",
+            return_value=_FakeResponse(response_body),
+        ):
+            result = provider.complete("sys", [], [], on_delta=deltas.append)
+
+        self.assertEqual(deltas, ["hello"])
+        self.assertEqual(result.text, "hello")
+
 
 class TestGetProviderJsonDispatch(GenericProviderTestCase):
     def test_get_provider_loads_json_config_by_path(self):
