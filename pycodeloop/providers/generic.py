@@ -137,6 +137,7 @@ class GenericProvider(Provider):
           "api_key_env": "MY_API_KEY",
           "headers": {"X-Custom": "value"},
           "timeout": 60,
+          "context_window": 4096,
           "response_paths": {
             "text": "choices.0.message.content",
             "tool_calls": "choices.0.message.tool_calls",
@@ -193,6 +194,7 @@ class GenericProvider(Provider):
         repetition_min_period: int = _REPETITION_MIN_PERIOD,
         repetition_max_period: int = _REPETITION_MAX_PERIOD,
         repetition_repeats: int = _REPETITION_REPEATS,
+        context_window: int | None = None,
         supports_openai_sse: bool = True,
         **kwargs,
     ) -> None:
@@ -207,6 +209,7 @@ class GenericProvider(Provider):
         self.repetition_min_period = repetition_min_period
         self.repetition_max_period = repetition_max_period
         self.repetition_repeats = repetition_repeats
+        self.context_window = context_window
         self._supports_openai_sse = supports_openai_sse
         self._config_path: Path | None = None
         self._lock = threading.Lock()
@@ -253,6 +256,7 @@ class GenericProvider(Provider):
             request_builder=request_builder,
             response_parser=response_parser,
             timeout=data.get("timeout", 60.0),
+            context_window=data.get("context_window"),
             supports_openai_sse=response_shape != "anthropic",
         )
 
@@ -275,6 +279,7 @@ class GenericProvider(Provider):
             self.request_builder = fresh.request_builder
             self.response_parser = fresh.response_parser
             self.timeout = fresh.timeout
+            self.context_window = fresh.context_window
             self._supports_openai_sse = fresh._supports_openai_sse
 
     @staticmethod

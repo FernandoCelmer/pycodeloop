@@ -52,6 +52,42 @@ class TestLoadProviderFromJson(GenericProviderTestCase):
         self.assertEqual(provider.api_key, "sk-test")
         self.assertEqual(provider.headers, {"X-Custom": "1"})
 
+    def test_reads_context_window_from_config(self):
+        path = self._write_config(
+            {
+                "url": "http://fake/v1/chat/completions",
+                "model": "my-model",
+                "context_window": 4096,
+            }
+        )
+
+        provider = GenericProvider.from_json(path)
+
+        self.assertEqual(provider.context_window, 4096)
+
+    def test_reload_updates_context_window_from_config(self):
+        path = self._write_config(
+            {
+                "url": "http://fake/v1/chat/completions",
+                "model": "my-model",
+                "context_window": 4096,
+            }
+        )
+        provider = GenericProvider.from_json(path)
+        path.write_text(
+            json.dumps(
+                {
+                    "url": "http://fake/v1/chat/completions",
+                    "model": "my-model",
+                    "context_window": 8192,
+                }
+            )
+        )
+
+        provider.reload()
+
+        self.assertEqual(provider.context_window, 8192)
+
     def test_reads_api_key_from_env_var(self):
         path = self._write_config(
             {
