@@ -3,7 +3,7 @@ session is close enough to a model's limit to compact it."""
 
 from __future__ import annotations
 
-DEFAULT_CONTEXT_WINDOW = 32_000
+DEFAULT_CONTEXT_WINDOW = 128_000
 
 _CONTEXT_WINDOWS = {
     "claude-opus-5": 200_000,
