@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import sys
 from pathlib import Path
 
@@ -12,7 +13,8 @@ from pycodeloop.cli.commands import chat, run
 from pycodeloop.cli.flow import PROVIDER_HELP
 from pycodeloop.cli.serve import serve
 
-sys.stdout.reconfigure(line_buffering=True)
+with contextlib.suppress(Exception):
+    sys.stdout.reconfigure(line_buffering=True)
 
 _cwd = str(Path.cwd())
 if _cwd not in sys.path:
