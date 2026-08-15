@@ -5,11 +5,25 @@ Anthropic messages)."""
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Callable
 
 from pycodeloop.core.session import Message
 
 RequestBuilder = Callable[[str, "list[Message]", "list[dict]", str], dict]
+
+_DATA_URL = re.compile(r"^data:(?P<mime>[\w./+-]+);base64,(?P<data>[^\n]+)$")
+
+
+def _split_image(image: str) -> tuple[str, str]:
+    """Returns `(mime_type, base64_data)`. Accepts a full `data:<mime>;
+    base64,<data>` URL (mime taken from it) or a bare base64 string
+    (assumed `image/png`, the historical/backward-compatible behavior
+    for a caller passing raw base64 straight to `Session.add_user`)."""
+    match = _DATA_URL.match(image)
+    if match:
+        return match.group("mime"), match.group("data")
+    return "image/png", image
 
 
 def openai_tool_schema(tools: list[dict]) -> list[dict]:
@@ -38,9 +52,9 @@ def to_openai_messages(
                 content = [
                     {
                         "type": "image_url",
-                        "image_url": {"url": f"data:image/png;base64,{image}"},
+                        "image_url": {"url": f"data:{mime};base64,{data}"},
                     }
-                    for image in msg.images
+                    for mime, data in (_split_image(i) for i in msg.images)
                 ]
                 if msg.content:
                     content.append({"type": "text", "text": msg.content})
@@ -108,11 +122,11 @@ def to_anthropic_messages(messages: list[Message]) -> list[dict]:
                         "type": "image",
                         "source": {
                             "type": "base64",
-                            "media_type": "image/png",
-                            "data": image,
+                            "media_type": mime,
+                            "data": data,
                         },
                     }
-                    for image in msg.images
+                    for mime, data in (_split_image(i) for i in msg.images)
                 ]
                 if msg.content:
                     content.append({"type": "text", "text": msg.content})

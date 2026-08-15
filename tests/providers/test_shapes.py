@@ -4,11 +4,25 @@ import unittest
 
 from pycodeloop.core.session import Message
 from pycodeloop.providers._shapes import (
+    _split_image,
     anthropic_tool_schema,
     request_builder_from_config,
     to_anthropic_messages,
     to_openai_messages,
 )
+
+
+class TestSplitImage(unittest.TestCase):
+    def test_data_url_rejects_embedded_newlines_in_the_base64_payload(self):
+        """A multiline/PEM-style base64 payload must not silently match
+        as a clean data URL — falls back to treating the whole string as
+        opaque `image/png` data instead of a partial, corrupted match."""
+        malformed = "data:image/png;base64,abc\ndef"
+
+        mime, data = _split_image(malformed)
+
+        self.assertEqual(mime, "image/png")
+        self.assertEqual(data, malformed)
 
 
 class TestAnthropicMessageBuilding(unittest.TestCase):
@@ -50,6 +64,22 @@ class TestAnthropicMessageBuilding(unittest.TestCase):
         self.assertEqual(len(out[0]["content"]), 1)
         self.assertEqual(out[0]["content"][0]["type"], "image")
 
+    def test_data_url_image_preserves_its_real_mime_type(self):
+        out = to_anthropic_messages(
+            [
+                Message(
+                    role="user",
+                    content="",
+                    images=["data:image/jpeg;base64,b64data"],
+                )
+            ]
+        )
+
+        self.assertEqual(
+            out[0]["content"][0]["source"],
+            {"type": "base64", "media_type": "image/jpeg", "data": "b64data"},
+        )
+
 
 class TestOpenAIMessageBuilding(unittest.TestCase):
     def test_plain_text_user_message_stays_a_string(self):
@@ -79,6 +109,23 @@ class TestOpenAIMessageBuilding(unittest.TestCase):
                     {"type": "text", "text": "what is this?"},
                 ],
             },
+        )
+
+    def test_data_url_image_preserves_its_real_mime_type(self):
+        out = to_openai_messages(
+            "sys",
+            [
+                Message(
+                    role="user",
+                    content="",
+                    images=["data:image/webp;base64,b64data"],
+                )
+            ],
+        )
+
+        self.assertEqual(
+            out[-1]["content"][0]["image_url"]["url"],
+            "data:image/webp;base64,b64data",
         )
 
     def test_tool_call_extra_fields_round_trip_back_to_the_wire(self):
