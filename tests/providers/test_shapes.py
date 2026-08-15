@@ -4,11 +4,25 @@ import unittest
 
 from pycodeloop.core.session import Message
 from pycodeloop.providers._shapes import (
+    _split_image,
     anthropic_tool_schema,
     request_builder_from_config,
     to_anthropic_messages,
     to_openai_messages,
 )
+
+
+class TestSplitImage(unittest.TestCase):
+    def test_data_url_rejects_embedded_newlines_in_the_base64_payload(self):
+        """A multiline/PEM-style base64 payload must not silently match
+        as a clean data URL — falls back to treating the whole string as
+        opaque `image/png` data instead of a partial, corrupted match."""
+        malformed = "data:image/png;base64,abc\ndef"
+
+        mime, data = _split_image(malformed)
+
+        self.assertEqual(mime, "image/png")
+        self.assertEqual(data, malformed)
 
 
 class TestAnthropicMessageBuilding(unittest.TestCase):

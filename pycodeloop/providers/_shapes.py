@@ -12,9 +12,7 @@ from pycodeloop.core.session import Message
 
 RequestBuilder = Callable[[str, "list[Message]", "list[dict]", str], dict]
 
-_DATA_URL = re.compile(
-    r"^data:(?P<mime>[\w./+-]+);base64,(?P<data>.+)$", re.DOTALL
-)
+_DATA_URL = re.compile(r"^data:(?P<mime>[\w./+-]+);base64,(?P<data>[^\n]+)$")
 
 
 def _split_image(image: str) -> tuple[str, str]:
