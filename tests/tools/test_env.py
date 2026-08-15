@@ -61,6 +61,19 @@ class TestEnvTool(unittest.TestCase):
         self.assertIn("SESSION_ID=***", result.output)
         self.assertIn("HOME=/tmp", result.output)
 
+    def test_is_dangerous_and_requires_confirmation(self):
+        self.assertTrue(EnvTool().dangerous)
+
+    def test_preview_names_the_single_variable_being_read(self):
+        self.assertEqual(
+            EnvTool().preview(name="MY_API_KEY"), "$ env MY_API_KEY"
+        )
+
+    def test_preview_warns_about_listing_every_variable(self):
+        preview = EnvTool().preview()
+
+        self.assertIn("every variable", preview)
+
 
 if __name__ == "__main__":
     unittest.main()
