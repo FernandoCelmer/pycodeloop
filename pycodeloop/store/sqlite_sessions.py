@@ -37,6 +37,7 @@ class SqliteSessions(Sessions):
         )
         self._migrate_legacy_messages()
         self._migrate_images_column()
+        self._session_identity: dict[str, int] = {}
 
     def _db(self) -> OrmSession:
         return self._session_factory()
@@ -119,22 +120,52 @@ class SqliteSessions(Sessions):
         self._engine.dispose()
 
     def post(self, key: str, session: Session) -> None:
+        """Persists `session`, writing only the messages appended since
+        the last save when possible — the common case, since `on_message`
+        fires after every message including every tool result. Falls
+        back to a full delete-and-reinsert when the session is new, a
+        *different* `Session` object is posted for a key we've already
+        saved (an intentional overwrite, not the same object growing —
+        checked via identity, since a message-count watermark alone
+        can't tell the two apart), `session.dirty` (compaction/trim/
+        repair replaced or reordered existing messages, not just
+        appended), or the message count shrank."""
         with self._db() as db:
             record = db.get(SessionRecord, key)
+            is_new = record is None
 
-            if record is None:
+            if is_new:
                 record = SessionRecord(key=key)
                 db.add(record)
 
             record.system_prompt = session.system_prompt
             record.cwd = session.cwd
             record.updated_at = time.time()
+
+            previous_count = 0 if is_new else record.message_count
+            same_object = self._session_identity.get(key) == id(session)
+            full_rewrite = (
+                is_new
+                or not same_object
+                or session.dirty
+                or len(session.messages) < previous_count
+            )
             record.message_count = len(session.messages)
 
-            db.query(MessageRecord).filter(
-                MessageRecord.session_key == key
-            ).delete()
-            for position, message in enumerate(session.messages):
+            if full_rewrite:
+                db.query(MessageRecord).filter(
+                    MessageRecord.session_key == key
+                ).delete()
+                new_messages = list(enumerate(session.messages))
+            else:
+                new_messages = list(
+                    enumerate(
+                        session.messages[previous_count:],
+                        start=previous_count,
+                    )
+                )
+
+            for position, message in new_messages:
                 db.add(
                     MessageRecord(
                         session_key=key,
@@ -156,6 +187,8 @@ class SqliteSessions(Sessions):
                 )
 
             db.commit()
+            session.dirty = False
+            self._session_identity[key] = id(session)
 
     def get(self, key: str) -> Session | None:
         with self._db() as db:
@@ -191,6 +224,7 @@ class SqliteSessions(Sessions):
             )
 
     def delete(self, key: str) -> None:
+        self._session_identity.pop(key, None)
         with self._db() as db:
             record = db.get(SessionRecord, key)
 
