@@ -1,5 +1,10 @@
 # Release Notes
 
+## v0.6.2
+
+- [📦 PyPI - Build 0.6.2](https://pypi.org/project/pycodeloop/0.6.2/)
+- [🪲 Bug: Fix Windows CLI crash and silent settings-save failure (#14)](https://github.com/dotflow-io/pycodeloop/pull/15)
+
 ## v0.6.1
 
 - [📦 PyPI - Build 0.6.1](https://pypi.org/project/pycodeloop/0.6.1/)
