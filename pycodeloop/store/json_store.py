@@ -32,7 +32,7 @@ class JsonFileStore(Settings):
         corrupt, and the next `read()` would silently discard every
         previously saved section instead of just this write."""
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        with contextlib.suppress(OSError):
+        try:
             fd, tmp_path = tempfile.mkstemp(
                 dir=self.path.parent, prefix=f".{self.path.name}."
             )
@@ -41,8 +41,12 @@ class JsonFileStore(Settings):
                     f.write(json.dumps(data, indent=2))
                 os.replace(tmp_path, self.path)
             except OSError:
-                os.unlink(tmp_path)
+                with contextlib.suppress(OSError):
+                    os.unlink(tmp_path)
                 raise
+        except OSError:
+            with contextlib.suppress(OSError):
+                self.path.write_text(json.dumps(data, indent=2))
 
     def get_section(self, name: str) -> dict:
         return self.read().get(name, {})
