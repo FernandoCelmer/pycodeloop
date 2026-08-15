@@ -146,6 +146,13 @@ class GenericProvider(Provider):
     `message_content` rename per-message keys). `params` are extra
     static fields merged into every request body (e.g. `temperature`,
     `max_tokens`, vendor-specific flags).
+
+    Streaming (OpenAI-style SSE) still works with `response_paths` —
+    the wire format is unchanged, only the *non-streaming* response's
+    JSON key paths differ. `response_shape: "anthropic"` is the
+    exception: that's a genuinely different SSE envelope `_stream()`
+    doesn't understand, so streaming is skipped for it in favor of one
+    blocking, fully-buffered `on_delta` call.
     """
 
     name = "generic"
@@ -164,6 +171,7 @@ class GenericProvider(Provider):
         repetition_min_period: int = _REPETITION_MIN_PERIOD,
         repetition_max_period: int = _REPETITION_MAX_PERIOD,
         repetition_repeats: int = _REPETITION_REPEATS,
+        supports_openai_sse: bool = True,
         **kwargs,
     ) -> None:
         super().__init__(model=model, api_key=api_key, **kwargs)
@@ -178,6 +186,7 @@ class GenericProvider(Provider):
         self.repetition_max_period = repetition_max_period
         self.repetition_repeats = repetition_repeats
         self._uses_default_parser = response_parser is None
+        self._supports_openai_sse = supports_openai_sse
         self._config_path: Path | None = None
 
     @classmethod
@@ -199,8 +208,9 @@ class GenericProvider(Provider):
         if not api_key and data.get("api_key_env"):
             api_key = os.environ.get(data["api_key_env"])
 
+        response_shape = data.get("response_shape")
         response_parser = None
-        if data.get("response_shape") == "anthropic":
+        if response_shape == "anthropic":
             response_parser = anthropic_response
         elif "response_paths" in data:
             response_parser = response_parser_from_paths(
@@ -221,6 +231,7 @@ class GenericProvider(Provider):
             request_builder=request_builder,
             response_parser=response_parser,
             timeout=data.get("timeout", 60.0),
+            supports_openai_sse=response_shape != "anthropic",
         )
 
     def reload(self) -> None:
@@ -242,6 +253,7 @@ class GenericProvider(Provider):
         self.response_parser = fresh.response_parser
         self.timeout = fresh.timeout
         self._uses_default_parser = fresh._uses_default_parser
+        self._supports_openai_sse = fresh._supports_openai_sse
 
     @staticmethod
     def _default_request(
@@ -289,7 +301,7 @@ class GenericProvider(Provider):
         body = self.request_builder(system_prompt, messages, tools, self.model)
         known_tools = {tool["name"] for tool in tools}
 
-        if on_delta is not None and self._uses_default_parser:
+        if on_delta is not None and self._supports_openai_sse:
             return self._stream(body, on_delta, known_tools)
 
         with self._open(body) as response:
