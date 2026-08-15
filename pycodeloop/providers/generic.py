@@ -115,6 +115,7 @@ class GenericProvider(Provider):
           "api_key_env": "MY_API_KEY",
           "headers": {"X-Custom": "value"},
           "timeout": 60,
+          "context_window": 4096,
           "response_paths": {
             "text": "choices.0.message.content",
             "tool_calls": "choices.0.message.tool_calls",
@@ -164,6 +165,7 @@ class GenericProvider(Provider):
         repetition_min_period: int = _REPETITION_MIN_PERIOD,
         repetition_max_period: int = _REPETITION_MAX_PERIOD,
         repetition_repeats: int = _REPETITION_REPEATS,
+        context_window: int | None = None,
         **kwargs,
     ) -> None:
         super().__init__(model=model, api_key=api_key, **kwargs)
@@ -177,6 +179,7 @@ class GenericProvider(Provider):
         self.repetition_min_period = repetition_min_period
         self.repetition_max_period = repetition_max_period
         self.repetition_repeats = repetition_repeats
+        self.context_window = context_window
         self._uses_default_parser = response_parser is None
         self._config_path: Path | None = None
 
@@ -221,6 +224,7 @@ class GenericProvider(Provider):
             request_builder=request_builder,
             response_parser=response_parser,
             timeout=data.get("timeout", 60.0),
+            context_window=data.get("context_window"),
         )
 
     def reload(self) -> None:
@@ -241,6 +245,7 @@ class GenericProvider(Provider):
         self.request_builder = fresh.request_builder
         self.response_parser = fresh.response_parser
         self.timeout = fresh.timeout
+        self.context_window = fresh.context_window
         self._uses_default_parser = fresh._uses_default_parser
 
     @staticmethod
