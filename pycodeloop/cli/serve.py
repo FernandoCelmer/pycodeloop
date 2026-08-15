@@ -118,7 +118,9 @@ class RpcServer:
 
         def confirm(name: str, preview: str) -> bool | str:
             if self.auto_approve:
-                self._notify("chat/autoApproved", {"name": name})
+                self._notify(
+                    "chat/autoApproved", {"name": name, "preview": preview}
+                )
                 return True
 
             request_id = str(uuid.uuid4())

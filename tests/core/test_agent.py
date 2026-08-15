@@ -1,6 +1,7 @@
 """Test Agent class"""
 
 import threading
+import time
 import unittest
 from unittest import mock
 
@@ -124,11 +125,7 @@ class TestAgent(unittest.TestCase):
 
     def test_prefers_explicit_provider_context_window(self):
         provider = FakeProvider(
-            [
-                ProviderResponse(
-                    text="done", usage=Usage(input_tokens=90)
-                )
-            ]
+            [ProviderResponse(text="done", usage=Usage(input_tokens=90))]
         )
         provider.context_window = 100
         contexts = []
@@ -634,6 +631,34 @@ class TestAgentRetry(unittest.TestCase):
         self.assertEqual(primary.calls, 4)
         self.assertEqual(secondary.calls, 4)
 
+    def test_a_new_run_call_retries_the_primary_even_after_a_prior_fallback(
+        self,
+    ):
+        """Issue #18: falling back within one run() must not be permanent
+        across the agent's lifetime — a later run() call (a new user
+        message) should give the primary another chance instead of
+        staying stuck on the fallback forever."""
+        primary = FlakyProvider(fail_times=4)
+        secondary = FlakyProvider(fail_times=0)
+        agent = Agent(
+            provider=primary,
+            fallback_providers=[secondary],
+            tools=[],
+        )
+
+        first = agent.run("hi")
+        self.assertEqual(first, "ok")
+        self.assertIs(agent.provider, secondary)
+        self.assertEqual(primary.calls, 4)
+        self.assertEqual(secondary.calls, 1)
+
+        second = agent.run("hi again")
+
+        self.assertEqual(second, "ok")
+        self.assertIs(agent.provider, primary)
+        self.assertEqual(primary.calls, 5)
+        self.assertEqual(secondary.calls, 1)
+
     def test_second_turn_after_fallback_does_not_retry_the_dead_primary(self):
         """Regression: rebuilding `[self.provider, *self.fallback_providers]`
         fresh on every `_complete` call put the now-active fallback in the
@@ -830,6 +855,79 @@ class TestAgentParallelTools(unittest.TestCase):
         result = agent.run("go")
 
         self.assertEqual(result, "done")
+
+    def test_tool_opting_into_cancel_event_receives_the_agents_event(self):
+        received = []
+
+        class CancelAwareTool(Tool):
+            name = "cancel_aware"
+            description = "wants the agent's cancel_event"
+            parameters = {"type": "object", "properties": {}}
+            wants_cancel_event = True
+
+            def run(self, cancel_event=None) -> ToolResult:
+                received.append(cancel_event)
+                return ToolResult(output="ok")
+
+        provider = FakeProvider(
+            [
+                ProviderResponse(
+                    text="",
+                    tool_calls=[
+                        ToolCall(id="1", name="cancel_aware", arguments={})
+                    ],
+                ),
+                ProviderResponse(text="done"),
+            ]
+        )
+        agent = Agent(provider=provider, tools=[CancelAwareTool()])
+        event = threading.Event()
+
+        agent.run("go", cancel_event=event)
+
+        self.assertEqual(received, [event])
+
+    def test_slow_tool_in_a_parallel_batch_times_out_without_blocking_the_others(
+        self,
+    ):
+        class SlowTool(Tool):
+            name = "slow"
+            description = "never finishes within its timeout"
+            parameters = {"type": "object", "properties": {}}
+            timeout = 0.05
+
+            def run(self) -> ToolResult:
+                time.sleep(2)
+                return ToolResult(output="too late")
+
+        class FastTool(Tool):
+            name = "fast"
+            description = "finishes immediately"
+            parameters = {"type": "object", "properties": {}}
+
+            def run(self) -> ToolResult:
+                return ToolResult(output="fast done")
+
+        provider = FakeProvider(
+            [
+                ProviderResponse(
+                    text="",
+                    tool_calls=[
+                        ToolCall(id="1", name="slow", arguments={}),
+                        ToolCall(id="2", name="fast", arguments={}),
+                    ],
+                ),
+                ProviderResponse(text="done"),
+            ]
+        )
+        agent = Agent(provider=provider, tools=[SlowTool(), FastTool()])
+
+        started = time.monotonic()
+        result = agent.run("go")
+        elapsed = time.monotonic() - started
+
+        self.assertEqual(result, "done")
+        self.assertLess(elapsed, 1.0)
 
 
 class TestAgentToolResultSummarization(unittest.TestCase):

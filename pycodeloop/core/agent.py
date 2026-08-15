@@ -6,6 +6,7 @@ import threading
 import time
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FutureTimeoutError
 
 from pycodeloop.abc.confirm import Confirm
 from pycodeloop.abc.provider import Provider, ProviderResponse, ToolCall, Usage
@@ -176,7 +177,12 @@ class Agent:
     def _tool_schemas(self) -> list[dict]:
         return [tool.schema() for tool in self.tools.values()]
 
-    def _execute(self, name: str, arguments: dict) -> tuple[str, bool]:
+    def _execute(
+        self,
+        name: str,
+        arguments: dict,
+        cancel_event: threading.Event | None = None,
+    ) -> tuple[str, bool]:
         tool = self.tools.get(name)
 
         if tool is None:
@@ -208,7 +214,10 @@ class Agent:
                 return "User declined to run this tool.", True
 
         try:
-            result = tool.run(**arguments)
+            if tool.wants_cancel_event:
+                result = tool.run(cancel_event=cancel_event, **arguments)
+            else:
+                result = tool.run(**arguments)
         except Exception as exc:
             return (
                 f"Tool '{name}' raised {exc.__class__.__name__}: {exc}",
@@ -248,23 +257,34 @@ class Agent:
         if cancel_event and cancel_event.is_set():
             results = {call.id: ("Cancelled by user.", True) for call in calls}
         elif self._can_parallelize(calls):
-            with ThreadPoolExecutor(max_workers=len(calls)) as executor:
-                futures = {
-                    call.id: executor.submit(
-                        self._execute, call.name, call.arguments
-                    )
-                    for call in calls
-                }
-            results = {
-                call_id: future.result() for call_id, future in futures.items()
+            executor = ThreadPoolExecutor(max_workers=len(calls))
+            futures = {
+                call.id: executor.submit(
+                    self._execute, call.name, call.arguments, cancel_event
+                )
+                for call in calls
             }
+            results = {}
+            for call in calls:
+                tool = self.tools.get(call.name)
+                timeout = tool.timeout if tool else None
+                try:
+                    results[call.id] = futures[call.id].result(timeout=timeout)
+                except FutureTimeoutError:
+                    results[call.id] = (
+                        f"Tool '{call.name}' timed out after {timeout}s.",
+                        True,
+                    )
+            executor.shutdown(wait=False)
         else:
             results = {}
             for call in calls:
                 if cancel_event and cancel_event.is_set():
                     results[call.id] = ("Cancelled by user.", True)
                 else:
-                    results[call.id] = self._execute(call.name, call.arguments)
+                    results[call.id] = self._execute(
+                        call.name, call.arguments, cancel_event
+                    )
 
         for call in calls:
             result_text, is_error = results[call.id]
@@ -339,7 +359,7 @@ class Agent:
             tool_calls=recent[0].tool_calls,
             images=recent[0].images,
         )
-        session.messages = recent
+        session.replace_messages(recent)
         self._notify_message()
 
         self._trace(
@@ -359,6 +379,8 @@ class Agent:
         or `cancel_event` is set — checked at each turn boundary and
         before every tool call, never mid-request, so an in-flight
         provider call always finishes first."""
+        self._provider_index = 0
+        self.provider = self._provider_chain[0]
         session = session or Session(system_prompt=self.system_prompt)
         session.add_user(prompt, images=images)
         self._notify_message()

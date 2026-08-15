@@ -4,10 +4,6 @@ import unittest
 
 from pycodeloop.core.config import Config
 from pycodeloop.providers import GenericProvider
-from pycodeloop.tools._workspace import (
-    is_workspace_enabled,
-    set_workspace_enabled,
-)
 
 
 class TestConfigDelegation(unittest.TestCase):
@@ -43,18 +39,34 @@ class TestConfigWorkspace(unittest.TestCase):
             url="http://fake/v1/chat/completions", model="fake-model"
         )
 
-    def setUp(self):
-        self.addCleanup(set_workspace_enabled, True)
+    def _read_file_tool(self, config: Config):
+        return next(t for t in config.tools if t.name == "read_file")
 
     def test_workspace_on_by_default(self):
-        Config(provider=self._provider(), storage=False)
+        config = Config(provider=self._provider(), storage=False)
 
-        self.assertTrue(is_workspace_enabled())
+        self.assertTrue(self._read_file_tool(config)._workspace)
 
     def test_workspace_false_disables_the_jail(self):
-        Config(provider=self._provider(), storage=False, workspace=False)
+        config = Config(
+            provider=self._provider(), storage=False, workspace=False
+        )
 
-        self.assertFalse(is_workspace_enabled())
+        self.assertFalse(self._read_file_tool(config)._workspace)
+
+    def test_two_configs_with_different_workspace_settings_dont_interfere(
+        self,
+    ):
+        """Regression: workspace used to be a process-wide global — the
+        Config built last would silently win for every Config's tools,
+        not just its own."""
+        jailed = Config(provider=self._provider(), storage=False)
+        unjailed = Config(
+            provider=self._provider(), storage=False, workspace=False
+        )
+
+        self.assertTrue(self._read_file_tool(jailed)._workspace)
+        self.assertFalse(self._read_file_tool(unjailed)._workspace)
 
 
 if __name__ == "__main__":

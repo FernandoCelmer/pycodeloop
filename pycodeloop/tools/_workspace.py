@@ -13,8 +13,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-_enabled = True
-
 
 class OutsideWorkspaceError(ValueError):
     def __init__(self, path: str, root: Path) -> None:
@@ -25,39 +23,32 @@ class OutsideWorkspaceError(ValueError):
         )
 
 
-def set_workspace_enabled(enabled: bool) -> None:
-    """Toggle the jail process-wide. Callers doing this mid-run (rather
-    than once at startup via `Config(workspace=...)`) should know it
-    affects every tool call from that point on, not just their own."""
-    global _enabled
-    _enabled = enabled
-
-
-def is_workspace_enabled() -> bool:
-    return _enabled
-
-
 def workspace_root() -> Path:
     return Path.cwd().resolve()
 
 
-def resolve_in_workspace(path: str, root: Path | None = None) -> Path:
+def resolve_in_workspace(
+    path: str, root: Path | None = None, enabled: bool = True
+) -> Path:
     """Resolve `path` under `root` (default: cwd). Raises
     `OutsideWorkspaceError` if the resolved path escapes the root via
-    `..` or an absolute path outside it — unless the jail was disabled
-    via `set_workspace_enabled(False)`, in which case `path` resolves
-    as-is with no restriction."""
-    target = Path(path).expanduser()
+    `..` or an absolute path outside it — unless `enabled` is False, in
+    which case `path` resolves as-is with no restriction.
 
-    if not _enabled:
-        base = (root or workspace_root()).resolve()
+    `enabled` is a plain parameter, not process-wide state — each tool
+    instance decides for itself so two `Config`s with different
+    `workspace=` settings (or tests running in the same process) can't
+    interfere with each other."""
+    target = Path(path).expanduser()
+    base = (root or workspace_root()).resolve()
+
+    if not enabled:
         return (
             target.resolve()
             if target.is_absolute()
             else (base / target).resolve()
         )
 
-    base = (root or workspace_root()).resolve()
     if not target.is_absolute():
         target = base / target
     resolved = target.resolve()
