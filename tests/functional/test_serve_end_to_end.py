@@ -143,15 +143,15 @@ class TestServeEndToEnd(unittest.TestCase):
             response["result"]["text"], "Here's the directory listing."
         )
 
-    def test_dangerous_tool_blocks_on_confirm_round_trip(self):
+    def test_gated_tool_blocks_on_confirm_round_trip(self):
         self.server = FakeLLMServer(
             [
                 chat_completion(
                     tool_calls=[
                         tool_call(
                             "call-1",
-                            "write_file",
-                            {"path": "note.txt", "content": "hi"},
+                            "bash",
+                            {"command": "echo hi > note.txt"},
                         )
                     ]
                 ),
@@ -176,7 +176,7 @@ class TestServeEndToEnd(unittest.TestCase):
             if message.get("method") == "chat/confirmRequest":
                 confirm_request = message
 
-        self.assertEqual(confirm_request["params"]["name"], "write_file")
+        self.assertEqual(confirm_request["params"]["name"], "bash")
 
         self.client.send(
             {
@@ -196,7 +196,7 @@ class TestServeEndToEnd(unittest.TestCase):
                 response = message
 
         self.assertEqual(response["result"]["text"], "Wrote it.")
-        self.assertEqual((self.tmp_path / "note.txt").read_text(), "hi")
+        self.assertEqual((self.tmp_path / "note.txt").read_text().strip(), "hi")
 
     def test_yes_flag_auto_approves_without_confirm_round_trip(self):
         self.server = FakeLLMServer(
@@ -205,8 +205,8 @@ class TestServeEndToEnd(unittest.TestCase):
                     tool_calls=[
                         tool_call(
                             "call-1",
-                            "write_file",
-                            {"path": "note.txt", "content": "hi"},
+                            "bash",
+                            {"command": "echo hi > note.txt"},
                         )
                     ]
                 ),
@@ -240,7 +240,7 @@ class TestServeEndToEnd(unittest.TestCase):
         self.assertIn("chat/autoApproved", methods)
         self.assertNotIn("chat/confirmRequest", methods)
         self.assertEqual(response["result"]["text"], "Wrote it.")
-        self.assertEqual((self.tmp_path / "note.txt").read_text(), "hi")
+        self.assertEqual((self.tmp_path / "note.txt").read_text().strip(), "hi")
 
         auto_approved = next(
             n for n in notifications if n.get("method") == "chat/autoApproved"

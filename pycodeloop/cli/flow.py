@@ -138,6 +138,7 @@ def build_flow(
     delegation: bool = False,
     memory: bool = True,
     workspace: bool = True,
+    autonomy: str = "safe_execute",
 ) -> tuple[CodeLoop, str, str]:
     provider, provider_name = resolve_provider(
         provider_name, model, base_url, url
@@ -277,6 +278,7 @@ def build_flow(
         delegation=delegation,
         memory=memory,
         workspace=workspace,
+        autonomy=autonomy,
     )
     if config.skills:
         console.print(

@@ -37,7 +37,7 @@ class HttpRequestTool(Tool):
         },
         "required": ["url"],
     }
-    dangerous = True
+    operation = "execute_high_risk"
 
     def preview(
         self,

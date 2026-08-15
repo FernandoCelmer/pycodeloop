@@ -134,7 +134,7 @@ class SqlSchemaTool(Tool):
         },
         "required": ["url"],
     }
-    dangerous = True
+    operation = "read"
 
     def preview(self, url: str, table: str = "", **_) -> str:
         target = f"table {table}" if table else "all tables"
@@ -199,7 +199,7 @@ class SqlQueryTool(Tool):
         },
         "required": ["url", "query"],
     }
-    dangerous = True
+    operation = "read"
 
     def preview(self, url: str, query: str = "", **_) -> str:
         return f"$ sql_query {url}\n{query}"

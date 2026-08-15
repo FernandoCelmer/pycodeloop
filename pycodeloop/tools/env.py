@@ -55,7 +55,7 @@ class EnvTool(Tool):
             "name": {"type": "string"},
         },
     }
-    dangerous = True
+    operation = "execute_high_risk"
 
     def preview(self, name: str = "", **_) -> str:
         return (

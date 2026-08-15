@@ -12,7 +12,11 @@ from unittest import mock
 from pycodeloop.core.agent import Agent
 from pycodeloop.providers.generic import GenericProvider
 from pycodeloop.store.file_access_log import FileAccessLog
-from pycodeloop.tools.filesystem import ReadFileTool, WriteFileTool
+from pycodeloop.tools.filesystem import (
+    DeleteFileTool,
+    ReadFileTool,
+    WriteFileTool,
+)
 from tests.functional._fake_llm_server import (
     FakeLLMServer,
     chat_completion,
@@ -114,7 +118,34 @@ class TestToolUseLoop(AgentEndToEndTestCase):
         self.assertEqual(len(tool_messages), 1)
         self.assertIn("42", tool_messages[0]["content"])
 
-    def test_declining_a_dangerous_tool_is_reported_back_to_the_model(self):
+    def test_declining_a_gated_tool_is_reported_back_to_the_model(self):
+        (self.tmp_path / "x.txt").write_text("do not delete me")
+        provider = self._provider(
+            [
+                chat_completion(
+                    tool_calls=[
+                        tool_call(
+                            "call-1",
+                            "delete_file",
+                            {"path": "x.txt"},
+                        )
+                    ]
+                ),
+                chat_completion(text="Okay, skipped."),
+            ]
+        )
+        agent = Agent(
+            provider=provider,
+            tools=[DeleteFileTool()],
+            confirm=lambda *_args: False,
+        )
+
+        result = agent.run("delete x.txt")
+
+        self.assertEqual(result, "Okay, skipped.")
+        self.assertTrue((self.tmp_path / "x.txt").exists())
+
+    def test_low_risk_write_runs_autonomously_without_confirm(self):
         provider = self._provider(
             [
                 chat_completion(
@@ -126,19 +157,19 @@ class TestToolUseLoop(AgentEndToEndTestCase):
                         )
                     ]
                 ),
-                chat_completion(text="Okay, skipped."),
+                chat_completion(text="Done."),
             ]
         )
         agent = Agent(
             provider=provider,
             tools=[WriteFileTool()],
-            confirm=lambda *_args: False,
+            confirm=None,
         )
 
         result = agent.run("write x.txt")
 
-        self.assertEqual(result, "Okay, skipped.")
-        self.assertFalse((self.tmp_path / "x.txt").exists())
+        self.assertEqual(result, "Done.")
+        self.assertEqual((self.tmp_path / "x.txt").read_text(), "x")
 
 
 if __name__ == "__main__":

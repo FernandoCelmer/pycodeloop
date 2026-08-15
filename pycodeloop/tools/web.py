@@ -46,6 +46,7 @@ def _html_to_text(html: str) -> str:
 class WebFetchTool(Tool):
     name = "web_fetch"
     description = "Fetch a URL and return its content as plain text."
+    operation = "read"
     parameters = {
         "type": "object",
         "properties": {

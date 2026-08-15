@@ -11,6 +11,7 @@ from concurrent.futures import TimeoutError as FutureTimeoutError
 from pycodeloop.abc.confirm import Confirm
 from pycodeloop.abc.provider import Provider, ProviderResponse, ToolCall, Usage
 from pycodeloop.abc.tool import Tool
+from pycodeloop.core.autonomy import AutonomyLevel, GateDecision, gate
 from pycodeloop.core.context_window import context_window_for
 from pycodeloop.core.session import Message, Session
 from pycodeloop.tools import DEFAULT_TOOLS
@@ -85,6 +86,7 @@ class Agent:
         on_provider_fallback: (
             Callable[[Provider, Provider, Exception], None] | None
         ) = None,
+        autonomy: str = "safe_execute",
     ) -> None:
         self.provider = provider
         self.fallback_providers = fallback_providers or []
@@ -99,6 +101,7 @@ class Agent:
         self.on_tool_result = on_tool_result
         self.on_text_delta = on_text_delta
         self.confirm = confirm
+        self.autonomy = AutonomyLevel.from_str(autonomy).value
         self.on_usage = on_usage
         self.on_request = on_request
         self.auto_compact = auto_compact
@@ -188,18 +191,36 @@ class Agent:
         if tool is None:
             return f"Unknown tool: {name}", True
 
-        if tool.dangerous:
+        decision = gate(self.autonomy, tool.operation)
+        self._trace(
+            "tool_gate",
+            name=name,
+            operation=tool.operation,
+            decision=decision.value,
+            autonomy=self.autonomy,
+        )
+
+        if decision is GateDecision.DENY:
+            return (
+                f"Refused to run '{name}' ({tool.operation}) under autonomy "
+                f"level '{self.autonomy}' — it needs a higher autonomy level.",
+                True,
+            )
+
+        if decision is GateDecision.REQUIRE_APPROVAL:
             if self.confirm is None:
                 return (
-                    f"Refused to run dangerous tool '{name}' without a confirm "
-                    "callback. Pass confirm=... or use --yes only from a trusted CLI.",
+                    f"Refused to run '{name}' under autonomy level "
+                    f"'{self.autonomy}' — it needs approval but no confirm "
+                    "callback was supplied.",
                     True,
                 )
             try:
                 preview = tool.preview(**arguments)
             except Exception as exc:
                 return (
-                    f"Tool '{name}' preview raised {exc.__class__.__name__}: {exc}",
+                    f"Tool '{name}' preview raised "
+                    f"{exc.__class__.__name__}: {exc}",
                     True,
                 )
             ask = (
@@ -239,7 +260,8 @@ class Agent:
                 return False
 
         return not any(
-            (tool := self.tools.get(call.name)) is not None and tool.dangerous
+            (tool := self.tools.get(call.name)) is not None
+            and gate(self.autonomy, tool.operation) != GateDecision.ALLOW
             for call in calls
         )
 

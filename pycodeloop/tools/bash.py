@@ -25,7 +25,7 @@ class BashTool(Tool):
         },
         "required": ["command"],
     }
-    dangerous = True
+    operation = "execute_high_risk"
 
     def preview(self, command: str, **_) -> str:
         return f"$ {command}"

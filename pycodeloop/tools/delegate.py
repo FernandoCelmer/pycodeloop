@@ -28,6 +28,7 @@ class DelegateTool(Tool):
         "path, constraint, and question it needs in `task`; only its "
         "final answer comes back, not its intermediate steps."
     )
+    operation = "read"
     parameters = {
         "type": "object",
         "properties": {
@@ -48,10 +49,12 @@ class DelegateTool(Tool):
         provider: Provider,
         tools: list[Tool],
         max_turns: int = _DEFAULT_MAX_TURNS,
+        autonomy: str = "safe_execute",
     ) -> None:
         self.provider = provider
         self.tools = tools
         self.max_turns = max_turns
+        self.autonomy = autonomy
         provider_timeout = getattr(provider, "timeout", None)
         self.timeout = max_turns * (
             provider_timeout if provider_timeout is not None else 60.0
@@ -69,6 +72,7 @@ class DelegateTool(Tool):
             provider=self.provider,
             tools=self.tools,
             max_turns=self.max_turns,
+            autonomy=self.autonomy,
         )
         text = sub_agent.run(task, cancel_event=cancel_event)
         return ToolResult(output=text)

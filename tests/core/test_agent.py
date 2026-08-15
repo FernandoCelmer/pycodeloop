@@ -49,7 +49,7 @@ class FailTool(Tool):
 class DeleteTool(Tool):
     name = "delete_everything"
     description = "Deletes everything."
-    dangerous = True
+    operation = "execute_high_risk"
 
     def run(self, **kwargs) -> ToolResult:
         return ToolResult(output="deleted")
@@ -61,7 +61,7 @@ class StrictPreviewTool(Tool):
 
     name = "strict_preview"
     description = "Dangerous tool with a required preview() argument."
-    dangerous = True
+    operation = "execute_high_risk"
 
     def preview(self, message: str, **_) -> str:
         return f"$ do it: {message}"
@@ -758,7 +758,7 @@ class TestAgentParallelTools(unittest.TestCase):
             name = "danger"
             description = "danger"
             parameters = {"type": "object", "properties": {}}
-            dangerous = True
+            operation = "execute_high_risk"
 
             def run(self) -> ToolResult:
                 return ToolResult(output="danger done")
@@ -1006,6 +1006,145 @@ class TestAgentToolResultSummarization(unittest.TestCase):
 
         tool_message = next(m for m in session.messages if m.role == "tool")
         self.assertEqual(len(tool_message.content), 10_000)
+
+
+class TestAgentAutonomy(unittest.TestCase):
+    def _high_risk_provider(self) -> FakeProvider:
+        return FakeProvider(
+            [
+                ProviderResponse(
+                    text="",
+                    tool_calls=[
+                        ToolCall(id="1", name="nuke", arguments={})
+                    ],
+                ),
+                ProviderResponse(text="done"),
+            ]
+        )
+
+    def test_high_risk_tool_requires_approval_under_safe_execute(self):
+        results = []
+
+        class HighRiskTool(Tool):
+            name = "nuke"
+            description = "high risk"
+            parameters = {"type": "object", "properties": {}}
+            operation = "execute_high_risk"
+
+            def run(self) -> ToolResult:
+                return ToolResult(output="nuked")
+
+        agent = Agent(
+            provider=self._high_risk_provider(),
+            tools=[HighRiskTool()],
+            confirm=lambda _n, _p: True,
+            on_tool_result=lambda _n, r, _e: results.append(r),
+        )
+
+        agent.run("go")
+
+        self.assertEqual(results, ["nuked"])
+
+    def test_high_risk_tool_without_confirm_is_refused_under_safe_execute(self):
+        results = []
+
+        class HighRiskTool(Tool):
+            name = "nuke"
+            description = "high risk"
+            parameters = {"type": "object", "properties": {}}
+            operation = "execute_high_risk"
+
+            def run(self) -> ToolResult:
+                return ToolResult(output="nuked")
+
+        agent = Agent(
+            provider=self._high_risk_provider(),
+            tools=[HighRiskTool()],
+            confirm=None,
+            on_tool_result=lambda _n, r, _e: results.append(r),
+        )
+
+        agent.run("go")
+
+        self.assertTrue(
+            any("needs approval but no confirm callback" in r for r in results)
+        )
+
+    def test_high_risk_tool_runs_without_confirm_under_full_project_loop(self):
+        results = []
+
+        class HighRiskTool(Tool):
+            name = "nuke"
+            description = "high risk"
+            parameters = {"type": "object", "properties": {}}
+            operation = "execute_high_risk"
+
+            def run(self) -> ToolResult:
+                return ToolResult(output="nuked")
+
+        agent = Agent(
+            provider=self._high_risk_provider(),
+            tools=[HighRiskTool()],
+            confirm=None,
+            autonomy="full_project_loop",
+            on_tool_result=lambda _n, r, _e: results.append(r),
+        )
+
+        agent.run("go")
+
+        self.assertEqual(results, ["nuked"])
+
+    def test_manual_level_denies_high_risk_regardless_of_confirm(self):
+        results = []
+
+        class HighRiskTool(Tool):
+            name = "nuke"
+            description = "high risk"
+            parameters = {"type": "object", "properties": {}}
+            operation = "execute_high_risk"
+
+            def run(self) -> ToolResult:
+                return ToolResult(output="nuked")
+
+        agent = Agent(
+            provider=self._high_risk_provider(),
+            tools=[HighRiskTool()],
+            confirm=lambda _n, _p: True,
+            autonomy="manual",
+            on_tool_result=lambda _n, r, _e: results.append(r),
+        )
+
+        agent.run("go")
+
+        self.assertTrue(any("needs a higher autonomy level" in r for r in results))
+
+    def test_gate_decision_is_traced(self):
+        events = []
+
+        class HighRiskTool(Tool):
+            name = "nuke"
+            description = "high risk"
+            parameters = {"type": "object", "properties": {}}
+            operation = "execute_high_risk"
+
+            def run(self) -> ToolResult:
+                return ToolResult(output="nuked")
+
+        agent = Agent(
+            provider=self._high_risk_provider(),
+            tools=[HighRiskTool()],
+            confirm=lambda _n, _p: True,
+            on_trace_event=events.append,
+        )
+
+        agent.run("go")
+
+        gate_events = [e for e in events if e.get("type") == "tool_gate"]
+        self.assertEqual(len(gate_events), 1)
+        self.assertEqual(gate_events[0]["name"], "nuke")
+        self.assertEqual(gate_events[0]["operation"], "execute_high_risk")
+        self.assertEqual(gate_events[0]["decision"], "require_approval")
+        self.assertEqual(gate_events[0]["autonomy"], "safe_execute")
 
 
 if __name__ == "__main__":

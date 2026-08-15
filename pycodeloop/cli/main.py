@@ -88,7 +88,15 @@ def default(
         False,
         "--yes",
         "-y",
-        help="Skip confirmation prompts for dangerous tools.",
+        help="Skip confirmation prompts for tools that need approval.",
+    ),
+    autonomy: str = typer.Option(
+        "safe_execute",
+        "--autonomy",
+        help=(
+            "Graduated autonomy level that gates tool calls: "
+            "'manual', 'safe_execute' (default), or 'full_project_loop'."
+        ),
     ),
 ) -> None:
     """Bare `pycodeloop` starts the chat; use `run`/`chat` for control."""
@@ -103,6 +111,7 @@ def default(
             skills_refresh=skills_refresh,
             delegate=delegate,
             yes=yes,
+            autonomy=autonomy,
         )
 
 

@@ -298,7 +298,15 @@ def serve(
         False,
         "--yes",
         "-y",
-        help="Auto-approve dangerous tool calls instead of round-tripping a confirmRequest.",
+        help="Auto-approve tool calls that need approval instead of round-tripping a confirmRequest.",
+    ),
+    autonomy: str = typer.Option(
+        "safe_execute",
+        "--autonomy",
+        help=(
+            "Graduated autonomy level that gates tool calls: "
+            "'manual', 'safe_execute' (default), or 'full_project_loop'."
+        ),
     ),
     workspace: bool = typer.Option(
         True,
@@ -326,6 +334,7 @@ def serve(
         delegation=delegate,
         memory=memory,
         workspace=workspace,
+        autonomy=autonomy,
     )
     flow = CodeLoop(config=config)
     RpcServer(
