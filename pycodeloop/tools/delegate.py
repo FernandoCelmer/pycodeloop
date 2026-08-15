@@ -52,7 +52,10 @@ class DelegateTool(Tool):
         self.provider = provider
         self.tools = tools
         self.max_turns = max_turns
-        self.timeout = max_turns * getattr(provider, "timeout", 60.0)
+        provider_timeout = getattr(provider, "timeout", None)
+        self.timeout = max_turns * (
+            provider_timeout if provider_timeout is not None else 60.0
+        )
 
     def preview(self, task: str, **_) -> str:
         return task
