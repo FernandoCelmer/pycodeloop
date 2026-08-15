@@ -8,6 +8,7 @@
 - [🪲 Bug: Add repetition guard to streaming responses (#3)](https://github.com/dotflow-io/pycodeloop/pull/7)
 - [⚙️ Feature: Add per-run JSONL execution trace (#4)](https://github.com/dotflow-io/pycodeloop/pull/8)
 - [⚙️ Feature: Add workspace jail toggle and clarify bash's exemption from it (#9)](https://github.com/dotflow-io/pycodeloop/pull/10)
+- [🪲 Bug: Preserve real image MIME type instead of hardcoding image/png (#12)](https://github.com/dotflow-io/pycodeloop/pull/13)
 
 ## v0.5.0
 
