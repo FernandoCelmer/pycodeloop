@@ -112,6 +112,7 @@ class Agent:
         self.on_trace_event = on_trace_event
         self.usage = Usage()
         self._last_context_tokens = 0
+        self.last_run_reason: str | None = None
 
     def _trace(self, event_type: str, **fields) -> None:
         if self.on_trace_event:
@@ -381,6 +382,7 @@ class Agent:
         provider call always finishes first."""
         self._provider_index = 0
         self.provider = self._provider_chain[0]
+        self.last_run_reason = None
         session = session or Session(system_prompt=self.system_prompt)
         session.add_user(prompt, images=images)
         self._notify_message()
@@ -392,6 +394,7 @@ class Agent:
         for _ in range(self.max_turns):
             if cancel_event and cancel_event.is_set():
                 self._trace("run_end", reason="cancelled")
+                self.last_run_reason = "cancelled"
                 return "Cancelled by user."
 
             context_window = getattr(self.provider, "context_window", None)
@@ -449,13 +452,16 @@ class Agent:
 
             if not response.tool_calls:
                 self._trace("run_end", reason="done")
+                self.last_run_reason = "done"
                 return response.text
 
             self._run_tool_calls(response.tool_calls, session, cancel_event)
 
             if cancel_event and cancel_event.is_set():
                 self._trace("run_end", reason="cancelled")
+                self.last_run_reason = "cancelled"
                 return "Cancelled by user."
 
         self._trace("run_end", reason="max_turns")
+        self.last_run_reason = "max_turns"
         return "Reached max_turns without finishing."
