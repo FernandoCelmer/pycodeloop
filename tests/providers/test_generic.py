@@ -3,6 +3,7 @@
 import io
 import json
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -508,6 +509,59 @@ class TestGetProviderJsonDispatch(GenericProviderTestCase):
         provider = get_provider(str(path), model="from-cli")
 
         self.assertEqual(provider.model, "from-cli")
+
+
+class TestReloadThreadSafety(GenericProviderTestCase):
+    def test_concurrent_complete_never_sees_a_mixed_config(self):
+        path = self._write_config({"url": "http://fake/A", "model": "model-A"})
+        provider = GenericProvider.from_json(path)
+
+        seen: list[tuple[str, str]] = []
+        seen_lock = threading.Lock()
+
+        def fake_urlopen(request, timeout=None):
+            body = json.loads(request.data)
+            with seen_lock:
+                seen.append((request.full_url, body["model"]))
+            payload = json.dumps(
+                {
+                    "choices": [
+                        {"message": {"content": "ok"}, "finish_reason": "stop"}
+                    ],
+                    "usage": {},
+                }
+            ).encode()
+            return _FakeResponse(payload)
+
+        def flip_config():
+            for i in range(50):
+                tag = "A" if i % 2 == 0 else "B"
+                path.write_text(
+                    json.dumps(
+                        {"url": f"http://fake/{tag}", "model": f"model-{tag}"}
+                    )
+                )
+                provider.reload()
+
+        def call_complete():
+            for _ in range(50):
+                provider.complete("sys", [], [])
+
+        with mock.patch(
+            "pycodeloop.providers.generic.urllib.request.urlopen",
+            side_effect=fake_urlopen,
+        ):
+            reloader = threading.Thread(target=flip_config)
+            caller = threading.Thread(target=call_complete)
+            reloader.start()
+            caller.start()
+            reloader.join()
+            caller.join()
+
+        self.assertTrue(seen)
+        for url, model in seen:
+            tag = url.rsplit("/", 1)[-1]
+            self.assertEqual(model, f"model-{tag}")
 
 
 if __name__ == "__main__":
