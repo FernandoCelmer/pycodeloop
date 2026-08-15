@@ -54,6 +54,21 @@ class DeleteTool(Tool):
         return ToolResult(output="deleted")
 
 
+class StrictPreviewTool(Tool):
+    """Mirrors GitCommitTool's real shape: a dangerous tool whose
+    preview() requires an argument the model can fail to supply."""
+
+    name = "strict_preview"
+    description = "Dangerous tool with a required preview() argument."
+    dangerous = True
+
+    def preview(self, message: str, **_) -> str:
+        return f"$ do it: {message}"
+
+    def run(self, message: str, **_) -> ToolResult:
+        return ToolResult(output=f"did it: {message}")
+
+
 class TestAgent(unittest.TestCase):
     def test_refuses_dangerous_tool_without_confirm(self):
         provider = FakeProvider(
@@ -182,6 +197,39 @@ class TestAgent(unittest.TestCase):
         agent.run("do it")
 
         self.assertEqual(calls, [("fail", "boom", True)])
+
+    def test_preview_raising_reports_is_error_instead_of_crashing_the_turn(
+        self,
+    ):
+        provider = FakeProvider(
+            [
+                ProviderResponse(
+                    text="",
+                    tool_calls=[
+                        ToolCall(id="1", name="strict_preview", arguments={})
+                    ],
+                ),
+                ProviderResponse(text="ok"),
+            ]
+        )
+        calls = []
+        agent = Agent(
+            provider=provider,
+            tools=[StrictPreviewTool()],
+            confirm=lambda *_args: True,
+            on_tool_result=lambda name, result, is_error: calls.append(
+                (name, result, is_error)
+            ),
+        )
+
+        result = agent.run("do it")
+
+        self.assertEqual(result, "ok")
+        self.assertEqual(len(calls), 1)
+        name, message, is_error = calls[0]
+        self.assertEqual(name, "strict_preview")
+        self.assertTrue(is_error)
+        self.assertIn("missing 1 required positional argument", message)
 
     def test_skips_dangerous_tool_when_confirm_declines(self):
         provider = FakeProvider(
