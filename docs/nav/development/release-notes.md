@@ -1,5 +1,20 @@
 # Release Notes
 
+## v0.7.0
+
+- [📦 PyPI - Build 0.7.0](https://pypi.org/project/pycodeloop/0.7.0/)
+- [🪲 Bug: Fix Agent crash when a dangerous tool's preview() gets malformed arguments (#30)](https://github.com/dotflow-io/pycodeloop/pull/31)
+- [🪲 Bug: Fix permanent provider fallback across run() calls (#18)](https://github.com/dotflow-io/pycodeloop/pull/32)
+- [🪲 Bug: Fix workspace jail global mutable state (#21)](https://github.com/dotflow-io/pycodeloop/pull/33)
+- [⚠️ Security: Gate EnvTool behind confirmation (#24)](https://github.com/dotflow-io/pycodeloop/pull/34)
+- [🪲 Bug: Fill in missing context-window entries (#16)](https://github.com/dotflow-io/pycodeloop/pull/35)
+- [🪲 Bug: Fix Session.messages race between parallel tool calls and compaction (#25)](https://github.com/dotflow-io/pycodeloop/pull/36)
+- [🪲 Bug: Fix GenericProvider race between complete() and reload() (#28)](https://github.com/dotflow-io/pycodeloop/pull/44)
+- [🪲 Bug: Stream via SSE for custom response_paths configs (#17)](https://github.com/dotflow-io/pycodeloop/pull/45)
+- [🪲 Bug: Forward cancel_event to DelegateTool and time out hung sub-agents (#23)](https://github.com/dotflow-io/pycodeloop/pull/46)
+- [⚙️ Feature: Include the diff preview in chat/autoApproved](https://github.com/dotflow-io/pycodeloop/pull/47)
+- [⚙️ Feature: Honor an explicit context_window in provider JSON config instead of only the model-name lookup (#27)](https://github.com/dotflow-io/pycodeloop/pull/48)
+
 ## v0.6.2
 
 - [📦 PyPI - Build 0.6.2](https://pypi.org/project/pycodeloop/0.6.2/)
