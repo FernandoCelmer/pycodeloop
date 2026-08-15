@@ -143,9 +143,8 @@ class Config:
         self.workspace = workspace
         if tools is not None:
             self.tools = list(tools)
-            _, read_only_tools = build_tools(workspace)
         else:
-            default_tools, read_only_tools = build_tools(workspace)
+            default_tools, _ = build_tools(workspace)
             self.tools = default_tools
         self.system_prompt = system_prompt
         self.max_turns = max_turns
@@ -154,6 +153,7 @@ class Config:
             skills, skill_sources, skills_refresh
         )
         if delegation:
+            _, read_only_tools = build_tools(workspace)
             self.tools = [
                 *self.tools,
                 DelegateTool(provider=self.provider, tools=read_only_tools),
