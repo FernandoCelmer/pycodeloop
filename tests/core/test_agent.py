@@ -614,6 +614,34 @@ class TestAgentRetry(unittest.TestCase):
         self.assertEqual(primary.calls, 4)
         self.assertEqual(secondary.calls, 4)
 
+    def test_a_new_run_call_retries_the_primary_even_after_a_prior_fallback(
+        self,
+    ):
+        """Issue #18: falling back within one run() must not be permanent
+        across the agent's lifetime — a later run() call (a new user
+        message) should give the primary another chance instead of
+        staying stuck on the fallback forever."""
+        primary = FlakyProvider(fail_times=4)
+        secondary = FlakyProvider(fail_times=0)
+        agent = Agent(
+            provider=primary,
+            fallback_providers=[secondary],
+            tools=[],
+        )
+
+        first = agent.run("hi")
+        self.assertEqual(first, "ok")
+        self.assertIs(agent.provider, secondary)
+        self.assertEqual(primary.calls, 4)
+        self.assertEqual(secondary.calls, 1)
+
+        second = agent.run("hi again")
+
+        self.assertEqual(second, "ok")
+        self.assertIs(agent.provider, primary)
+        self.assertEqual(primary.calls, 5)
+        self.assertEqual(secondary.calls, 1)
+
     def test_second_turn_after_fallback_does_not_retry_the_dead_primary(self):
         """Regression: rebuilding `[self.provider, *self.fallback_providers]`
         fresh on every `_complete` call put the now-active fallback in the
