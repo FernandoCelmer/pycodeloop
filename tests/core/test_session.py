@@ -119,6 +119,62 @@ class TestSessionImages(unittest.TestCase):
         self.assertIsNone(message.images)
 
 
+class TestSessionDirtyFlag(unittest.TestCase):
+    def test_starts_clean(self):
+        session = Session(system_prompt="sys")
+        session.add_user("hi")
+
+        self.assertFalse(session.dirty)
+
+    def test_replace_messages_marks_dirty(self):
+        session = Session(system_prompt="sys")
+        session.add_user("hi")
+
+        session.replace_messages([Message(role="user", content="summary")])
+
+        self.assertTrue(session.dirty)
+
+    def test_trim_that_actually_truncates_marks_dirty(self):
+        session = Session(system_prompt="sys")
+        for i in range(5):
+            _add_turn(session, f"user-{i}", f"assistant-{i}")
+
+        session.trim(max_turns=2)
+
+        self.assertTrue(session.dirty)
+
+    def test_trim_that_is_a_noop_does_not_mark_dirty(self):
+        session = Session(system_prompt="sys")
+        _add_turn(session, "user-0", "assistant-0")
+
+        session.trim(max_turns=5)
+
+        self.assertFalse(session.dirty)
+
+    def test_repairing_a_dangling_tool_call_marks_dirty(self):
+        session = Session(system_prompt="sys")
+        session.add_user("do the thing")
+        session.add_assistant(
+            "", tool_calls=[{"id": "c1", "name": "bash", "arguments": {}}]
+        )
+
+        session.history()
+
+        self.assertTrue(session.dirty)
+
+    def test_a_complete_history_call_does_not_mark_dirty(self):
+        session = Session(system_prompt="sys")
+        session.add_user("do the thing")
+        session.add_assistant(
+            "", tool_calls=[{"id": "c1", "name": "bash", "arguments": {}}]
+        )
+        session.add_tool_result("c1", "output")
+
+        session.history()
+
+        self.assertFalse(session.dirty)
+
+
 class TestSessionThreadSafety(unittest.TestCase):
     def test_concurrent_tool_results_are_never_lost(self):
         session = Session(system_prompt="sys")
