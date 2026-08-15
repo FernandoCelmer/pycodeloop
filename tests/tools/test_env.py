@@ -72,7 +72,7 @@ class TestEnvTool(unittest.TestCase):
     def test_preview_warns_about_listing_every_variable(self):
         preview = EnvTool().preview()
 
-        self.assertIn("every variable", preview)
+        self.assertIn("all variable names and masked values", preview)
 
 
 if __name__ == "__main__":
