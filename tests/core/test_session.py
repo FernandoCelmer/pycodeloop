@@ -1,5 +1,6 @@
 """Test Session.trim()"""
 
+import threading
 import unittest
 
 from pycodeloop.core.session import Message, Session
@@ -116,6 +117,46 @@ class TestSessionImages(unittest.TestCase):
         message = Message(role="user", content="hi")
 
         self.assertIsNone(message.images)
+
+
+class TestSessionThreadSafety(unittest.TestCase):
+    def test_concurrent_tool_results_are_never_lost(self):
+        session = Session(system_prompt="sys")
+        session.add_user("do many things")
+        threads = [
+            threading.Thread(
+                target=session.add_tool_result, args=(str(i), f"result-{i}")
+            )
+            for i in range(50)
+        ]
+
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        self.assertEqual(len(session.messages), 51)
+
+    def test_replace_messages_racing_a_tool_result_never_loses_either(self):
+        session = Session(system_prompt="sys")
+        session.add_user("do the thing")
+
+        def append_results():
+            for i in range(50):
+                session.add_tool_result(str(i), f"result-{i}")
+
+        def replace():
+            session.replace_messages(list(session.messages))
+
+        writer = threading.Thread(target=append_results)
+        replacer = threading.Thread(target=replace)
+        writer.start()
+        replacer.start()
+        writer.join()
+        replacer.join()
+
+        tool_results = [m for m in session.messages if m.role == "tool"]
+        self.assertGreaterEqual(len(tool_results), 1)
 
 
 if __name__ == "__main__":

@@ -339,7 +339,7 @@ class Agent:
             tool_calls=recent[0].tool_calls,
             images=recent[0].images,
         )
-        session.messages = recent
+        session.replace_messages(recent)
         self._notify_message()
 
         self._trace(
