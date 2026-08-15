@@ -122,6 +122,26 @@ class TestAgent(unittest.TestCase):
 
         self.assertEqual(result, "hello")
 
+    def test_prefers_explicit_provider_context_window(self):
+        provider = FakeProvider(
+            [
+                ProviderResponse(
+                    text="done", usage=Usage(input_tokens=90)
+                )
+            ]
+        )
+        provider.context_window = 100
+        contexts = []
+        agent = Agent(
+            provider=provider,
+            on_context=lambda used, limit: contexts.append((used, limit)),
+        )
+
+        result = agent.run("hi")
+
+        self.assertEqual(result, "done")
+        self.assertEqual(contexts, [(90, 100)])
+
     def test_executes_tool_call_then_returns_final_text(self):
         provider = FakeProvider(
             [
