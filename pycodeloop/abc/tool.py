@@ -20,13 +20,20 @@ class Tool(ABC):
     subclasses whose `run()` has no shared mutable state, so Agent may
     run several calls to the *same* tool concurrently within one batch
     (distinct-named tools in a batch already run concurrently regardless
-    of this flag — it only affects repeated same-name calls)."""
+    of this flag — it only affects repeated same-name calls). Set
+    `wants_cancel_event = True` and accept a `cancel_event` keyword in
+    `run()` for a tool that spawns its own long-running work (e.g. a
+    sub-agent) and needs to notice cancellation itself. Set `timeout`
+    to cap how long Agent waits for `run()` to finish before treating
+    it as failed and moving on."""
 
     name: str
     description: str
     parameters: dict[str, Any] = {"type": "object", "properties": {}}
     dangerous: bool = False
     concurrent_safe: bool = False
+    wants_cancel_event: bool = False
+    timeout: float | None = None
 
     def schema(self) -> dict:
         return {

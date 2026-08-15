@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import threading
 from typing import TYPE_CHECKING
 
 from pycodeloop.abc.tool import Tool, ToolResult
@@ -40,6 +41,7 @@ class DelegateTool(Tool):
         "required": ["task"],
     }
     concurrent_safe = True
+    wants_cancel_event = True
 
     def __init__(
         self,
@@ -50,11 +52,14 @@ class DelegateTool(Tool):
         self.provider = provider
         self.tools = tools
         self.max_turns = max_turns
+        self.timeout = max_turns * getattr(provider, "timeout", 60.0)
 
     def preview(self, task: str, **_) -> str:
         return task
 
-    def run(self, task: str) -> ToolResult:
+    def run(
+        self, task: str, cancel_event: threading.Event | None = None
+    ) -> ToolResult:
         from pycodeloop.core.agent import Agent
 
         sub_agent = Agent(
@@ -62,5 +67,5 @@ class DelegateTool(Tool):
             tools=self.tools,
             max_turns=self.max_turns,
         )
-        text = sub_agent.run(task)
+        text = sub_agent.run(task, cancel_event=cancel_event)
         return ToolResult(output=text)
