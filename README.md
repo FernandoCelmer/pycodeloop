@@ -132,6 +132,66 @@ pycodeloop run "..." --no-memory
 
 The CLI streams the model's text as it arrives, reports token usage after every turn, and caches discovered skills in `~/.pycodeloop/config.json` until something changes (`--skills-refresh` bypasses that).
 
+## CI/CD integration
+
+`pycodeloop run` exits `0` on success but stays silent on failure unless you ask for it — so it is safe to drop into a pipeline once you pass `--ci`.
+
+```bash
+# Machine-readable result on stdout, human logs on stderr, real exit codes
+pycodeloop run "fix the failing tests in src/auth.py" \
+  --provider templates/anthropic.json \
+  --ci --output json
+```
+
+Exit codes:
+
+| Code | Meaning |
+|------|---------|
+| 0 | Agent completed, verification passed |
+| 1 | Agent error (exception) or max turns reached |
+| 2 | Regression — `--check` command failed post-run |
+| 3 | Budget exceeded (`--max-tokens`) |
+
+`--ci` also redirects the streaming logs to **stderr** so the JSON (or your `--check` output) is the only thing left on **stdout**.
+
+```bash
+# Fail the pipeline if the test suite regresses after the agent finishes
+pycodeloop run "refactor src/auth.py" --ci --check "pytest tests/ -q"
+
+# Cap spend by token budget; over the cap exits 3
+pycodeloop run "add rate limiting" --ci --max-tokens 200000
+```
+
+The JSON document matches `RunResult`:
+
+```json
+{
+  "status": "success",
+  "turns": 4,
+  "tokens": {"input": 12400, "output": 2100},
+  "cost_usd": null,
+  "regression": false,
+  "files_modified": ["src/auth.py", "tests/test_auth.py"],
+  "text": "Done."
+}
+```
+
+`cost_usd` is `null` until a pricing table is configured; `files_modified` is read from the per-session file-access log.
+
+### GitHub Actions
+
+```yaml
+- name: Run pycodeloop agent
+  uses: dotflow-io/pycodeloop-action@v1
+  with:
+    prompt: "Fix failing tests in src/auth.py"
+    provider: claude
+    model: claude-sonnet-4-6
+    check_cmd: "pytest tests/ -q"
+  env:
+    ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+```
+
 ## Tools
 
 Ships with the actions an agent needs to actually change code:
