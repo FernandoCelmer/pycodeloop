@@ -38,7 +38,7 @@ class TestContextWindowFor(unittest.TestCase):
             context_window_for("some-future-vendor-model"),
             DEFAULT_CONTEXT_WINDOW,
         )
-        self.assertEqual(DEFAULT_CONTEXT_WINDOW, 32_000)
+        self.assertEqual(DEFAULT_CONTEXT_WINDOW, 128_000)
 
 
 if __name__ == "__main__":
