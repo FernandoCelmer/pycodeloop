@@ -143,6 +143,37 @@ class TestServeEndToEnd(unittest.TestCase):
             response["result"]["text"], "Here's the directory listing."
         )
 
+    def test_chat_send_emits_on_request_notification(self):
+        self.server = FakeLLMServer([chat_completion(text="hi")])
+        self.client = ServeSubprocess(self.server.url, self.tmp_path)
+        self.client.next_message()  # ready
+
+        self.client.send(
+            {
+                "jsonrpc": "2.0",
+                "id": "1",
+                "method": "chat/send",
+                "params": {"prompt": "hello"},
+            }
+        )
+
+        messages = []
+        response = None
+        while response is None:
+            message = self.client.next_message()
+            if message.get("id") == "1" and "result" in message:
+                response = message
+            else:
+                messages.append(message)
+
+        request_notification = next(
+            m for m in messages if m.get("method") == "chat/request"
+        )
+        self.assertIsInstance(
+            request_notification["params"]["messageCount"], int
+        )
+        self.assertIsInstance(request_notification["params"]["toolCount"], int)
+
     def test_dangerous_tool_blocks_on_confirm_round_trip(self):
         self.server = FakeLLMServer(
             [
