@@ -105,7 +105,9 @@ def resolve_provider(
     """Build a `Provider` from CLI-style args, returning it alongside the
     resolved provider name — shared by the interactive CLI and `serve`."""
     provider_name = provider_name or Settings.PROVIDER
-    is_json_config = provider_name.endswith(".json") or provider_name in BUNDLED_TEMPLATES
+    is_json_config = (
+        provider_name.endswith(".json") or provider_name in BUNDLED_TEMPLATES
+    )
 
     if is_json_config:
         provider_kwargs: dict = {}
