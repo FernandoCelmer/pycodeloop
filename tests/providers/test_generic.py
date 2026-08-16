@@ -267,6 +267,48 @@ class TestLoadProviderFromJson(GenericProviderTestCase):
             {"extra_content": {"google": {"thought_signature": "xyz789"}}},
         )
 
+    def test_streaming_keeps_already_shown_text_on_malformed_chunk(self):
+        path = self._write_config(
+            {"url": "http://fake/v1/chat/completions", "model": "my-model"}
+        )
+        provider = GenericProvider.from_json(path)
+
+        chunks = [{"choices": [{"delta": {"content": "hello there"}}]}]
+        sse_body = (
+            "".join(f"data: {json.dumps(c)}\n" for c in chunks)
+            + "data: {not valid json\n"
+            + "data: [DONE]\n"
+        ).encode()
+
+        deltas = []
+        with mock.patch(
+            "pycodeloop.providers.generic.urllib.request.urlopen",
+            return_value=_FakeResponse(sse_body),
+        ):
+            result = provider.complete("sys", [], [], on_delta=deltas.append)
+
+        self.assertEqual(result.text, "hello there")
+        self.assertEqual(result.stop_reason, "malformed_stream")
+        self.assertEqual("".join(deltas), "hello there")
+
+    def test_streaming_flags_a_connection_dropped_mid_response(self):
+        path = self._write_config(
+            {"url": "http://fake/v1/chat/completions", "model": "my-model"}
+        )
+        provider = GenericProvider.from_json(path)
+
+        chunks = [{"choices": [{"delta": {"content": "cut off mid"}}]}]
+        sse_body = "".join(f"data: {json.dumps(c)}\n" for c in chunks).encode()
+
+        with mock.patch(
+            "pycodeloop.providers.generic.urllib.request.urlopen",
+            return_value=_FakeResponse(sse_body),
+        ):
+            result = provider.complete("sys", [], [], on_delta=lambda _: None)
+
+        self.assertEqual(result.text, "cut off mid")
+        self.assertEqual(result.stop_reason, "connection_lost")
+
     def test_streaming_cuts_a_looping_response_short(self):
         path = self._write_config(
             {"url": "http://fake/v1/chat/completions", "model": "my-model"}
