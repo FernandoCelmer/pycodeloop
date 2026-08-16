@@ -364,6 +364,9 @@ class GenericProvider(Provider):
                 body, on_delta, known_tools, config, cancel_event
             )
 
+        if cancel_event is not None and cancel_event.is_set():
+            return ProviderResponse(stop_reason="cancelled")
+
         with self._open(body, config) as response:
             raw = response.read()
 
