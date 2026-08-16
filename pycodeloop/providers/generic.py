@@ -383,7 +383,8 @@ class GenericProvider(Provider):
         body = {**body, "stream": True}
         text = ""
         pending: dict[int, dict] = {}
-        stop_reason = "stop"
+        stop_reason: str | None = None
+        saw_terminal_marker = False
         usage = Usage()
 
         with self._open(body, config) as response:
@@ -393,8 +394,13 @@ class GenericProvider(Provider):
                     continue
                 payload = line[len("data: ") :]
                 if payload == "[DONE]":
+                    saw_terminal_marker = True
                     break
-                chunk = json.loads(payload)
+                try:
+                    chunk = json.loads(payload)
+                except json.JSONDecodeError:
+                    stop_reason = "malformed_stream"
+                    break
 
                 if chunk.get("usage"):
                     usage = Usage(
@@ -451,6 +457,10 @@ class GenericProvider(Provider):
 
                 if choice.get("finish_reason"):
                     stop_reason = choice["finish_reason"]
+                    saw_terminal_marker = True
+
+        if stop_reason is None:
+            stop_reason = "stop" if saw_terminal_marker else "connection_lost"
 
         tool_calls = [
             ToolCall(
