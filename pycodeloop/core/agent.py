@@ -420,7 +420,7 @@ class Agent:
                 self.usage = self.usage + response.usage
                 if self.on_usage:
                     self.on_usage(response.usage, self.usage, elapsed)
-                if response.text.strip() or response.tool_calls:
+                if response.text.strip():
                     session.add_assistant(response.text)
                     self._notify_message()
                     if self.on_turn_end:
@@ -467,6 +467,11 @@ class Agent:
                     self.usage = self.usage + response.usage
                     if self.on_usage:
                         self.on_usage(response.usage, self.usage, elapsed)
+                    if response.text.strip():
+                        session.add_assistant(response.text)
+                        self._notify_message()
+                        if self.on_turn_end:
+                            self.on_turn_end()
                     self._trace("run_end", reason="cancelled")
                     return "Cancelled by user."
 
