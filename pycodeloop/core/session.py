@@ -15,6 +15,7 @@ class Session:
     system_prompt: str = ""
     messages: list[Message] = field(default_factory=list)
     cwd: str = "."
+    dirty: bool = field(default=False, repr=False, compare=False)
     _lock: threading.Lock = field(
         default_factory=threading.Lock, repr=False, compare=False
     )
@@ -77,15 +78,21 @@ class Session:
                         tool_call_id=call["id"],
                     ),
                 )
+            if missing:
+                self.dirty = True
             i = j + len(missing)
 
     def replace_messages(self, messages: list[Message]) -> None:
         """Swap in a whole new message list — e.g. compaction replacing
         older history with a condensed summary. Holding the same lock
         `add_*` uses closes the race where a tool-result thread appends
-        to the list being discarded right as it's replaced."""
+        to the list being discarded right as it's replaced. Marks the
+        session `dirty` so storage backends that append incrementally
+        (tracking a message-count watermark) know to do a full rewrite
+        on the next save instead of trusting the watermark."""
         with self._lock:
             self.messages = messages
+            self.dirty = True
 
     def trim(self, max_turns: int) -> None:
         """Keep only the most recent `max_turns` user-initiated turns,
@@ -102,3 +109,4 @@ class Session:
 
             cutoff = turn_starts[-max_turns]
             self.messages = self.messages[cutoff:]
+            self.dirty = True
