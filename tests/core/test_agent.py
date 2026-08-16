@@ -20,7 +20,7 @@ class FakeProvider(Provider):
         self._scripted = list(scripted)
 
     def complete(
-        self, system_prompt, messages, tools, on_delta=None
+        self, system_prompt, messages, tools, on_delta=None, cancel_event=None
     ) -> ProviderResponse:
         return self._scripted.pop(0)
 
@@ -631,6 +631,45 @@ class TestAgent(unittest.TestCase):
         self.assertEqual(result, "Cancelled by user.")
         self.assertEqual(len(provider._scripted), 1)
 
+    def test_cancelled_provider_response_stops_the_run_immediately(self):
+        """Regression: cancel_event was never threaded into
+        provider.complete(), so cancelling mid-stream had no effect
+        until the current turn finished on its own. Once the provider
+        reports stop_reason='cancelled', the run must stop right away
+        instead of retrying or continuing to the next turn."""
+
+        class CancelAwareProvider(Provider):
+            name = "cancel-aware"
+
+            def __init__(self) -> None:
+                super().__init__(model="fake-model")
+
+            def complete(
+                self,
+                system_prompt,
+                messages,
+                tools,
+                on_delta=None,
+                cancel_event=None,
+            ) -> ProviderResponse:
+                assert cancel_event is not None, (
+                    "cancel_event was not forwarded to provider.complete()"
+                )
+                cancel_event.set()
+                return ProviderResponse(
+                    text="partial answer", stop_reason="cancelled"
+                )
+
+        provider = CancelAwareProvider()
+        cancel_event = threading.Event()
+        agent = Agent(provider=provider, tools=[EchoTool()])
+        session = Session(system_prompt="sys")
+
+        result = agent.run("go", session=session, cancel_event=cancel_event)
+
+        self.assertEqual(result, "Cancelled by user.")
+        self.assertEqual(session.messages[-1].content, "partial answer")
+
 
 class FlakyProvider(Provider):
     """Raises a retryable error `fail_times` times, then succeeds."""
@@ -644,7 +683,7 @@ class FlakyProvider(Provider):
         self.calls = 0
 
     def complete(
-        self, system_prompt, messages, tools, on_delta=None
+        self, system_prompt, messages, tools, on_delta=None, cancel_event=None
     ) -> ProviderResponse:
         self.calls += 1
         if self.calls <= self.fail_times:
