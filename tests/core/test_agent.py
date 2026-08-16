@@ -276,7 +276,7 @@ class TestAgent(unittest.TestCase):
 
         agent.run("do it")
 
-        self.assertEqual(results, ["Unknown tool: missing"])
+        self.assertEqual(results, ["[unknown]\nUnknown tool: missing"])
 
     def test_reports_tool_is_error_flag(self):
         provider = FakeProvider(
@@ -299,7 +299,7 @@ class TestAgent(unittest.TestCase):
 
         agent.run("do it")
 
-        self.assertEqual(calls, [("fail", "boom", True)])
+        self.assertEqual(calls, [("fail", "[unknown]\nboom", True)])
 
     def test_preview_raising_reports_is_error_instead_of_crashing_the_turn(
         self,
@@ -360,7 +360,9 @@ class TestAgent(unittest.TestCase):
 
         agent.run("do it")
 
-        self.assertEqual(results, ["User declined to run this tool."])
+        self.assertEqual(
+            results, ["[unknown]\nUser declined to run this tool."]
+        )
 
     def test_runs_dangerous_tool_when_confirm_accepts(self):
         provider = FakeProvider(
@@ -1156,7 +1158,7 @@ class TestAgentToolResultSummarization(unittest.TestCase):
         agent.run("go", session=session)
 
         tool_message = next(m for m in session.messages if m.role == "tool")
-        self.assertEqual(len(tool_message.content), 10_000)
+        self.assertEqual(len(tool_message.content), 10_010)
 
 
 if __name__ == "__main__":

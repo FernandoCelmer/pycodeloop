@@ -162,6 +162,8 @@ Ships with the actions an agent needs to actually change code:
 
 `read_file` logs every read/write/edit/delete to `~/.pycodeloop/pycodeloop.db`, scoped to the session. Reading the exact same path/range twice with no change on disk in between returns a short notice instead of repeating the content, to save tokens — pass `force=true` to see it again.
 
+When a tool fails, pycodeloop classifies the failure (rule-based, no LLM call) and injects a typed prefix ahead of the error so the agent can replan differently per kind — `[syntax_error]`, `[test_failure]`, `[runtime_exception]`, `[permission_denied]`, `[command_not_found]`, `[timeout]`, or `[unknown]`. The same `error_kind` is recorded in the JSONL execution trace.
+
 ## Commit Style
 
 | Icon | Type      | Description                                |

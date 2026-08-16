@@ -12,6 +12,7 @@ from pycodeloop.abc.confirm import Confirm
 from pycodeloop.abc.provider import Provider, ProviderResponse, ToolCall, Usage
 from pycodeloop.abc.tool import Tool
 from pycodeloop.core.context_window import context_window_for
+from pycodeloop.core.errors import classify_error
 from pycodeloop.core.session import Message, Session
 from pycodeloop.tools import DEFAULT_TOOLS
 
@@ -183,11 +184,11 @@ class Agent:
         name: str,
         arguments: dict,
         cancel_event: threading.Event | None = None,
-    ) -> tuple[str, bool]:
+    ) -> tuple[str, bool, str | None]:
         tool = self.tools.get(name)
 
         if tool is None:
-            return f"Unknown tool: {name}", True
+            return f"Unknown tool: {name}", True, None
 
         if tool.dangerous:
             if self.confirm is None:
@@ -195,6 +196,7 @@ class Agent:
                     f"Refused to run dangerous tool '{name}' without a confirm "
                     "callback. Pass confirm=... or use --yes only from a trusted CLI.",
                     True,
+                    None,
                 )
             try:
                 preview = tool.preview(**arguments)
@@ -202,6 +204,7 @@ class Agent:
                 return (
                     f"Tool '{name}' preview raised {exc.__class__.__name__}: {exc}",
                     True,
+                    None,
                 )
             ask = (
                 self.confirm.ask
@@ -211,8 +214,8 @@ class Agent:
             answer = ask(name, preview)
             if answer is not True:
                 if isinstance(answer, str) and answer:
-                    return f"User declined and said: {answer}", True
-                return "User declined to run this tool.", True
+                    return f"User declined and said: {answer}", True, None
+                return "User declined to run this tool.", True, None
 
         try:
             if tool.wants_cancel_event:
@@ -223,9 +226,10 @@ class Agent:
             return (
                 f"Tool '{name}' raised {exc.__class__.__name__}: {exc}",
                 True,
+                None,
             )
 
-        return result.output, result.is_error
+        return result.output, result.is_error, result.error_kind
 
     def _can_parallelize(self, calls: list[ToolCall]) -> bool:
         if len(calls) <= 1:
@@ -255,8 +259,10 @@ class Agent:
             if self.on_tool_call:
                 self.on_tool_call(call.name, call.arguments)
 
+        results: dict[str, tuple[str, bool, str | None]] = {}
         if cancel_event and cancel_event.is_set():
-            results = {call.id: ("Cancelled by user.", True) for call in calls}
+            for call in calls:
+                results[call.id] = ("Cancelled by user.", True, None)
         elif self._can_parallelize(calls):
             executor = ThreadPoolExecutor(max_workers=len(calls))
             futures = {
@@ -265,7 +271,6 @@ class Agent:
                 )
                 for call in calls
             }
-            results = {}
             for call in calls:
                 tool = self.tools.get(call.name)
                 timeout = tool.timeout if tool else None
@@ -275,20 +280,23 @@ class Agent:
                     results[call.id] = (
                         f"Tool '{call.name}' timed out after {timeout}s.",
                         True,
+                        "timeout",
                     )
             executor.shutdown(wait=False)
         else:
-            results = {}
             for call in calls:
                 if cancel_event and cancel_event.is_set():
-                    results[call.id] = ("Cancelled by user.", True)
+                    results[call.id] = ("Cancelled by user.", True, None)
                 else:
                     results[call.id] = self._execute(
                         call.name, call.arguments, cancel_event
                     )
 
         for call in calls:
-            result_text, is_error = results[call.id]
+            result_text, is_error, error_kind = results[call.id]
+            if is_error:
+                error_kind = error_kind or classify_error(result_text)
+                result_text = f"[{error_kind}]\n{result_text}"
             if (
                 not is_error
                 and len(result_text) > _TOOL_RESULT_SUMMARIZE_THRESHOLD
@@ -300,6 +308,7 @@ class Agent:
                 "tool_result",
                 name=call.name,
                 is_error=is_error,
+                error_kind=error_kind,
                 result_len=len(result_text),
             )
             if self.on_tool_result:

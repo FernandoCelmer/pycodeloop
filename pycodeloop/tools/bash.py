@@ -5,6 +5,7 @@ from __future__ import annotations
 import subprocess
 
 from pycodeloop.abc.tool import Tool, ToolResult
+from pycodeloop.core.errors import classify_error
 from pycodeloop.tools._limits import truncate
 
 
@@ -41,9 +42,18 @@ class BashTool(Tool):
             )
         except subprocess.TimeoutExpired:
             return ToolResult(
-                output=f"Command timed out after {timeout}s", is_error=True
+                output=f"Command timed out after {timeout}s",
+                is_error=True,
+                error_kind="timeout",
             )
 
         output = truncate(proc.stdout + proc.stderr)
+        is_error = proc.returncode != 0
 
-        return ToolResult(output=output, is_error=proc.returncode != 0)
+        return ToolResult(
+            output=output,
+            is_error=is_error,
+            error_kind=classify_error(output, proc.returncode)
+            if is_error
+            else None,
+        )
