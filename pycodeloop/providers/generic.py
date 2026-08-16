@@ -121,6 +121,7 @@ class _ConnectionSnapshot:
     request_builder: RequestBuilder
     response_parser: ResponseParser
     supports_openai_sse: bool
+    include_usage_in_stream: bool
 
 
 class GenericProvider(Provider):
@@ -196,6 +197,7 @@ class GenericProvider(Provider):
         repetition_repeats: int = _REPETITION_REPEATS,
         context_window: int | None = None,
         supports_openai_sse: bool = True,
+        include_usage_in_stream: bool = True,
         **kwargs,
     ) -> None:
         super().__init__(model=model, api_key=api_key, **kwargs)
@@ -211,6 +213,7 @@ class GenericProvider(Provider):
         self.repetition_repeats = repetition_repeats
         self.context_window = context_window
         self._supports_openai_sse = supports_openai_sse
+        self._include_usage_in_stream = include_usage_in_stream
         self._config_path: Path | None = None
         self._lock = threading.Lock()
 
@@ -258,6 +261,9 @@ class GenericProvider(Provider):
             timeout=data.get("timeout", 60.0),
             context_window=data.get("context_window"),
             supports_openai_sse=response_shape != "anthropic",
+            include_usage_in_stream=data.get(
+                "include_usage_in_stream", True
+            ),
         )
 
     def reload(self) -> None:
@@ -281,6 +287,7 @@ class GenericProvider(Provider):
             self.timeout = fresh.timeout
             self.context_window = fresh.context_window
             self._supports_openai_sse = fresh._supports_openai_sse
+            self._include_usage_in_stream = fresh._include_usage_in_stream
 
     @staticmethod
     def _default_request(
@@ -308,6 +315,7 @@ class GenericProvider(Provider):
             request_builder=self.request_builder,
             response_parser=self.response_parser,
             supports_openai_sse=self._supports_openai_sse,
+            include_usage_in_stream=self._include_usage_in_stream,
         )
 
     def _headers(self, config: _ConnectionSnapshot) -> dict[str, str]:
@@ -380,11 +388,13 @@ class GenericProvider(Provider):
         known_tools: set[str],
         config: _ConnectionSnapshot,
     ) -> ProviderResponse:
-        body = {
-            **body,
-            "stream": True,
-            "stream_options": {"include_usage": True},
-        }
+        body = {**body, "stream": True}
+        if config.include_usage_in_stream:
+            existing_stream_options = body.get("stream_options") or {}
+            body["stream_options"] = {
+                "include_usage": True,
+                **existing_stream_options,
+            }
         text = ""
         pending: dict[int, dict] = {}
         stop_reason: str | None = None
