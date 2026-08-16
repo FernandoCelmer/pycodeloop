@@ -16,6 +16,7 @@ class Session:
     messages: list[Message] = field(default_factory=list)
     cwd: str = "."
     dirty: bool = field(default=False, repr=False, compare=False)
+    last_context_tokens: int = field(default=0, repr=False, compare=False)
     _lock: threading.Lock = field(
         default_factory=threading.Lock, repr=False, compare=False
     )
