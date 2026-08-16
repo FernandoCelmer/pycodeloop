@@ -380,6 +380,81 @@ class TestLoadProviderFromJson(GenericProviderTestCase):
         self.assertEqual(result.usage.input_tokens, 12)
         self.assertEqual(result.usage.output_tokens, 3)
 
+    def test_streaming_merges_include_usage_into_callers_stream_options(
+        self,
+    ):
+        """A caller opting out via params.stream_options.include_usage
+        (e.g. a provider that rejects the field) must not be silently
+        overwritten, and sibling flags must survive the merge."""
+        path = self._write_config(
+            {
+                "url": "http://fake/v1/chat/completions",
+                "model": "my-model",
+                "request": {
+                    "params": {
+                        "stream_options": {
+                            "include_usage": False,
+                            "include_intermediary_tokens": True,
+                        }
+                    }
+                },
+            }
+        )
+        provider = GenericProvider.from_json(path)
+
+        sse_body = (
+            'data: {"choices": [{"delta": {}, "finish_reason": "stop"}]}\n'
+            "data: [DONE]\n"
+        ).encode()
+
+        captured_requests = []
+
+        def fake_urlopen(request, timeout=None):
+            captured_requests.append(json.loads(request.data))
+            return _FakeResponse(sse_body)
+
+        with mock.patch(
+            "pycodeloop.providers.generic.urllib.request.urlopen",
+            side_effect=fake_urlopen,
+        ):
+            provider.complete("sys", [], [], on_delta=lambda _: None)
+
+        self.assertEqual(
+            captured_requests[0]["stream_options"],
+            {"include_usage": False, "include_intermediary_tokens": True},
+        )
+
+    def test_include_usage_in_stream_false_omits_stream_options(self):
+        """Strict OpenAI-compatible endpoints that 400 on unknown fields
+        can opt out entirely via config."""
+        path = self._write_config(
+            {
+                "url": "http://fake/v1/chat/completions",
+                "model": "my-model",
+                "include_usage_in_stream": False,
+            }
+        )
+        provider = GenericProvider.from_json(path)
+
+        sse_body = (
+            'data: {"choices": [{"delta": {}, "finish_reason": "stop"}]}\n'
+            "data: [DONE]\n"
+        ).encode()
+
+        captured_requests = []
+
+        def fake_urlopen(request, timeout=None):
+            captured_requests.append(json.loads(request.data))
+            return _FakeResponse(sse_body)
+
+        with mock.patch(
+            "pycodeloop.providers.generic.urllib.request.urlopen",
+            side_effect=fake_urlopen,
+        ):
+            provider.complete("sys", [], [], on_delta=lambda _: None)
+
+        self.assertNotIn("stream_options", captured_requests[0])
+
     def test_streaming_cuts_a_looping_response_short(self):
         path = self._write_config(
             {"url": "http://fake/v1/chat/completions", "model": "my-model"}
