@@ -350,7 +350,6 @@ class GenericProvider(Provider):
         messages: list[Message],
         tools: list[dict],
         on_delta: Callable[[str], None] | None = None,
-        cancel_event: threading.Event | None = None,
     ) -> ProviderResponse:
         with self._lock:
             config = self._snapshot_locked()
@@ -360,9 +359,7 @@ class GenericProvider(Provider):
         known_tools = {tool["name"] for tool in tools}
 
         if on_delta is not None and config.supports_openai_sse:
-            return self._stream(
-                body, on_delta, known_tools, config, cancel_event
-            )
+            return self._stream(body, on_delta, known_tools, config)
 
         with self._open(body, config) as response:
             raw = response.read()
@@ -388,7 +385,6 @@ class GenericProvider(Provider):
         on_delta: Callable[[str], None],
         known_tools: set[str],
         config: _ConnectionSnapshot,
-        cancel_event: threading.Event | None = None,
     ) -> ProviderResponse:
         body = {**body, "stream": True}
         if config.include_usage_in_stream:
@@ -405,10 +401,6 @@ class GenericProvider(Provider):
 
         with self._open(body, config) as response:
             for raw_line in response:
-                if cancel_event is not None and cancel_event.is_set():
-                    stop_reason = "cancelled"
-                    saw_terminal_marker = True
-                    break
                 line = raw_line.decode().strip()
                 if not line or not line.startswith("data: "):
                     continue
