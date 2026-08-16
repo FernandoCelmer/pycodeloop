@@ -1,5 +1,12 @@
 # Release Notes
 
+## v0.8.2
+
+- 🪲 Bug: `pycodeloop chat`'s full-screen Textual UI ignored `-y`/`--yes` — every tool call still prompted for confirmation even with auto-approve on, because `on_mount` unconditionally overrode the `confirm` callback `build_flow` had already wired for it
+- 🎨 UI: Retrying now shows a live countdown (`retrying (n/3) in Xs`) instead of a static message that didn't reflect how much longer the wait actually was
+- 🎨 UI: Cancelling a turn (Esc) now confirms once the turn has actually stopped, instead of leaving "cancelling…" as the last visible line with no follow-up
+- 🎨 UI: Tool call icons unified to a single neutral marker instead of a different emoji per tool; diff previews in the confirm prompt use real green/red instead of bold/dim; long tool results now say how many characters were hidden instead of just trailing off; the header shows the current git branch next to the working directory
+
 ## v0.8.1
 
 - [📦 PyPI - Build 0.8.1](https://pypi.org/project/pycodeloop/0.8.1/)
