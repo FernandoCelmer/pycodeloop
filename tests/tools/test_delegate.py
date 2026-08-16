@@ -18,7 +18,7 @@ class FakeProvider(Provider):
         self.requests: list[list] = []
 
     def complete(
-        self, system_prompt, messages, tools, on_delta=None
+        self, system_prompt, messages, tools, on_delta=None, cancel_event=None
     ) -> ProviderResponse:
         self.requests.append(tools)
         return self._scripted.pop(0)
