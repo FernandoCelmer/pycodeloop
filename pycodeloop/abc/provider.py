@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import threading
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -66,15 +65,9 @@ class Provider(ABC):
         messages: list,
         tools: list[dict],
         on_delta: Callable[[str], None] | None = None,
-        cancel_event: threading.Event | None = None,
     ) -> ProviderResponse:
         """Send conversation + tool schema, return the model's response.
 
         When `on_delta` is given, call it with each text chunk as it
         arrives instead of only returning the assembled text at the end.
-
-        When `cancel_event` is given and set while streaming, the
-        implementation should stop reading as soon as practical and
-        return with `stop_reason="cancelled"` instead of waiting for the
-        provider to finish on its own.
         """

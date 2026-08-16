@@ -26,7 +26,7 @@ class FakeProvider(Provider):
         self._scripted = list(scripted)
 
     def complete(
-        self, system_prompt, messages, tools, on_delta=None, cancel_event=None
+        self, system_prompt, messages, tools, on_delta=None
     ) -> ProviderResponse:
         return self._scripted.pop(0)
 
