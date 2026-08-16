@@ -196,7 +196,9 @@ class TestServeEndToEnd(unittest.TestCase):
                 response = message
 
         self.assertEqual(response["result"]["text"], "Wrote it.")
-        self.assertEqual((self.tmp_path / "note.txt").read_text().strip(), "hi")
+        self.assertEqual(
+            (self.tmp_path / "note.txt").read_text().strip(), "hi"
+        )
 
     def test_yes_flag_auto_approves_without_confirm_round_trip(self):
         self.server = FakeLLMServer(
@@ -240,7 +242,9 @@ class TestServeEndToEnd(unittest.TestCase):
         self.assertIn("chat/autoApproved", methods)
         self.assertNotIn("chat/confirmRequest", methods)
         self.assertEqual(response["result"]["text"], "Wrote it.")
-        self.assertEqual((self.tmp_path / "note.txt").read_text().strip(), "hi")
+        self.assertEqual(
+            (self.tmp_path / "note.txt").read_text().strip(), "hi"
+        )
 
         auto_approved = next(
             n for n in notifications if n.get("method") == "chat/autoApproved"

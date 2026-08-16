@@ -1014,9 +1014,7 @@ class TestAgentAutonomy(unittest.TestCase):
             [
                 ProviderResponse(
                     text="",
-                    tool_calls=[
-                        ToolCall(id="1", name="nuke", arguments={})
-                    ],
+                    tool_calls=[ToolCall(id="1", name="nuke", arguments={})],
                 ),
                 ProviderResponse(text="done"),
             ]
@@ -1045,7 +1043,9 @@ class TestAgentAutonomy(unittest.TestCase):
 
         self.assertEqual(results, ["nuked"])
 
-    def test_high_risk_tool_without_confirm_is_refused_under_safe_execute(self):
+    def test_high_risk_tool_without_confirm_is_refused_under_safe_execute(
+        self,
+    ):
         results = []
 
         class HighRiskTool(Tool):
@@ -1116,7 +1116,9 @@ class TestAgentAutonomy(unittest.TestCase):
 
         agent.run("go")
 
-        self.assertTrue(any("needs a higher autonomy level" in r for r in results))
+        self.assertTrue(
+            any("needs a higher autonomy level" in r for r in results)
+        )
 
     def test_gate_decision_is_traced(self):
         events = []
