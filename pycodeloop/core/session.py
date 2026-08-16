@@ -16,6 +16,7 @@ class Session:
     messages: list[Message] = field(default_factory=list)
     cwd: str = "."
     dirty: bool = field(default=False, repr=False, compare=False)
+    last_context_tokens: int = field(default=0, repr=False, compare=False)
     _lock: threading.Lock = field(
         default_factory=threading.Lock, repr=False, compare=False
     )
@@ -41,6 +42,14 @@ class Session:
                     role="tool", content=content, tool_call_id=tool_call_id
                 )
             )
+
+    def get_last_context_tokens(self) -> int:
+        with self._lock:
+            return self.last_context_tokens
+
+    def update_last_context_tokens(self, value: int) -> None:
+        with self._lock:
+            self.last_context_tokens = value
 
     def history(self) -> list[Message]:
         with self._lock:

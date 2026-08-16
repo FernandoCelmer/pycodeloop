@@ -451,6 +451,32 @@ class TestAgent(unittest.TestCase):
         self.assertIn("second", session.messages[0].content)
         self.assertEqual(len(session.messages), 4)
 
+    def test_context_usage_does_not_leak_across_sessions(self):
+        provider = FakeProvider(
+            [
+                ProviderResponse(text="b1", usage=Usage(input_tokens=500)),
+                ProviderResponse(text="b2", usage=Usage(input_tokens=500)),
+                ProviderResponse(text="a1", usage=Usage(input_tokens=190_000)),
+                ProviderResponse(text="b3", usage=Usage(input_tokens=500)),
+            ]
+        )
+        provider.model = "claude-sonnet-5"
+        events = []
+        agent = Agent(
+            provider=provider,
+            on_compact_start=lambda: events.append("start"),
+        )
+        session_a = Session(system_prompt="sys")
+        session_b = Session(system_prompt="sys")
+
+        agent.run("b-first", session=session_b)
+        agent.run("b-second", session=session_b)
+        agent.run("a-first", session=session_a)
+        agent.run("b-third", session=session_b)
+
+        self.assertEqual(events, [])
+        self.assertEqual(len(session_b.messages), 6)
+
     def test_auto_compact_false_never_compacts(self):
         provider = FakeProvider(
             [
