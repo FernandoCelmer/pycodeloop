@@ -72,6 +72,12 @@ class RpcServer:
     def _wire_callbacks(self) -> None:
         agent = self.flow.agent
 
+        def on_request(message_count: int, tool_count: int) -> None:
+            self._notify(
+                "chat/request",
+                {"messageCount": message_count, "toolCount": tool_count},
+            )
+
         def on_text_delta(delta: str) -> None:
             self._notify("chat/textDelta", {"delta": delta})
 
@@ -135,6 +141,7 @@ class RpcServer:
             finally:
                 self._confirm_waiters.pop(request_id, None)
 
+        agent.on_request = on_request
         agent.on_text_delta = on_text_delta
         agent.on_turn_end = on_turn_end
         agent.on_tool_call = on_tool_call
