@@ -423,6 +423,10 @@ class Agent:
                 and not response.tool_calls
                 and empty_retries < _MAX_EMPTY_RESPONSE_RETRIES
             ):
+                self.usage = self.usage + response.usage
+                if self.on_usage:
+                    self.on_usage(response.usage, self.usage, elapsed)
+
                 empty_retries += 1
                 self._trace(
                     "empty_response_retry",
@@ -448,14 +452,23 @@ class Agent:
                 elapsed = time.perf_counter() - started_at
 
             if not response.text.strip() and not response.tool_calls:
-                self._trace("run_end", reason="empty_response")
-                return (
+                self.usage = self.usage + response.usage
+                if self.on_usage:
+                    self.on_usage(response.usage, self.usage, elapsed)
+
+                error_text = (
                     f"{self.provider.model} returned an empty response "
                     "with no tool calls after "
                     f"{_MAX_EMPTY_RESPONSE_RETRIES} retries. The model may "
                     "be too weak for agent mode with the current tool/"
                     "system-prompt size — try a larger model."
                 )
+                session.add_assistant(error_text)
+                self._notify_message()
+                if self.on_turn_end:
+                    self.on_turn_end()
+                self._trace("run_end", reason="empty_response")
+                return error_text
 
             self.usage = self.usage + response.usage
             if self.on_usage:
