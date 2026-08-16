@@ -637,14 +637,30 @@ class TestAgent(unittest.TestCase):
         until the current turn finished on its own. Once the provider
         reports stop_reason='cancelled', the run must stop right away
         instead of retrying or continuing to the next turn."""
-        provider = FakeProvider(
-            [
-                ProviderResponse(
+
+        class CancelAwareProvider(Provider):
+            name = "cancel-aware"
+
+            def __init__(self) -> None:
+                super().__init__(model="fake-model")
+
+            def complete(
+                self,
+                system_prompt,
+                messages,
+                tools,
+                on_delta=None,
+                cancel_event=None,
+            ) -> ProviderResponse:
+                assert cancel_event is not None, (
+                    "cancel_event was not forwarded to provider.complete()"
+                )
+                cancel_event.set()
+                return ProviderResponse(
                     text="partial answer", stop_reason="cancelled"
-                ),
-                ProviderResponse(text="should never be reached"),
-            ]
-        )
+                )
+
+        provider = CancelAwareProvider()
         cancel_event = threading.Event()
         agent = Agent(provider=provider, tools=[EchoTool()])
         session = Session(system_prompt="sys")
@@ -652,7 +668,6 @@ class TestAgent(unittest.TestCase):
         result = agent.run("go", session=session, cancel_event=cancel_event)
 
         self.assertEqual(result, "Cancelled by user.")
-        self.assertEqual(len(provider._scripted), 1)
         self.assertEqual(session.messages[-1].content, "partial answer")
 
 

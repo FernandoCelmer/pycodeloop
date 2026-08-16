@@ -147,6 +147,24 @@ class TestLoadProviderFromJson(GenericProviderTestCase):
 
         self.assertEqual(result.text, "hi")
 
+    def test_non_streaming_skips_the_request_when_already_cancelled(self):
+        path = self._write_config(
+            {"url": "http://fake/v1/chat/completions", "model": "my-model"}
+        )
+        provider = GenericProvider.from_json(path)
+        cancel_event = threading.Event()
+        cancel_event.set()
+
+        with mock.patch(
+            "pycodeloop.providers.generic.urllib.request.urlopen"
+        ) as urlopen:
+            result = provider.complete(
+                "sys", [], [], cancel_event=cancel_event
+            )
+
+        urlopen.assert_not_called()
+        self.assertEqual(result.stop_reason, "cancelled")
+
     def test_default_response_captures_extra_tool_call_fields(self):
         """Some OpenAI-compatible vendors (e.g. Gemini) attach extra
         sibling fields to a tool_call — like extra_content.google's
