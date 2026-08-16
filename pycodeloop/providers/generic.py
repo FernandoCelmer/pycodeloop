@@ -261,9 +261,7 @@ class GenericProvider(Provider):
             timeout=data.get("timeout", 60.0),
             context_window=data.get("context_window"),
             supports_openai_sse=response_shape != "anthropic",
-            include_usage_in_stream=data.get(
-                "include_usage_in_stream", True
-            ),
+            include_usage_in_stream=data.get("include_usage_in_stream", True),
         )
 
     def reload(self) -> None:

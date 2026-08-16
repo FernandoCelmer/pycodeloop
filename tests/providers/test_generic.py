@@ -403,9 +403,9 @@ class TestLoadProviderFromJson(GenericProviderTestCase):
         provider = GenericProvider.from_json(path)
 
         sse_body = (
-            'data: {"choices": [{"delta": {}, "finish_reason": "stop"}]}\n'
-            "data: [DONE]\n"
-        ).encode()
+            b'data: {"choices": [{"delta": {}, "finish_reason": "stop"}]}\n'
+            b"data: [DONE]\n"
+        )
 
         captured_requests = []
 
@@ -437,9 +437,9 @@ class TestLoadProviderFromJson(GenericProviderTestCase):
         provider = GenericProvider.from_json(path)
 
         sse_body = (
-            'data: {"choices": [{"delta": {}, "finish_reason": "stop"}]}\n'
-            "data: [DONE]\n"
-        ).encode()
+            b'data: {"choices": [{"delta": {}, "finish_reason": "stop"}]}\n'
+            b"data: [DONE]\n"
+        )
 
         captured_requests = []
 
