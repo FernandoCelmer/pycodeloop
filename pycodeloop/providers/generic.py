@@ -380,7 +380,11 @@ class GenericProvider(Provider):
         known_tools: set[str],
         config: _ConnectionSnapshot,
     ) -> ProviderResponse:
-        body = {**body, "stream": True}
+        body = {
+            **body,
+            "stream": True,
+            "stream_options": {"include_usage": True},
+        }
         text = ""
         pending: dict[int, dict] = {}
         stop_reason: str | None = None
