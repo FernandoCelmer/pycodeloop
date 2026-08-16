@@ -127,7 +127,7 @@ class MCPClient:
 class MCPTool(Tool):
     """Adapts one remote MCP tool into the pycodeloop Tool ABC."""
 
-    dangerous = True
+    operation = "execute_high_risk"
 
     def __init__(self, client: MCPClient, schema: dict) -> None:
         self.client = client

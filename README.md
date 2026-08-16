@@ -113,8 +113,11 @@ Point it at any OpenAI-compatible HTTP endpoint by writing your own JSON — see
 # Override provider/model per invocation
 pycodeloop run "..." --provider templates/openai.json --model gpt-5
 
-# Skip confirmation prompts for dangerous tools
+# Skip confirmation prompts for tools that need approval
 pycodeloop run "..." --yes
+
+# Pick a graduated autonomy level (manual | safe_execute | full_project_loop)
+pycodeloop run "..." --autonomy safe_execute
 
 # Connect an MCP server, one flag per server
 pycodeloop run "list every allowed directory" \
@@ -158,7 +161,25 @@ Ships with the actions an agent needs to actually change code:
 | `delegate` | Spawn a read-only sub-agent for an independent subtask (`--delegate`, off by default) |
 | `remember` | Save a standing correction/preference to `.pycodeloop/memory.md`, loaded into every future session's system prompt (`--memory`, on by default) |
 
-`write_file`, `edit_file`, `delete_file`, `bash`, `git_commit`, `http_request`, and every MCP tool are marked dangerous and gated behind confirmation. `delegate` calls run in parallel with each other in the same turn — the underlying sub-agents only get read-only tools, so there's nothing to confirm.
+Tools are no longer a binary "dangerous or not". Each tool declares the
+*kind* of effect it has — `read`, `execute_low_risk`, or
+`execute_high_risk` — and the configured autonomy level decides, per call,
+whether to allow it, ask for approval, or deny it:
+
+| Level | `read` | `execute_low_risk` | `execute_high_risk` |
+|-------|--------|--------------------|---------------------|
+| `manual` | allow | require approval | deny |
+| `safe_execute` (default) | allow | allow | require approval |
+| `full_project_loop` | allow | allow | allow |
+
+So `safe_execute` lets the agent make low-risk writes (`write_file`,
+`edit_file`) autonomously while still gating high-risk ones
+(`delete_file`, `bash`, `git_commit`, `http_request`, `env`, every MCP
+tool) behind confirmation. Set `autonomy="full_project_loop"` to let it
+run unattended, or `autonomy="manual"` to force approval on every
+mutation. `delegate` calls run in parallel with each other in the same
+turn — the underlying sub-agents only get read-only tools, so there's
+nothing to confirm.
 
 `read_file` logs every read/write/edit/delete to `~/.pycodeloop/pycodeloop.db`, scoped to the session. Reading the exact same path/range twice with no change on disk in between returns a short notice instead of repeating the content, to save tokens — pass `force=true` to see it again.
 

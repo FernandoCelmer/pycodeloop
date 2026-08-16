@@ -143,9 +143,9 @@ class TestSqlQuerySafety(SqlToolTestCase):
         self.assertTrue(result.is_error)
         self.assertIn("Unsupported database scheme", result.output)
 
-    def test_tools_are_marked_dangerous(self):
-        self.assertTrue(SqlQueryTool.dangerous)
-        self.assertTrue(SqlSchemaTool.dangerous)
+    def test_tools_are_read_operations(self):
+        self.assertEqual(SqlQueryTool().operation, "read")
+        self.assertEqual(SqlSchemaTool().operation, "read")
 
 
 if __name__ == "__main__":

@@ -53,7 +53,17 @@ def run(
         False,
         "--yes",
         "-y",
-        help="Skip confirmation prompts for dangerous tools.",
+        help="Skip confirmation prompts for tools that need approval.",
+    ),
+    autonomy: str = typer.Option(
+        "safe_execute",
+        "--autonomy",
+        help=(
+            "Graduated autonomy level that gates tool calls: "
+            "'manual' (low-risk writes need approval, high-risk denied), "
+            "'safe_execute' (low-risk writes allowed, high-risk need "
+            "approval; default), or 'full_project_loop' (all writes allowed)."
+        ),
     ),
     workspace: bool = typer.Option(
         True,
@@ -78,6 +88,7 @@ def run(
         delegation=delegate,
         memory=memory,
         workspace=workspace,
+        autonomy=autonomy,
     )
     flow.run(prompt, session_key=default_session_key())
     console.print()

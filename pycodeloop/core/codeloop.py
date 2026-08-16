@@ -57,6 +57,7 @@ class CodeLoop:
             tools=self.config.tools,
             max_turns=self.config.max_turns,
             max_history_turns=self.config.max_history_turns,
+            autonomy=self.config.autonomy,
             **agent_kwargs,
         )
 

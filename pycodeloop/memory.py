@@ -57,7 +57,7 @@ class RememberTool(Tool):
         },
         "required": ["note"],
     }
-    dangerous = True
+    operation = "execute_high_risk"
 
     def __init__(self, cwd: str | Path | None = None) -> None:
         self._path = memory_path(cwd)

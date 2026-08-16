@@ -6,6 +6,7 @@ from pycodeloop.abc.provider import Provider
 from pycodeloop.abc.sessions import Sessions
 from pycodeloop.abc.tool import Tool
 from pycodeloop.core.agent import DEFAULT_SYSTEM_PROMPT
+from pycodeloop.core.autonomy import AutonomyLevel
 from pycodeloop.core.exception import NotProviderInstance
 from pycodeloop.memory import RememberTool, load_memory, render_memory_prompt
 from pycodeloop.providers import get_provider
@@ -88,6 +89,15 @@ class Config:
             in one session is still followed in the next, instead of the
             user repeating it every time. On by default.
 
+        autonomy (str): Which graduated autonomy level gates tool calls —
+            `"manual"` (reads allowed, low-risk writes need approval,
+            high-risk denied), `"safe_execute"` (reads + low-risk writes
+            allowed, high-risk need approval; the default), or
+            `"full_project_loop"` (reads + low-risk and high-risk writes
+            all allowed). Replaces the old binary `dangerous` flag so a
+            run can permit low-risk mutations autonomously while still
+            gating high-risk ones.
+
         trace (bool): Append one JSON line per provider call, tool call/
             result, retry, and compaction event to
             `~/.pycodeloop/logs/<session_key or "global">.jsonl`, for
@@ -105,7 +115,7 @@ class Config:
             an absolute path or `..` escape outside it is refused. Does
             NOT cover `bash`/`git`, which run arbitrary shell/subprocess
             commands with no path parsing; their only guardrail is the
-            `dangerous` confirm gate. On by default; set `False` only
+            autonomy gate. On by default; set `False` only
             for a trusted, single-project setup that needs tools to
             read/write outside the workspace (e.g. a shared config
             directory).
@@ -136,6 +146,7 @@ class Config:
         trace: bool = True,
         storage: Sessions | bool | None = None,
         workspace: bool = True,
+        autonomy: str = "safe_execute",
     ) -> None:
         self.provider = (
             provider if provider is not None else _default_provider()
@@ -149,6 +160,7 @@ class Config:
         self.system_prompt = system_prompt
         self.max_turns = max_turns
         self.max_history_turns = max_history_turns
+        self.autonomy = AutonomyLevel.from_str(autonomy).value
         self.skills = self._discover_skills(
             skills, skill_sources, skills_refresh
         )
@@ -156,7 +168,11 @@ class Config:
             _, read_only_tools = build_tools(workspace)
             self.tools = [
                 *self.tools,
-                DelegateTool(provider=self.provider, tools=read_only_tools),
+                DelegateTool(
+                    provider=self.provider,
+                    tools=read_only_tools,
+                    autonomy=self.autonomy,
+                ),
             ]
         if memory:
             self._load_memory()

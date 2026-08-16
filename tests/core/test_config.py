@@ -69,5 +69,45 @@ class TestConfigWorkspace(unittest.TestCase):
         self.assertFalse(self._read_file_tool(unjailed)._workspace)
 
 
+class TestConfigAutonomy(unittest.TestCase):
+    def _provider(self) -> GenericProvider:
+        return GenericProvider(
+            url="http://fake/v1/chat/completions", model="fake-model"
+        )
+
+    def test_default_autonomy_is_safe_execute(self):
+        config = Config(provider=self._provider(), storage=False)
+
+        self.assertEqual(config.autonomy, "safe_execute")
+
+    def test_autonomy_is_stored_normalized(self):
+        config = Config(
+            provider=self._provider(), storage=False, autonomy="manual"
+        )
+
+        self.assertEqual(config.autonomy, "manual")
+        self.assertIsInstance(config.autonomy, str)
+
+    def test_invalid_autonomy_raises(self):
+        with self.assertRaises(ValueError):
+            Config(
+                provider=self._provider(),
+                storage=False,
+                autonomy="do_everything",
+            )
+
+    def test_delegate_tool_inherits_autonomy(self):
+        config = Config(
+            provider=self._provider(),
+            storage=False,
+            delegation=True,
+            autonomy="full_project_loop",
+        )
+
+        delegate = next(t for t in config.tools if t.name == "delegate")
+
+        self.assertEqual(delegate.autonomy, "full_project_loop")
+
+
 if __name__ == "__main__":
     unittest.main()

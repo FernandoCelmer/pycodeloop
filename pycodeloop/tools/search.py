@@ -34,6 +34,7 @@ def _is_binary(path: Path) -> bool:
 class GrepTool(Tool):
     name = "grep"
     description = "Search for a regex pattern across files under a path."
+    operation = "read"
     parameters = {
         "type": "object",
         "properties": {
@@ -84,6 +85,7 @@ class GrepTool(Tool):
 class GlobTool(Tool):
     name = "glob"
     description = "Find files by glob pattern (e.g. '**/*.py')."
+    operation = "read"
     parameters = {
         "type": "object",
         "properties": {

@@ -249,6 +249,7 @@ class ReadSkillTool(Tool):
     description = (
         "Read the full content of a discovered skill/instruction file by name."
     )
+    operation = "read"
     parameters = {
         "type": "object",
         "properties": {"name": {"type": "string"}},

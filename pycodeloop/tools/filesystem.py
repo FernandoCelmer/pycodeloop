@@ -50,6 +50,7 @@ class ReadFileTool(Tool):
         "force=true to get the full content again (e.g. if it scrolled "
         "out of your context after compaction)."
     )
+    operation = "read"
     parameters = {
         "type": "object",
         "properties": {
@@ -144,7 +145,7 @@ class WriteFileTool(Tool):
         },
         "required": ["path", "content"],
     }
-    dangerous = True
+    operation = "execute_low_risk"
 
     def __init__(
         self,
@@ -220,7 +221,7 @@ class EditFileTool(Tool):
         },
         "required": ["path", "old_string", "new_string"],
     }
-    dangerous = True
+    operation = "execute_low_risk"
 
     def __init__(
         self,
@@ -331,7 +332,7 @@ class DeleteFileTool(Tool):
         "properties": {"path": {"type": "string"}},
         "required": ["path"],
     }
-    dangerous = True
+    operation = "execute_high_risk"
 
     def __init__(
         self,
@@ -374,6 +375,7 @@ class DeleteFileTool(Tool):
 class ListDirTool(Tool):
     name = "list_dir"
     description = "List files and directories at a given path."
+    operation = "read"
     parameters = {
         "type": "object",
         "properties": {"path": {"type": "string", "default": "."}},

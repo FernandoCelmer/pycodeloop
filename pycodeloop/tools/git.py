@@ -34,6 +34,7 @@ def _run_git(*args: str, timeout: int = 30) -> ToolResult:
 class GitStatusTool(Tool):
     name = "git_status"
     description = "Show the working tree status (git status --porcelain)."
+    operation = "read"
     parameters = {"type": "object", "properties": {}}
 
     def run(self) -> ToolResult:
@@ -43,6 +44,7 @@ class GitStatusTool(Tool):
 class GitDiffTool(Tool):
     name = "git_diff"
     description = "Show unstaged (or staged) changes as a unified diff."
+    operation = "read"
     parameters = {
         "type": "object",
         "properties": {
@@ -66,6 +68,7 @@ class GitDiffTool(Tool):
 class GitLogTool(Tool):
     name = "git_log"
     description = "Show recent commit history, one line per commit."
+    operation = "read"
     parameters = {
         "type": "object",
         "properties": {
@@ -102,7 +105,7 @@ class GitCommitTool(Tool):
         },
         "required": ["message", "paths"],
     }
-    dangerous = True
+    operation = "execute_high_risk"
 
     def preview(
         self, message: str, paths: list[str] | None = None, **_
