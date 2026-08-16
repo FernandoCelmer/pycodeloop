@@ -123,6 +123,38 @@ class TestAgent(unittest.TestCase):
 
         self.assertEqual(result, "hello")
 
+    def test_retries_and_recovers_from_empty_response_with_no_tool_calls(
+        self,
+    ):
+        """Regression: a weak model can return a fully empty message (no
+        text, no tool calls) — the agent used to treat that as a normal
+        `done` turn and silently return "". It should retry instead."""
+        provider = FakeProvider(
+            [
+                ProviderResponse(text="", tool_calls=[]),
+                ProviderResponse(text="", tool_calls=[]),
+                ProviderResponse(text="finally, here's the answer"),
+            ]
+        )
+        agent = Agent(provider=provider, tools=[EchoTool()])
+
+        result = agent.run("hi")
+
+        self.assertEqual(result, "finally, here's the answer")
+
+    def test_gives_up_with_a_clear_error_after_repeated_empty_responses(
+        self,
+    ):
+        provider = FakeProvider(
+            [ProviderResponse(text="", tool_calls=[]) for _ in range(5)]
+        )
+        agent = Agent(provider=provider, tools=[EchoTool()])
+
+        result = agent.run("hi")
+
+        self.assertIn("empty response", result)
+        self.assertIn(provider.model, result)
+
     def test_prefers_explicit_provider_context_window(self):
         provider = FakeProvider(
             [ProviderResponse(text="done", usage=Usage(input_tokens=90))]
