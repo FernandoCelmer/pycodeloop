@@ -111,7 +111,6 @@ class Agent:
         self.on_turn_end = on_turn_end
         self.on_trace_event = on_trace_event
         self.usage = Usage()
-        self._last_context_tokens = 0
 
     def _trace(self, event_type: str, **fields) -> None:
         if self.on_trace_event:
@@ -325,9 +324,8 @@ class Agent:
         provider itself, replacing the older history with one condensed
         message — keeps the conversation going instead of hitting the
         model's context limit."""
-        turn_starts = [
-            i for i, m in enumerate(session.messages) if m.role == "user"
-        ]
+        history = session.history()
+        turn_starts = [i for i, m in enumerate(history) if m.role == "user"]
 
         if len(turn_starts) <= _COMPACT_KEEP_RECENT_TURNS:
             return
@@ -335,9 +333,9 @@ class Agent:
         if self.on_compact_start:
             self.on_compact_start()
 
-        before_count = len(session.messages)
+        before_count = len(history)
         cutoff = turn_starts[-_COMPACT_KEEP_RECENT_TURNS]
-        older, recent = session.messages[:cutoff], session.messages[cutoff:]
+        older, recent = history[:cutoff], history[cutoff:]
 
         summary = self._complete(
             system_prompt="Summarize conversations concisely for context compaction.",
@@ -397,7 +395,7 @@ class Agent:
             context_window = getattr(self.provider, "context_window", None)
             if context_window is None:
                 context_window = context_window_for(self.provider.model)
-            if self.auto_compact and self._last_context_tokens >= (
+            if self.auto_compact and session.last_context_tokens >= (
                 context_window * self.compact_threshold
             ):
                 self._compact(session)
@@ -429,9 +427,9 @@ class Agent:
                 output_tokens=response.usage.output_tokens,
             )
 
-            self._last_context_tokens = response.usage.input_tokens
+            session.last_context_tokens = response.usage.input_tokens
             if self.on_context:
-                self.on_context(self._last_context_tokens, context_window)
+                self.on_context(session.last_context_tokens, context_window)
 
             tool_calls = [
                 {
