@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 from rich.console import Console
@@ -13,29 +14,29 @@ from rich.text import Text
 console = Console()
 
 _TOOL_ICONS = {
-    "read_file": "📖",
-    "write_file": "📝",
-    "edit_file": "✏️",
-    "delete_file": "🗑️",
-    "list_dir": "📁",
-    "glob": "🔎",
-    "grep": "🔍",
-    "bash": "💻",
-    "web_fetch": "🌐",
-    "http_request": "🔌",
-    "git_status": "🌿",
-    "git_diff": "🌿",
-    "git_log": "🌿",
-    "git_commit": "🌿",
-    "env": "🧾",
-    "read_skill": "🧠",
-    "sql_query": "🗄️",
-    "sql_schema": "🗄️",
+    "read_file": "⏺",
+    "write_file": "⏺",
+    "edit_file": "⏺",
+    "delete_file": "⏺",
+    "list_dir": "⏺",
+    "glob": "⏺",
+    "grep": "⏺",
+    "bash": "⏺",
+    "web_fetch": "⏺",
+    "http_request": "⏺",
+    "git_status": "⏺",
+    "git_diff": "⏺",
+    "git_log": "⏺",
+    "git_commit": "⏺",
+    "env": "⏺",
+    "read_skill": "⏺",
+    "sql_query": "⏺",
+    "sql_schema": "⏺",
 }
 
 
 def tool_icon(name: str) -> str:
-    return _TOOL_ICONS.get(name, "🔧")
+    return _TOOL_ICONS.get(name, "⏺")
 
 
 def format_tokens(count: int) -> str:
@@ -57,7 +58,7 @@ def format_tool_call(name: str, args: dict) -> str:
     if name == "bash" and "command" in args:
         command = str(args["command"])
         command = command if len(command) <= 100 else command[:100] + "…"
-        return f"💻 [bold white]$[/bold white] {escape(command)}"
+        return f"⏺ [bold white]$[/bold white] {escape(command)}"
     icon = tool_icon(name)
     preview = escape(format_args(args))
     return f"{icon} [bold white]{name}[/bold white] [dim]{preview}[/dim]"
@@ -81,7 +82,7 @@ class TurnBuffer:
                     Markdown(self._text),
                     border_style="grey50",
                     subtitle=(
-                        "[bold white on grey30] CodeLoop [/bold white on grey30]"
+                        "[bold white on grey30] Agent [/bold white on grey30]"
                     ),
                     subtitle_align="right",
                 )
@@ -103,9 +104,9 @@ def render_preview(preview: str) -> Text:
     text = Text()
     for line in preview.splitlines(keepends=True):
         if line.startswith("+") and not line.startswith("+++"):
-            text.append(line, style="bold white")
+            text.append(line, style="bold green")
         elif line.startswith("-") and not line.startswith("---"):
-            text.append(line, style="grey50")
+            text.append(line, style="bold red")
         elif line.startswith("$"):
             text.append(line, style="bold white")
         else:
@@ -113,11 +114,31 @@ def render_preview(preview: str) -> Text:
     return text
 
 
+def git_branch() -> str | None:
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            cwd=Path.cwd(),
+            capture_output=True,
+            text=True,
+            timeout=1,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if result.returncode != 0:
+        return None
+    return result.stdout.strip() or None
+
+
 def print_header(provider_name: str, model: str, hint: str) -> None:
     body = Text()
     body.append("CodeLoop", style="bold white")
     body.append(f"  {provider_name}", style="grey70")
     body.append(f" · {model}\n", style="grey70")
-    body.append(f"{Path.cwd()}\n", style="dim")
+    body.append(f"{Path.cwd()}", style="dim")
+    branch = git_branch()
+    if branch:
+        body.append(f"  ({branch})", style="grey70")
+    body.append("\n")
     body.append(hint, style="dim")
     console.print(Panel(body, border_style="grey50"))

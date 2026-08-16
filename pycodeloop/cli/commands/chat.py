@@ -79,4 +79,4 @@ def chat(
         memory=memory,
         workspace=workspace,
     )
-    CodeLoopApp(flow, provider_name, model_name).run()
+    CodeLoopApp(flow, provider_name, model_name, auto_approve=yes).run()

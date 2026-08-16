@@ -16,11 +16,11 @@ from pycodeloop.cli.render import (
 
 
 class TestToolIcon(unittest.TestCase):
-    def test_known_tool_has_specific_icon(self):
-        self.assertEqual(tool_icon("bash"), "💻")
+    def test_known_tool_has_icon(self):
+        self.assertEqual(tool_icon("bash"), "⏺")
 
-    def test_unknown_tool_falls_back(self):
-        self.assertEqual(tool_icon("something_new"), "🔧")
+    def test_unknown_tool_falls_back_to_same_icon(self):
+        self.assertEqual(tool_icon("something_new"), "⏺")
 
 
 class TestFormatTokens(unittest.TestCase):
@@ -69,9 +69,9 @@ class TestRenderPreview(unittest.TestCase):
         text = render_preview(preview)
 
         styles = {str(span.style) for span in text.spans}
-        # Three distinct non-dim styles: bold white (+ and $) and grey50 (-)
         self.assertIn("bold white", styles)
-        self.assertIn("grey50", styles)
+        self.assertIn("bold green", styles)
+        self.assertIn("bold red", styles)
 
 
 class TestTurnBuffer(unittest.TestCase):

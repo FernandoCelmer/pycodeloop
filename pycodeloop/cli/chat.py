@@ -23,6 +23,7 @@ from pycodeloop.cli.flow import default_session_key, new_session_key
 from pycodeloop.cli.render import (
     format_tokens,
     format_tool_call,
+    git_branch,
     render_preview,
     tool_icon,
 )
@@ -156,12 +157,17 @@ class CodeLoopApp(App):
     ENABLE_COMMAND_PALETTE = False
 
     def __init__(
-        self, flow: CodeLoop, provider_name: str, model_name: str
+        self,
+        flow: CodeLoop,
+        provider_name: str,
+        model_name: str,
+        auto_approve: bool = False,
     ) -> None:
         super().__init__(ansi_color=True)
         self.flow = flow
         self.provider_name = provider_name
         self.model_name = model_name
+        self._auto_approve = auto_approve
         self.session_key = default_session_key()
         self._context_pct: int | None = None
         self._text_buffer = ""
@@ -215,12 +221,16 @@ class CodeLoopApp(App):
     def on_mount(self) -> None:
         self.title = "CodeLoop"
         self._update_subtitle()
+        branch = git_branch()
+        cwd_line = f"[dim]{os.getcwd()}[/dim]"
+        if branch:
+            cwd_line += f"[grey70]  ({branch})[/grey70]"
         self._log(
             Panel(
                 f"[bold white]CodeLoop[/bold white] ready\n"
                 f"[grey70]{self.provider_name}[/grey70] · "
                 f"[grey70]{self.model_name}[/grey70]\n"
-                f"[dim]{os.getcwd()}[/dim]",
+                f"{cwd_line}",
                 border_style="grey50",
             )
         )
@@ -266,7 +276,7 @@ class CodeLoopApp(App):
                         Markdown(message.content),
                         border_style="grey50",
                         subtitle=(
-                            "[bold white on grey30] CodeLoop [/bold white on grey30]"
+                            "[bold white on grey30] Agent [/bold white on grey30]"
                         ),
                         subtitle_align="right",
                     )
@@ -430,6 +440,8 @@ class CodeLoopApp(App):
 
     def _finish_turn(self) -> None:
         self._busy = False
+        if self._cancel_event is not None and self._cancel_event.is_set():
+            self._log("[dim]⊘ cancelled[/dim]")
         if self._pending:
             text, images = self._pending.pop(0)
             self._start_turn(text, images)
@@ -497,14 +509,31 @@ class CodeLoopApp(App):
         )
 
     def _on_retry(self, attempt: int, delay: float, exc: Exception) -> None:
-        self.call_from_thread(
-            self._log,
-            self._styled(
-                f"[dim]⚠ retrying ({attempt}/3) in {delay:.0f}s — ",
-                str(exc),
-                "dim",
-            ),
-        )
+        self.call_from_thread(self._start_retry_countdown, attempt, delay, exc)
+
+    def _start_retry_countdown(
+        self, attempt: int, delay: float, exc: Exception
+    ) -> None:
+        static = Static("")
+        self.query_one("#log", VerticalScroll).mount(static)
+        static.scroll_visible()
+        deadline = time.monotonic() + delay
+        error_text = str(exc)
+
+        def tick() -> None:
+            remaining = max(0.0, deadline - time.monotonic())
+            static.update(
+                self._styled(
+                    f"[dim]⚠ retrying ({attempt}/3) in {remaining:.0f}s — ",
+                    error_text,
+                    "dim",
+                )
+            )
+            if remaining <= 0:
+                timer.stop()
+
+        timer = self.set_interval(0.5, tick)
+        tick()
 
     def _update_subtitle(self) -> None:
         base = f"{self.provider_name}/{self.model_name}"
@@ -518,7 +547,11 @@ class CodeLoopApp(App):
         self.call_from_thread(self._log, format_tool_call(name, args))
 
     def _on_tool_result(self, name: str, result: str, is_error: bool) -> None:
-        preview = result if len(result) < 500 else result[:500] + "…"
+        if len(result) < 500:
+            preview = result
+        else:
+            hidden = len(result) - 500
+            preview = f"{result[:500]}… (+{hidden} chars hidden)"
         if result == "User declined to run this tool.":
             self.call_from_thread(self._log, "  [dim]⊘ skipped[/dim]")
         elif result.startswith("User declined and said: "):
@@ -552,7 +585,7 @@ class CodeLoopApp(App):
                     Markdown(self._text_buffer),
                     border_style="grey50",
                     subtitle=(
-                        "[bold white on grey30] CodeLoop [/bold white on grey30]"
+                        "[bold white on grey30] Agent [/bold white on grey30]"
                     ),
                     subtitle_align="right",
                 ),
@@ -598,6 +631,9 @@ class CodeLoopApp(App):
         self._stale_confirm_answer = False
 
     def _confirm(self, name: str, preview: str) -> bool | str:
+        if self._auto_approve:
+            self.call_from_thread(self._log, "  [dim]running…[/dim]")
+            return True
         self._drain_stale_confirm_answer()
         self._awaiting_confirm = True
         self.call_from_thread(self._show_confirm_prompt, name, preview)
