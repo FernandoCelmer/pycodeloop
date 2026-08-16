@@ -395,7 +395,7 @@ class Agent:
             context_window = getattr(self.provider, "context_window", None)
             if context_window is None:
                 context_window = context_window_for(self.provider.model)
-            if self.auto_compact and session.last_context_tokens >= (
+            if self.auto_compact and session.get_last_context_tokens() >= (
                 context_window * self.compact_threshold
             ):
                 self._compact(session)
@@ -427,9 +427,9 @@ class Agent:
                 output_tokens=response.usage.output_tokens,
             )
 
-            session.last_context_tokens = response.usage.input_tokens
+            session.update_last_context_tokens(response.usage.input_tokens)
             if self.on_context:
-                self.on_context(session.last_context_tokens, context_window)
+                self.on_context(response.usage.input_tokens, context_window)
 
             tool_calls = [
                 {

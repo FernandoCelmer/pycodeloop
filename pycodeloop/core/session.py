@@ -43,6 +43,14 @@ class Session:
                 )
             )
 
+    def get_last_context_tokens(self) -> int:
+        with self._lock:
+            return self.last_context_tokens
+
+    def update_last_context_tokens(self, value: int) -> None:
+        with self._lock:
+            self.last_context_tokens = value
+
     def history(self) -> list[Message]:
         with self._lock:
             self._repair_dangling_tool_calls()
