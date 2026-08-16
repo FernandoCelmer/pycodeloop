@@ -155,6 +155,60 @@ class TestAgent(unittest.TestCase):
         self.assertIn("empty response", result)
         self.assertIn(provider.model, result)
 
+    def test_accumulates_usage_across_empty_response_retries(self):
+        provider = FakeProvider(
+            [
+                ProviderResponse(
+                    text="", tool_calls=[], usage=Usage(input_tokens=10)
+                ),
+                ProviderResponse(
+                    text="", tool_calls=[], usage=Usage(input_tokens=20)
+                ),
+                ProviderResponse(text="done", usage=Usage(input_tokens=30)),
+            ]
+        )
+        agent = Agent(provider=provider, tools=[EchoTool()])
+
+        agent.run("hi")
+
+        self.assertEqual(agent.usage.input_tokens, 60)
+
+    def test_accumulates_usage_even_when_giving_up_after_empty_responses(
+        self,
+    ):
+        provider = FakeProvider(
+            [
+                ProviderResponse(
+                    text="", tool_calls=[], usage=Usage(input_tokens=5)
+                )
+                for _ in range(3)
+            ]
+        )
+        agent = Agent(provider=provider, tools=[EchoTool()])
+
+        agent.run("hi")
+
+        self.assertEqual(agent.usage.input_tokens, 15)
+
+    def test_records_assistant_turn_in_session_when_giving_up(self):
+        provider = FakeProvider(
+            [ProviderResponse(text="", tool_calls=[]) for _ in range(3)]
+        )
+        notified = []
+        agent = Agent(
+            provider=provider,
+            tools=[EchoTool()],
+            on_message=lambda: notified.append(True),
+        )
+        session = Session(system_prompt="sys")
+
+        result = agent.run("hi", session=session)
+
+        history = session.history()
+        self.assertEqual(history[-1].role, "assistant")
+        self.assertEqual(history[-1].content, result)
+        self.assertTrue(notified)
+
     def test_prefers_explicit_provider_context_window(self):
         provider = FakeProvider(
             [ProviderResponse(text="done", usage=Usage(input_tokens=90))]
