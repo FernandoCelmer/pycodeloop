@@ -338,6 +338,41 @@ class TestLoadProviderFromJson(GenericProviderTestCase):
         self.assertEqual(result.text, "cut off mid")
         self.assertEqual(result.stop_reason, "connection_lost")
 
+    def test_streaming_stops_promptly_when_cancel_event_is_set(self):
+        """Regression: cancel_event was accepted nowhere in the streaming
+        read loop, so pressing Esc/Cancel mid-response did nothing until
+        the provider finished the turn on its own."""
+        path = self._write_config(
+            {"url": "http://fake/v1/chat/completions", "model": "my-model"}
+        )
+        provider = GenericProvider.from_json(path)
+
+        chunks = [
+            {"choices": [{"delta": {"content": "first"}}]},
+            {"choices": [{"delta": {"content": "second"}}]},
+            {"choices": [{"delta": {}, "finish_reason": "stop"}]},
+        ]
+        sse_body = (
+            "".join(f"data: {json.dumps(c)}\n" for c in chunks)
+            + "data: [DONE]\n"
+        ).encode()
+
+        cancel_event = threading.Event()
+
+        def on_delta(_chunk):
+            cancel_event.set()
+
+        with mock.patch(
+            "pycodeloop.providers.generic.urllib.request.urlopen",
+            return_value=_FakeResponse(sse_body),
+        ):
+            result = provider.complete(
+                "sys", [], [], on_delta=on_delta, cancel_event=cancel_event
+            )
+
+        self.assertEqual(result.text, "first")
+        self.assertEqual(result.stop_reason, "cancelled")
+
     def test_streaming_requests_usage_and_captures_it_from_final_chunk(self):
         """Regression: streaming previously sent `stream: True` with no
         `stream_options.include_usage`, so OpenAI-compatible servers that
