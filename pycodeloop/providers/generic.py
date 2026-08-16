@@ -399,7 +399,8 @@ class GenericProvider(Provider):
                 try:
                     chunk = json.loads(payload)
                 except json.JSONDecodeError:
-                    stop_reason = "malformed_stream"
+                    if stop_reason is None:
+                        stop_reason = "malformed_stream"
                     break
 
                 if chunk.get("usage"):
