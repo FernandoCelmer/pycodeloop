@@ -412,8 +412,21 @@ class Agent:
                 messages=session.history(),
                 tools=tools,
                 on_delta=self.on_text_delta,
+                cancel_event=cancel_event,
             )
             elapsed = time.perf_counter() - started_at
+
+            if response.stop_reason == "cancelled":
+                self.usage = self.usage + response.usage
+                if self.on_usage:
+                    self.on_usage(response.usage, self.usage, elapsed)
+                if response.text.strip() or response.tool_calls:
+                    session.add_assistant(response.text)
+                    self._notify_message()
+                    if self.on_turn_end:
+                        self.on_turn_end()
+                self._trace("run_end", reason="cancelled")
+                return "Cancelled by user."
 
             empty_retries = 0
             while (
@@ -446,8 +459,16 @@ class Agent:
                     messages=session.history(),
                     tools=tools,
                     on_delta=self.on_text_delta,
+                    cancel_event=cancel_event,
                 )
                 elapsed = time.perf_counter() - started_at
+
+                if response.stop_reason == "cancelled":
+                    self.usage = self.usage + response.usage
+                    if self.on_usage:
+                        self.on_usage(response.usage, self.usage, elapsed)
+                    self._trace("run_end", reason="cancelled")
+                    return "Cancelled by user."
 
             if not response.text.strip() and not response.tool_calls:
                 self.usage = self.usage + response.usage
