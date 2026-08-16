@@ -27,6 +27,8 @@ _RETRYABLE_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 _MAX_RETRIES = 3
 _RETRY_BASE_DELAY = 1.0
 
+_MAX_EMPTY_RESPONSE_RETRIES = 2
+
 _TOOL_RESULT_SUMMARIZE_THRESHOLD = 8_000
 _TOOL_SUMMARY_PROMPT = (
     "Summarize this tool output concisely, preserving specific facts, "
@@ -412,6 +414,59 @@ class Agent:
                 on_delta=self.on_text_delta,
             )
             elapsed = time.perf_counter() - started_at
+
+            empty_retries = 0
+            while (
+                not response.text.strip()
+                and not response.tool_calls
+                and empty_retries < _MAX_EMPTY_RESPONSE_RETRIES
+            ):
+                self.usage = self.usage + response.usage
+                if self.on_usage:
+                    self.on_usage(response.usage, self.usage, elapsed)
+
+                empty_retries += 1
+                self._trace(
+                    "empty_response_retry",
+                    model=self.provider.model,
+                    attempt=empty_retries,
+                )
+                if self.on_retry:
+                    self.on_retry(
+                        empty_retries,
+                        0.0,
+                        RuntimeError(
+                            f"{self.provider.model} returned an empty "
+                            "response with no tool calls"
+                        ),
+                    )
+                started_at = time.perf_counter()
+                response = self._complete(
+                    system_prompt=self.system_prompt,
+                    messages=session.history(),
+                    tools=tools,
+                    on_delta=self.on_text_delta,
+                )
+                elapsed = time.perf_counter() - started_at
+
+            if not response.text.strip() and not response.tool_calls:
+                self.usage = self.usage + response.usage
+                if self.on_usage:
+                    self.on_usage(response.usage, self.usage, elapsed)
+
+                error_text = (
+                    f"{self.provider.model} returned an empty response "
+                    "with no tool calls after "
+                    f"{_MAX_EMPTY_RESPONSE_RETRIES} retries. The model may "
+                    "be too weak for agent mode with the current tool/"
+                    "system-prompt size — try a larger model."
+                )
+                session.add_assistant(error_text)
+                self._notify_message()
+                if self.on_turn_end:
+                    self.on_turn_end()
+                self._trace("run_end", reason="empty_response")
+                return error_text
 
             self.usage = self.usage + response.usage
             if self.on_usage:
