@@ -291,6 +291,35 @@ class TestLoadProviderFromJson(GenericProviderTestCase):
         self.assertEqual(result.stop_reason, "malformed_stream")
         self.assertEqual("".join(deltas), "hello there")
 
+    def test_streaming_prefers_finish_reason_over_trailing_malformed_chunk(
+        self,
+    ):
+        path = self._write_config(
+            {"url": "http://fake/v1/chat/completions", "model": "my-model"}
+        )
+        provider = GenericProvider.from_json(path)
+
+        chunks = [
+            {
+                "choices": [
+                    {"delta": {"content": "done"}, "finish_reason": "stop"}
+                ]
+            }
+        ]
+        sse_body = (
+            "".join(f"data: {json.dumps(c)}\n" for c in chunks)
+            + "data: {junk after finish\n"
+        ).encode()
+
+        with mock.patch(
+            "pycodeloop.providers.generic.urllib.request.urlopen",
+            return_value=_FakeResponse(sse_body),
+        ):
+            result = provider.complete("sys", [], [], on_delta=lambda _: None)
+
+        self.assertEqual(result.text, "done")
+        self.assertEqual(result.stop_reason, "stop")
+
     def test_streaming_flags_a_connection_dropped_mid_response(self):
         path = self._write_config(
             {"url": "http://fake/v1/chat/completions", "model": "my-model"}
