@@ -1,5 +1,11 @@
 # Release Notes
 
+## v0.8.0
+
+- [📦 PyPI - Build 0.8.0](https://pypi.org/project/pycodeloop/0.8.0/)
+- [🪲 Bug: Persist only new messages instead of rewriting the whole session (#19)](https://github.com/dotflow-io/pycodeloop/pull/54)
+- [⚙️ Feature: Resolve bundled provider templates by bare name (#58)](https://github.com/dotflow-io/pycodeloop/pull/59)
+
 ## v0.7.0
 
 - [📦 PyPI - Build 0.7.0](https://pypi.org/project/pycodeloop/0.7.0/)
