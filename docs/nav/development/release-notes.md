@@ -5,6 +5,12 @@
 - [📦 PyPI - Build 0.8.0](https://pypi.org/project/pycodeloop/0.8.0/)
 - [🪲 Bug: Persist only new messages instead of rewriting the whole session (#19)](https://github.com/dotflow-io/pycodeloop/pull/54)
 - [⚙️ Feature: Resolve bundled provider templates by bare name (#58)](https://github.com/dotflow-io/pycodeloop/pull/59)
+- [🪲 Bug: Fix `Agent._last_context_tokens` leaking across sessions in `serve`, triggering wrong auto-compact (#61)](https://github.com/dotflow-io/pycodeloop/pull/65)
+- [🪲 Bug: Wire `Agent.on_request` in `serve.py` so the VS Code extension gets the "N msg, M tools" status too (#63)](https://github.com/dotflow-io/pycodeloop/pull/66)
+- [🪲 Bug: Persist already-streamed text when an SSE chunk is malformed, and flag a dropped connection instead of reporting a clean `stop` (#62, #64)](https://github.com/dotflow-io/pycodeloop/pull/67)
+- [🪲 Bug: Request `stream_options.include_usage` in SSE streaming — usage was reporting 0/0 input/output tokens for Ollama and other providers that only report usage on request (#68)](https://github.com/dotflow-io/pycodeloop/pull/70)
+- [🪲 Bug: Retry and surface a clear error instead of silently returning an empty response when a weak model returns no text and no tool calls (#69)](https://github.com/dotflow-io/pycodeloop/pull/71)
+- [🪲 Bug: Thread `cancel_event` into the provider so Esc/Cancel actually interrupts an in-flight request instead of waiting for the current turn to finish on its own (#72)](https://github.com/dotflow-io/pycodeloop/pull/75)
 
 ## v0.7.0
 
