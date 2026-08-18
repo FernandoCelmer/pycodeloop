@@ -198,6 +198,7 @@ class GenericProvider(Provider):
         context_window: int | None = None,
         supports_openai_sse: bool = True,
         include_usage_in_stream: bool = True,
+        inference_params: dict | None=None,
         **kwargs,
     ) -> None:
         super().__init__(model=model, api_key=api_key, **kwargs)
@@ -214,6 +215,7 @@ class GenericProvider(Provider):
         self.context_window = context_window
         self._supports_openai_sse = supports_openai_sse
         self._include_usage_in_stream = include_usage_in_stream
+        self.inference_params = inference_params or {}
         self._config_path: Path | None = None
         self._lock = threading.Lock()
 
@@ -248,6 +250,8 @@ class GenericProvider(Provider):
         request_builder = None
         if "request" in data:
             request_builder = request_builder_from_config(data["request"])
+
+        request_params = (data.get("request") or {}).get("params") or {}
 
         return cls(
             url=data["url"],
@@ -286,15 +290,18 @@ class GenericProvider(Provider):
             self.context_window = fresh.context_window
             self._supports_openai_sse = fresh._supports_openai_sse
             self._include_usage_in_stream = fresh._include_usage_in_stream
+            self.inference_params = fresh.inference_params
 
-    @staticmethod
+    
     def _default_request(
+        self,
         system_prompt: str,
         messages: list[Message],
         tools: list[dict],
         model: str,
     ) -> dict:
         return {
+            **self.inference_params,
             "model": model,
             "messages": to_openai_messages(system_prompt, messages),
             "tools": openai_tool_schema(tools) if tools else None,
