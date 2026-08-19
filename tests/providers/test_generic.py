@@ -34,6 +34,21 @@ class GenericProviderTestCase(unittest.TestCase):
 
 
 class TestLoadProviderFromJson(GenericProviderTestCase):
+    def test_inference_params_are_added_to_default_request(self):
+        provider = GenericProvider(
+            url="http://fake/v1/chat/completions",
+            model="my-model",
+            inference_params={
+                "temperature": 0,
+                "max_tokens": 500,
+            },
+        )
+
+        request = provider._default_request("sys", [], [], "my-model")
+
+        self.assertEqual(request["temperature"], 0)
+        self.assertEqual(request["max_tokens"], 500)
+        
     def test_builds_generic_provider_from_config(self):
         path = self._write_config(
             {
