@@ -266,6 +266,7 @@ class GenericProvider(Provider):
             context_window=data.get("context_window"),
             supports_openai_sse=response_shape != "anthropic",
             include_usage_in_stream=data.get("include_usage_in_stream", True),
+            inference_params=request_params or None,
         )
 
     def reload(self) -> None:

@@ -17,13 +17,13 @@ def chat(
     url: str = typer.Option(
         None, help="Endpoint URL, required for --provider generic."
     ),
-    temperature: float = typer.Option(
+    temperature: float | None = typer.Option(
         None,
         "--temperature",
         help="Sampling temperature.",
     ),
 
-    max_tokens: int = typer.Option(
+    max_tokens: int | None = typer.Option(
         None,
         "--max-tokens",
         help="Maximum number of tokens to generate.",
